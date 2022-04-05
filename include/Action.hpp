@@ -1,18 +1,23 @@
 #ifndef ACTION_HPP
 #define ACTION_HPP
 
-#include <Action.hpp>
+#include <State.hpp>
 
+using namespace epase;
 
 class Action
 {
 
 public:
-    virtual State Apply(State& state) = 0; 
+	Action(){};
+	Action(const std::string& type):type_(type){};
+    virtual State Apply(State& state){}; 
+    bool operator==(const Action& other_action) const
+    {
+        return type_ == other_action.type_;
+    }
+    std::string type_;
 
-}
-
-
-
+};
 
 #endif

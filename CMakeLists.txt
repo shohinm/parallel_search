@@ -16,7 +16,7 @@ include_directories(include)
 
 set(SOURCES
     src/State.cpp 
-    # src/Action.cpp
+    src/Edge.cpp
 )
 
 add_executable(run_point_robot_nav

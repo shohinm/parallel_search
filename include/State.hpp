@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <memory>
+#include <Types.hpp>
 
 namespace epase
 {
