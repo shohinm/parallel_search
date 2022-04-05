@@ -1,0 +1,24 @@
+cmake_minimum_required(VERSION 2.8)
+
+project (epase)
+
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
+
+add_compile_options(-std=c++17)
+
+set(CMAKE_CXX_FLAGS "-g")
+SET(CMAKE_CXX_FLAGS_RELEASE "-O3")
+SET(CMAKE_C_FLAGS_RELEASE "-O3")
+
+include_directories(include)
+
+set(SOURCES
+    src/State.cpp 
+    # src/Action.cpp
+)
+
+add_executable(run_point_robot_nav
+        examples/point_robot_nav/run_point_robot_nav.cpp
+        ${SOURCES})
