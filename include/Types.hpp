@@ -3,11 +3,18 @@
 
 #include <vector>
 #include <memory>
+#include <unordered_map>
+#include "intrusive_heap.h"
 
 namespace epase
 {
 	class State;
-	typedef std::shared_ptr<State> StatePtrType;
+	class Edge;
+
+	typedef std::vector<double> StateVarsType;
+	typedef State* StatePtrType;
+	typedef Edge* EdgePtrType;
+
 }
 
 #endif

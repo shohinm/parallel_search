@@ -13,7 +13,7 @@ size_t State::id_counter_ = 0;
 //     state_id_ = id_counter_++;
 // }
 
-State::State(const vector<double>& vars):
+State::State(const StateVarsType& vars):
 g_val_(numeric_limits<double>::infinity()),
 f_val_(numeric_limits<double>::infinity()),
 is_visited_(false),
@@ -23,7 +23,7 @@ vars_(vars)
 }
 
 
-bool StateCompare::operator()(const State& lhs, const State& rhs)
+bool IsLesserState::operator()(const State& lhs, const State& rhs)
 {
     if (lhs.GetFValue() == rhs.GetFValue()) // tie breaking
         return lhs.GetStateID() < rhs.GetStateID();

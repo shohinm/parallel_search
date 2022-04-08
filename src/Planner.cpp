@@ -1,0 +1,126 @@
+#include <cmath>
+#include "Planner.hpp"
+
+using namespace std;
+using namespace epase;
+
+Planner::Planner()
+{
+
+}
+
+Planner::~Planner()
+{
+	cleanUp();
+}
+
+void Planner::SetStartState(const StateVarsType& state_vars)
+{
+	start_state_ptr_ = constructState(state_vars);
+}
+
+void Planner::SetGoalChecker(std::function<double(const StatePtrType)> callback)
+{
+
+}
+
+void Planner::SetStateMapKeyGenerator(std::function<std::size_t(const StateVarsType&)> callback)
+{
+	state_key_generator_ = callback;
+}
+
+void Planner::SetEdgeKeyGenerator(std::function<std::size_t(const EdgePtrType)> callback)
+{
+	edge_key_generator_ = callback;
+}
+
+void Planner::SetHeuristicGenerator(std::function<double(const StatePtrType)> callback)
+{
+	unary_heuristic_generator_ = callback;
+}
+
+void Planner::SetStateToStateHeuristicGenerator(std::function<double(const StatePtrType, const StatePtrType)> callback)
+{
+	binary_heuristic_generator_ = callback;
+}
+
+void Planner::initialize()
+{
+	cleanUp();
+
+}
+
+size_t Planner::getEdgeKey(const EdgePtrType& edge_ptr)
+{
+    if (edge_ptr->action_.type_ != "dummy")
+        return edge_key_generator_(edge_ptr);
+    else // proxy edge for epase
+        return state_key_generator_(edge_ptr->parent_->GetStateVars());
+}
+
+StatePtrType Planner::constructState(const StateVarsType& state)
+{
+    size_t key = state_key_generator_(state);
+    StatePtrMapType::iterator it = state_map_.find(key);
+    StatePtrType state_ptr;
+    
+    // Check if state exists in the search state map
+    if (it == state_map_.end())
+    {
+        state_ptr = new State(state);
+        state_map_.insert(pair<size_t, StatePtrType>(key, state_ptr));
+    }
+    else 
+    {
+        state_ptr = it->second;
+    }
+   
+    return state_ptr;
+}
+
+double Planner::computeHeuristic(const StatePtrType state_ptr)
+{
+    return roundOff(unary_heuristic_generator_(state_ptr));
+}
+
+double Planner::computeHeuristic(const StatePtrType state_ptr_1, const StatePtrType state_ptr_2)
+{
+    return roundOff(binary_heuristic_generator_(state_ptr_1, state_ptr_2));
+}
+
+double Planner::roundOff(double value, int prec)
+{
+    double pow_10 = pow(10.0, prec);
+    return round(value * pow_10) / pow_10;
+}
+
+void Planner::cleanUp()
+{
+    for (auto& state_it : state_map_)
+    {        
+        if (state_it.second)
+        {
+            delete state_it.second;
+            state_it.second = NULL;
+        }
+    }
+	state_map_.clear();
+
+    for (auto& edge_it : edge_map_)
+    {
+        if (edge_it.second)
+        {
+            delete edge_it.second;
+            edge_it.second = NULL;
+        }
+    }
+    edge_map_.clear();
+    
+    State::ResetStateIDCounter();
+    Edge::ResetStateIDCounter();
+}
+
+
+
+
+

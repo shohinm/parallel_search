@@ -3,6 +3,7 @@
 using namespace std;
 using namespace epase;
 
+size_t Edge::id_counter_ = 0;
 
 void Edge::SetCost(double cost)
 {
@@ -11,7 +12,7 @@ void Edge::SetCost(double cost)
     lock_.unlock();
 }
 
-double Edge::GetCost()
+double Edge::GetCost() const
 {   
     double cost_local;
     lock_.lock();
@@ -30,6 +31,7 @@ Edge::Edge(const Edge& other_edge)
     is_eval_ = other_edge.is_eval_.load();
     is_invalid_ = other_edge.is_invalid_.load();
     edge_id_ = other_edge.edge_id_;
+    SetCost(other_edge.GetCost());
 }
 
 Edge& Edge::operator=(const Edge& other_edge)
@@ -42,6 +44,7 @@ Edge& Edge::operator=(const Edge& other_edge)
     is_eval_ = other_edge.is_eval_.load();
     is_invalid_ = other_edge.is_invalid_.load();
     edge_id_ = other_edge.edge_id_;
+    SetCost(other_edge.GetCost());
     return *this;
 }            
 
@@ -65,4 +68,22 @@ void Print(std::string str="")
     // if (child_)
     //     child_->Print("Child");
     // std::cout << "_______________________________" << std::endl;
+}
+
+bool IsLesserEdge::operator() (const Edge& lhs, const Edge& rhs)
+{
+    // Default fifo ordering
+    if (lhs.expansion_priority_ == rhs.expansion_priority_) // tie breaking
+        return lhs.edge_id_ < rhs.edge_id_;
+    else
+        return lhs.expansion_priority_ < rhs.expansion_priority_;
+}
+
+bool IsGreaterEdge::operator() (const Edge& lhs, const Edge& rhs)
+{
+    // Default fifo ordering
+    if (lhs.expansion_priority_ == rhs.expansion_priority_) // tie breaking
+        return lhs.edge_id_ < rhs.edge_id_;
+    else
+        return lhs.expansion_priority_ > rhs.expansion_priority_;
 }

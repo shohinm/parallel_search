@@ -3,7 +3,8 @@
 
 #include <State.hpp>
 
-using namespace epase;
+namespace epase
+{
 
 class Action
 {
@@ -19,5 +20,7 @@ public:
     std::string type_;
 
 };
+
+}
 
 #endif

@@ -3,7 +3,7 @@
 
 #include <vector>
 #include <memory>
-#include <Types.hpp>
+#include "Types.hpp"
 
 namespace epase
 {
@@ -13,14 +13,14 @@ class State
 
 public:
 	// State();
-	State(const std::vector<double>& vars=std::vector<double>());
+	State(const StateVarsType& vars=StateVarsType());
 	~State(){};
 
 	std::size_t GetStateID() const {return state_id_;};
 	static void ResetStateIDCounter(){id_counter_=0;};
 
-    void SetStateVars(std::vector<double>& vars){vars_ = vars;};
-    std::vector<double> GetStateVars() const {return vars_;};
+    void SetStateVars(StateVarsType& vars){vars_ = vars;};
+    StateVarsType GetStateVars() const {return vars_;};
 
 	void SetGValue(const double& g_val){g_val_ = g_val;};
 	double GetGValue() const {return g_val_;};
@@ -40,7 +40,7 @@ private:
 	static std::size_t id_counter_;
 
 	std::size_t state_id_;
-    std::vector<double> vars_;
+    StateVarsType vars_;
 	double g_val_;
     double h_val_;
 	double f_val_;
@@ -50,7 +50,7 @@ private:
 
 };
 
-class StateCompare
+class IsLesserState
 {
 public:
     bool operator() (const State& lhs, const State& rhs);

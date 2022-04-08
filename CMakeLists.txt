@@ -17,6 +17,8 @@ include_directories(include)
 set(SOURCES
     src/State.cpp 
     src/Edge.cpp
+    src/Planner.cpp
+    src/EpasePlanner.cpp
 )
 
 add_executable(run_point_robot_nav

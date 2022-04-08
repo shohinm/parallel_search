@@ -1,8 +1,11 @@
+#ifndef EDGE_HPP
+#define EDGE_HPP
+
 #include <thread>
 #include <mutex>
 #include <atomic>
-#include <intrusive_heap.hpp>
-#include <Action.hpp>
+#include "Types.hpp"
+#include "Action.hpp"
 
 namespace epase
 {
@@ -24,9 +27,10 @@ class Edge : public smpl::heap_element
         bool operator==(const Edge& other_edge) const;
         
         void SetCost(double cost);
-        double GetCost();
+        double GetCost() const;
 
         void Print(std::string str="");
+        static void ResetStateIDCounter(){id_counter_=0;};
 
         static std::size_t id_counter_;
         std::size_t edge_id_;
@@ -46,4 +50,18 @@ class Edge : public smpl::heap_element
 
 };
 
+class IsLesserEdge
+{
+    public:
+        bool operator() (const Edge& lhs, const Edge& rhs);
+};
+
+class IsGreaterEdge
+{
+    public:
+        bool operator() (const Edge& lhs, const Edge& rhs);
+};
+
 }
+
+#endif
