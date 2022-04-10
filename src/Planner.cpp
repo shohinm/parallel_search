@@ -1,3 +1,4 @@
+#include <iostream>
 #include <cmath>
 #include "Planner.hpp"
 
@@ -12,6 +13,13 @@ Planner::Planner()
 Planner::~Planner()
 {
 	cleanUp();
+    start_state_ptr_ = NULL;
+    goal_state_ptr_ = NULL;
+    num_evaluated_edges_ = 0;
+    num_state_expansions_ = 0;   
+    total_time_ = 0;
+    solution_cost_ = 0;
+
 }
 
 void Planner::SetStartState(const StateVarsType& state_vars)
@@ -44,18 +52,42 @@ void Planner::SetStateToStateHeuristicGenerator(std::function<double(const State
 	binary_heuristic_generator_ = callback;
 }
 
+bool Planner::PrintStats(int exp_idx)
+{
+    cout << "Total planning time: " << total_time_ << endl;
+    cout << "Solution cost: " << solution_cost_ << endl;
+    cout << "Number of state expansiosn: " << num_state_expansions_ << endl;
+    cout << "Number of edges evaluaited: " << num_evaluated_edges_ << endl;
+}
+
 void Planner::initialize()
 {
 	cleanUp();
+    plan_.clear();
 
+}
+
+void Planner::resetStates()
+{
+    for (auto it = state_map_.begin(); it != state_map_.end(); ++it)
+    {
+        it->second->ResetGValue();
+        it->second->ResetFValue();
+        // it->second->ResetVValue();
+        it->second->ResetIncomingEdgePtr();        
+        it->second->UnsetVisited();     
+        it->second->UnsetBeingExpanded();      
+        it->second->num_successors_ = 0;   
+        it->second->num_expanded_successors_ = 0;   
+    }
 }
 
 size_t Planner::getEdgeKey(const EdgePtrType& edge_ptr)
 {
-    if (edge_ptr->action_.type_ != "dummy")
+    if (edge_ptr->action_ptr_->type_ != "dummy")
         return edge_key_generator_(edge_ptr);
     else // proxy edge for epase
-        return state_key_generator_(edge_ptr->parent_->GetStateVars());
+        return state_key_generator_(edge_ptr->parent_state_ptr_->GetStateVars());
 }
 
 StatePtrType Planner::constructState(const StateVarsType& state)
@@ -86,6 +118,21 @@ double Planner::computeHeuristic(const StatePtrType state_ptr)
 double Planner::computeHeuristic(const StatePtrType state_ptr_1, const StatePtrType state_ptr_2)
 {
     return roundOff(binary_heuristic_generator_(state_ptr_1, state_ptr_2));
+}
+
+bool Planner::isGoalState(StatePtrType state)
+{
+
+}
+
+void Planner::constructPlan(StatePtrType state)
+{
+    while(state->GetIncomingEdgePtr())
+    {
+        plan_.insert(plan_.begin(), PlanElement(state->GetStateVars(), *(state->GetIncomingEdgePtr()->action_ptr_), state->GetIncomingEdgePtr()->GetCost()));        
+        solution_cost_ += state->GetIncomingEdgePtr()->GetCost();
+        state = state->GetIncomingEdgePtr()->parent_state_ptr_;     
+    }
 }
 
 double Planner::roundOff(double value, int prec)

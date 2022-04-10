@@ -14,13 +14,13 @@ class Edge : public smpl::heap_element
 {
     public:
         Edge(){};
-        Edge(StatePtrType parent, StatePtrType child, Action action): 
-        parent_(parent), child_(child), action_(action),
+        Edge(StatePtrType parent_ptr, StatePtrType child_ptr, ActionPtrType action_ptr): 
+        parent_state_ptr_(parent_ptr), child_state_ptr_(child_ptr), action_ptr_(action_ptr),
         is_closed_(false), is_eval_(false), is_invalid_(false)
         {edge_id_ = id_counter_++;};
-        Edge(StatePtrType parent, Action action): 
-        parent_(parent), action_(action),
-        is_closed_(false), is_eval_(false), is_invalid_(false), child_(NULL)
+        Edge(StatePtrType parent_ptr, ActionPtrType action_ptr): 
+        parent_state_ptr_(parent_ptr), action_ptr_(action_ptr),
+        is_closed_(false), is_eval_(false), is_invalid_(false), child_state_ptr_(NULL)
         {edge_id_ = id_counter_++;};
         Edge(const Edge& other_edge);
         Edge& operator=(const Edge& other_edge);
@@ -35,9 +35,9 @@ class Edge : public smpl::heap_element
         static std::size_t id_counter_;
         std::size_t edge_id_;
 
-        StatePtrType parent_;
-        StatePtrType child_;
-        Action action_;
+        StatePtrType parent_state_ptr_;
+        StatePtrType child_state_ptr_;
+        ActionPtrType action_ptr_;
 
         double expansion_priority_;
         std::atomic<bool> is_closed_;

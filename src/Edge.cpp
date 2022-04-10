@@ -23,9 +23,9 @@ double Edge::GetCost() const
 
 Edge::Edge(const Edge& other_edge)
 {
-    parent_ = other_edge.parent_;
-    child_ = other_edge.child_;
-    action_ = other_edge.action_;
+    parent_state_ptr_ = other_edge.parent_state_ptr_;
+    child_state_ptr_ = other_edge.child_state_ptr_;
+    action_ptr_ = other_edge.action_ptr_;
     expansion_priority_ = other_edge.expansion_priority_;
     is_closed_ = other_edge.is_closed_.load();
     is_eval_ = other_edge.is_eval_.load();
@@ -36,9 +36,9 @@ Edge::Edge(const Edge& other_edge)
 
 Edge& Edge::operator=(const Edge& other_edge)
 {
-    parent_ = other_edge.parent_;
-    child_ = other_edge.child_;
-    action_ = other_edge.action_;
+    parent_state_ptr_ = other_edge.parent_state_ptr_;
+    child_state_ptr_ = other_edge.child_state_ptr_;
+    action_ptr_ = other_edge.action_ptr_;
     expansion_priority_ = other_edge.expansion_priority_;
     is_closed_ = other_edge.is_closed_.load();
     is_eval_ = other_edge.is_eval_.load();
@@ -50,7 +50,7 @@ Edge& Edge::operator=(const Edge& other_edge)
 
 bool Edge::operator==(const Edge& other_edge) const
 {
-    return ((parent_==other_edge.parent_)&&(action_==other_edge.action_));
+    return ((parent_state_ptr_==other_edge.parent_state_ptr_)&&(action_ptr_==other_edge.action_ptr_));
 }
 
 void Print(std::string str="")
@@ -63,10 +63,10 @@ void Print(std::string str="")
     //     std::cout << "Edge: " << edge_id_ << " | type: NULL" << "| Cost: " << GetCost() << "| Frozen cost: " << GetCostFrozen() << "| eval_priority: " << eval_priority_ << "| exp_priority: " << exp_priority_<< std::endl;
 
 
-    // if (parent_)
-    //     parent_->Print("Parent");
-    // if (child_)
-    //     child_->Print("Child");
+    // if (parent_state_ptr_)
+    //     parent_state_ptr_->Print("Parent");
+    // if (child_state_ptr_)
+    //     child_state_ptr_->Print("Child");
     // std::cout << "_______________________________" << std::endl;
 }
 

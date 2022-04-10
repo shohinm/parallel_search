@@ -1,3 +1,4 @@
+#include <iostream>
 #include "EpasePlanner.hpp"
 
 using namespace std;
@@ -5,8 +6,9 @@ using namespace epase;
 
 EpasePlanner::EpasePlanner():
 Planner()
-{
-    
+{    
+    vector<LockType> lock_vec(num_threads_-1);
+    lock_vec_.swap(lock_vec);
 }
 
 EpasePlanner::~EpasePlanner()
@@ -14,23 +16,278 @@ EpasePlanner::~EpasePlanner()
     
 }
 
-bool EpasePlanner::Plan()
+bool EpasePlanner::Plan(int exp_idx)
 {
     
+    initialize();    
+    auto t_start = chrono::system_clock::now();
+    
+    vector<Edge*> popped_edges;
+
+    lock_.lock();
+
+
+    while(!terminate_)
+    {
+        Edge* curr_edge_ptr = NULL;
+
+        while (!curr_edge_ptr && !terminate_)
+        {
+            if (edge_open_list_.empty() && being_expanded_states_.empty())
+            {
+                terminate_ = true;
+                auto t_end = chrono::system_clock::now();
+                double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
+                total_time_ = 1e-9*t_elapsed;
+                cout << "Goal Not Reached" << endl;   
+                lock_.unlock();
+                exit();
+                return false;
+            }
+
+            while(!curr_edge_ptr && !edge_open_list_.empty())
+            {
+                curr_edge_ptr = edge_open_list_.min();
+                edge_open_list_.pop();
+                popped_edges.emplace_back(curr_edge_ptr);
+
+                // state_to_expand_found = true;
+
+                if (curr_edge_ptr->parent_state_ptr_->IsBeingExpanded())
+                    continue;
+
+                // Independence check of curr_edge with edges in OPEN that are in front of curr_edge
+                for (auto& popped_edge_ptr : popped_edges)
+                {
+                    auto h_diff = computeHeuristic(popped_edge_ptr->parent_state_ptr_, curr_edge_ptr->parent_state_ptr_);
+                    // if (curr_edge_ptr->GetGValue() > popped_edge_ptr->GetGValue() + heuristic_w_*(popped_edge_ptr->GetHValue() -  curr_edge_ptr->GetHValue()))
+                    if (curr_edge_ptr->parent_state_ptr_->GetGValue() > popped_edge_ptr->parent_state_ptr_->GetGValue() + heuristic_w_*h_diff)
+                    {
+                        // state_to_expand_found = false;
+                        curr_edge_ptr = NULL;
+                        break;
+                    }
+                }
+     
+                if (curr_edge_ptr)
+                {
+                    // Independence check of curr_edge with edges in BE
+                    for (auto& being_expanded_state : being_expanded_states_)
+                    {
+                        auto h_diff = computeHeuristic(being_expanded_state, curr_edge_ptr->parent_state_ptr_);
+                        if (curr_edge_ptr->parent_state_ptr_->GetGValue() > being_expanded_state->GetGValue() + heuristic_w_*h_diff)
+                        {
+                            // state_to_expand_found = false;
+                            curr_edge_ptr = NULL;
+                            break;
+                        }
+                    }
+                }
+            }
+    
+
+            // Re add the popped states except curr state which will be expanded now
+            for (auto& popped_edge_ptr : popped_edges)
+            {
+                if (popped_edge_ptr != curr_edge_ptr)
+                    edge_open_list_.push(popped_edge_ptr);
+            }
+            popped_edges.clear();
+
+            if (!curr_edge_ptr)
+            {
+                lock_.unlock();
+                // Wait for recheck_flag_ to be set true;
+                while(!recheck_flag_ && !terminate_){}
+                lock_.lock();    
+                continue;
+            }
+
+            // if (!terminate_)
+            recheck_flag_ = false;
+            
+            // Return solution if goal state is expanded
+            // if (isGoalState(curr_edge_ptr) && !terminate_)
+            if (isGoalState(curr_edge_ptr->parent_state_ptr_) && (!terminate_))
+            {
+                auto t_end = chrono::system_clock::now();
+                double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
+                total_time_ = 1e-9*t_elapsed;
+
+                // Reconstruct and return path
+                cout << "--------------------------------------------------------" << endl;            
+                cout << "Goal Reached!" << endl;
+                // cout << "Number of edge expansions threads spawned: " << edge_expansion_futures_.size() << endl;
+                cout << "--------------------------------------------------------" << endl;            
+                goal_state_ptr_ = curr_edge_ptr->parent_state_ptr_;
+                constructPlan(curr_edge_ptr->parent_state_ptr_);   
+                terminate_ = true;
+                recheck_flag_ = true;
+                lock_.unlock();
+                PrintStats(exp_idx);
+                exit();
+                cout << "--------------------------------------------------------" << endl;            
+
+                return true;
+            }
+            
+        }
+
+        // Insert the state in BE and mark it closed if the edge being expanded is dummy edge
+        if (curr_edge_ptr->action_ptr_ == dummy_action_ptr_)
+        {
+            num_state_expansions_++;  
+            curr_edge_ptr->parent_state_ptr_->SetVisited();
+            curr_edge_ptr->parent_state_ptr_->SetBeingExpanded();
+            being_expanded_states_.emplace_back(curr_edge_ptr->parent_state_ptr_);
+        }
+
+        lock_.unlock();
+
+
+        // cout << "____________________" << endl;
+        // cout << "Open list size: " << edge_open_list_.size() << endl; 
+        // cout << "BE size: " << being_expanded_states_.size() << endl;
+        // cout << "Graph size: " << num_vertices(graph_) << endl; 
+        // cout << "____________________" << endl;
+
+
+        int thread_id = 0;
+        bool edge_expansion_assigned = false;
+
+        // cout << "-----------------------" << endl;
+        // cout << " thread: " << thread_id << endl;
+        // curr_edge_ptr->Print("Assigning");
+        // cout << "-----------------------" << endl;
+
+        if (num_threads_ == 1)
+        {
+            expandEdge(curr_edge_ptr, 0);
+        }
+        else
+        {
+            while (!edge_expansion_assigned)
+            {
+                lock_vec_[thread_id].lock();
+                bool status = edge_expansion_status_[thread_id];
+                lock_vec_[thread_id].unlock();
+
+                if (!status)
+                {
+                    int num_threads_current = edge_expansion_futures_.size();
+                    if (thread_id >= num_threads_current)
+                    {
+                        // cout << "Spawning thread " << thread_id << endl;
+                        edge_expansion_futures_.emplace_back(async(launch::async, &EpasePlanner::expandEdgeLoop, this, thread_id));
+                        // cout << "New threads size: " << edge_expansion_futures_.size() << endl;
+                    }
+                    lock_vec_[thread_id].lock();
+                    edge_expansion_vec_[thread_id] = curr_edge_ptr;
+                    edge_expansion_status_[thread_id] = 1;
+                    edge_expansion_assigned = true;       
+                    lock_vec_[thread_id].unlock();
+                }
+                else
+                    thread_id = thread_id == num_threads_-2 ? 0 : thread_id+1;
+
+            }
+        }
+
+        lock_.lock();
+
+
+    }
+
+    terminate_ = true;
+    auto t_end = chrono::system_clock::now();
+    double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
+    total_time_ = 1e-9*t_elapsed;
+    cout << "Goal Not Reached, Number of states expanded: " << num_state_expansions_ << endl;   
+    lock_.unlock();
+    exit();
+    return false;
+
+
+
 }
 
 void EpasePlanner::initialize()
 {
     Planner::initialize();
     terminate_ = false;
+    recheck_flag_ = true;
 
-    edge_open_list_ = EdgeQueueMinType();
+    edge_expansion_vec_.clear();
+    edge_expansion_vec_.resize(num_threads_-1, NULL);
+    
+    edge_expansion_status_.clear();
+    edge_expansion_status_.resize(num_threads_-1, 0);
+
+    edge_expansion_futures_.clear();
  
+    edge_open_list_ = EdgeQueueMinType();
+
     // Insert proxy edge with start state
-    auto edge_ptr = new Edge(start_state_ptr_, Action("dummy"));
+    dummy_action_ptr_ = make_shared<Action>("dummy");
+    auto edge_ptr = new Edge(start_state_ptr_, dummy_action_ptr_);
     edge_ptr->expansion_priority_ = heuristic_w_*computeHeuristic(start_state_ptr_);
 
     edge_map_.insert(make_pair(getEdgeKey(edge_ptr), edge_ptr));
     edge_open_list_.push(edge_ptr);   
 
+
+}
+
+void EpasePlanner::expandEdgeLoop(int thread_id)
+{
+    while (!terminate_)
+    {
+
+        lock_vec_[thread_id].lock();
+        bool status = edge_expansion_status_[thread_id];
+        lock_vec_[thread_id].unlock();
+
+        while ((!status) && (!terminate_))
+        {
+            lock_vec_[thread_id].lock();
+            status = edge_expansion_status_[thread_id];
+            lock_vec_[thread_id].unlock();
+            // cout << "Expansion thread " << thread_id << " waiting! " << edge_expansion_status_[thread_id] << endl;
+        }
+
+        if (terminate_)
+            break;
+
+
+        expandEdge(edge_expansion_vec_[thread_id], thread_id);
+
+        lock_vec_[thread_id].lock();
+        edge_expansion_vec_[thread_id] = NULL;
+        edge_expansion_status_[thread_id] = 0;
+        lock_vec_[thread_id].unlock();
+
+    }    
+}
+
+void EpasePlanner::expandEdge(Edge* edge_ptr, int thread_id)
+{
+
+}
+
+void EpasePlanner::exit()
+{
+    bool all_expansion_threads_terminated = false;
+    while (!all_expansion_threads_terminated)
+    {
+        all_expansion_threads_terminated = true;
+        for (auto& fut : edge_expansion_futures_)
+        {
+            if (!isFutureReady(fut))
+            {
+                all_expansion_threads_terminated = false;
+                break;
+            }
+        }
+    }
+    edge_expansion_futures_.clear();
 }

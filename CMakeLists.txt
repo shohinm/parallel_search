@@ -24,3 +24,6 @@ set(SOURCES
 add_executable(run_point_robot_nav
         examples/point_robot_nav/run_point_robot_nav.cpp
         ${SOURCES})
+
+target_link_libraries(run_point_robot_nav
+        pthread)

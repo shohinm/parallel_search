@@ -12,7 +12,7 @@ class Action
 public:
 	Action(){};
 	Action(const std::string& type):type_(type){};
-    virtual State Apply(State& state){}; 
+    virtual StateVarsType Apply(StateVarsType state){}; 
     bool operator==(const Action& other_action) const
     {
         return type_ == other_action.type_;
