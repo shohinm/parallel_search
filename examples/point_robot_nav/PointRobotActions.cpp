@@ -8,9 +8,7 @@ using namespace epase;
 
 ActionSuccessor PointRobotAction::Apply(StateVarsType state_vars, int thread_id)
 {
-
 	vector<double> next_state_vars(3, 0);
-
     for (int i = 0; i < params_["length"]; ++i)
     {
         next_state_vars[0] = state_vars[0] + i*move_dir_[0];
@@ -23,7 +21,7 @@ ActionSuccessor PointRobotAction::Apply(StateVarsType state_vars, int thread_id)
        
         if (!in_range)
         {
-            return ActionSuccessor(false, StateVarsType(), -DINF);
+            return ActionSuccessor(false, {make_pair(StateVarsType(), -DINF)});
         }
 
         bool is_collision =  false;
@@ -40,7 +38,7 @@ ActionSuccessor PointRobotAction::Apply(StateVarsType state_vars, int thread_id)
         {
             if (!isValidCell(cell.first, cell.second))
             {
-	            return ActionSuccessor(false, StateVarsType(), -DINF);
+	            return ActionSuccessor(false, {make_pair(StateVarsType(), -DINF)});
             }
         }
 
@@ -48,7 +46,7 @@ ActionSuccessor PointRobotAction::Apply(StateVarsType state_vars, int thread_id)
 
     
     double cost = pow(pow((next_state_vars[0] - state_vars[0]), 2) + pow((next_state_vars[1] - state_vars[1]), 2), 0.5);;
-	return ActionSuccessor(true, next_state_vars, cost);
+    return ActionSuccessor(true, {make_pair(next_state_vars, cost)});
 
 }
 

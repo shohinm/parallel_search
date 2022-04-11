@@ -25,10 +25,10 @@ namespace epase
 	
 	struct ActionSuccessor
 	{
-		ActionSuccessor(bool success, StateVarsType successor_state_vars, double cost): success_(success), successor_state_vars_(successor_state_vars), cost_(cost) {}
+		ActionSuccessor(bool success, std::vector<std::pair<StateVarsType, double>> successor_state_vars_costs): 
+		success_(success), successor_state_vars_costs_(successor_state_vars_costs){};
 		bool success_;
-		StateVarsType successor_state_vars_;
-		double cost_;	
+		std::vector<std::pair<StateVarsType, double>> successor_state_vars_costs_;
 	};
 
 

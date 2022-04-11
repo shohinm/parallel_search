@@ -320,11 +320,11 @@ void EpasePlanner::expandEdge(Edge* edge_ptr, int thread_id)
 
         if (action_successor.success_)
         {
-            auto successor_state_ptr = constructState(action_successor.successor_state_vars_);
+            auto successor_state_ptr = constructState(action_successor.successor_state_vars_costs_.back().first);
 
             if (!successor_state_ptr->IsVisited())
             {
-                auto cost = action_successor.cost_;                
+                double cost = action_successor.successor_state_vars_costs_.back().second;                
                 double new_g_val = edge_ptr->parent_state_ptr_->GetGValue() + cost;
                 
                 if (successor_state_ptr->GetGValue() > new_g_val)
