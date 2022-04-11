@@ -141,32 +141,37 @@ size_t EdgeKeyGenerator(const EdgePtrType& edge_ptr)
     return seed;
 }
 
-void constructActions(vector<shared_ptr<Action>>& action_ptrs)
+void loadMap(vector<vector<int>>& map)
+{
+
+}
+
+void constructActions(vector<shared_ptr<Action>>& action_ptrs, vector<vector<int>>& map)
 {
     ParamsType action_params;
 
-    auto move_up_controller_ptr = make_shared<MoveUpAction>("MoveUp", action_params);
+    auto move_up_controller_ptr = make_shared<MoveUpAction>("MoveUp", action_params, map);
     action_ptrs.emplace_back(move_up_controller_ptr);
 
-    auto move_up_right_controller_ptr = make_shared<MoveUpRightAction>("MoveUpRight", action_params);
+    auto move_up_right_controller_ptr = make_shared<MoveUpRightAction>("MoveUpRight", action_params, map);
     action_ptrs.emplace_back(move_up_right_controller_ptr);
 
-    auto move_right_controller_ptr = make_shared<MoveRightAction>("MoveRight", action_params);
+    auto move_right_controller_ptr = make_shared<MoveRightAction>("MoveRight", action_params, map);
     action_ptrs.emplace_back(move_right_controller_ptr);
 
-    auto move_right_down_controller_ptr = make_shared<MoveRightDownAction>("MoveRightDown", action_params);
+    auto move_right_down_controller_ptr = make_shared<MoveRightDownAction>("MoveRightDown", action_params, map);
     action_ptrs.emplace_back(move_right_down_controller_ptr);
 
-    auto move_down_controller_ptr = make_shared<MoveDownAction>("MoveDown", action_params);
+    auto move_down_controller_ptr = make_shared<MoveDownAction>("MoveDown", action_params, map);
     action_ptrs.emplace_back(move_down_controller_ptr);
 
-    auto move_down_left_controller_ptr = make_shared<MoveDownLeftAction>("MoveDownLeft", action_params);
+    auto move_down_left_controller_ptr = make_shared<MoveDownLeftAction>("MoveDownLeft", action_params, map);
     action_ptrs.emplace_back(move_down_left_controller_ptr);
 
-    auto move_left_controller_ptr = make_shared<MoveLeftAction>("MoveLeft", action_params);
+    auto move_left_controller_ptr = make_shared<MoveLeftAction>("MoveLeft", action_params, map);
     action_ptrs.emplace_back(move_left_controller_ptr);
 
-    auto move_left_up_controller_ptr = make_shared<MoveLeftUpAction>("MoveLeftUp", action_params);
+    auto move_left_up_controller_ptr = make_shared<MoveLeftUpAction>("MoveLeftUp", action_params, map);
     action_ptrs.emplace_back(move_left_up_controller_ptr);
 
 }
@@ -178,9 +183,13 @@ int main(int argc, char* argv[])
     ParamsType planner_params;
     planner_params["num_threads"] = 10;
 
+    // Read map
+    vector<vector<int>> map;
+    loadMap(map);
+
     // Construct actions
     vector<shared_ptr<Action>> action_ptrs;
-    constructActions(action_ptrs);
+    constructActions(action_ptrs, map);
 
 
     // Construct planner
