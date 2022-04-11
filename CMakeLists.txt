@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 2.8)
 
 project (epase)
 
+find_package(OpenCV REQUIRED)
+
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
@@ -23,7 +25,9 @@ set(SOURCES
 
 add_executable(run_point_robot_nav
         examples/point_robot_nav/run_point_robot_nav.cpp
+        examples/point_robot_nav/PointRobotActions.cpp
         ${SOURCES})
 
 target_link_libraries(run_point_robot_nav
+        ${OpenCV_LIBRARIES}
         pthread)

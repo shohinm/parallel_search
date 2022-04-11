@@ -7,7 +7,7 @@ namespace epase
 class EpasePlanner : public Planner
 {
     public:
-        EpasePlanner();
+        EpasePlanner(ParamsType planner_params);
         ~EpasePlanner();
     	bool Plan(int exp_idx = 1);
 
@@ -19,7 +19,6 @@ class EpasePlanner : public Planner
 
     	EdgeQueueMinType edge_open_list_;
 	    std::vector<StatePtrType> being_expanded_states_;    
-	    std::vector<std::shared_ptr<Action>> actions_;
 
         // Multi-threading members
         int num_threads_;

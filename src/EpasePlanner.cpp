@@ -6,8 +6,8 @@
 using namespace std;
 using namespace epase;
 
-EpasePlanner::EpasePlanner():
-Planner()
+EpasePlanner::EpasePlanner(ParamsType planner_params):
+Planner(planner_params)
 {    
     vector<LockType> lock_vec(num_threads_-1);
     lock_vec_.swap(lock_vec);

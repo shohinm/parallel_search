@@ -21,24 +21,25 @@ class Planner
         // typedef std::tuple<State, Action, double> PlanElement;
         struct PlanElement 
         {
-            PlanElement(StateVarsType state, Action action, double cost): state_(state), incoming_action_(action), cost_(cost) {};
+            PlanElement(StateVarsType state, ActionPtrType action_ptr, double cost): state_(state), incoming_action_ptr_(action_ptr), cost_(cost) {};
             ~PlanElement(){};
             StateVarsType state_;
-            Action incoming_action_;
+            ActionPtrType incoming_action_ptr_;
             double cost_;
         };
 
-        Planner();
+        Planner(ParamsType planner_params);
         virtual ~Planner();
         
         virtual bool Plan(int exp_idx = 1) = 0;
         virtual bool PrintStats(int exp_idx);
 
+        void SetActions(std::vector<std::shared_ptr<Action>> actions_ptrs);
         void SetStartState(const StateVarsType& state_vars);
         void SetGoalChecker(std::function<double(const StatePtrType)> callback);
 
         void SetStateMapKeyGenerator(std::function<std::size_t(const StateVarsType&)> callback);
-        void SetEdgeKeyGenerator(std::function<std::size_t(const EdgePtrType)> callback);
+        void SetEdgeKeyGenerator(std::function<std::size_t(const EdgePtrType&)> callback);
         void SetHeuristicGenerator(std::function<double(const StatePtrType)> callback);
         void SetStateToStateHeuristicGenerator(std::function<double(const StatePtrType, const StatePtrType)> callback);
 
@@ -67,7 +68,7 @@ class Planner
         double heuristic_w_;
 
         std::function<std::size_t(const StateVarsType&)> state_key_generator_;
-        std::function<std::size_t(const EdgePtrType)> edge_key_generator_;
+        std::function<std::size_t(const EdgePtrType&)> edge_key_generator_;
         std::function<double(const StatePtrType)> unary_heuristic_generator_;
         std::function<double(const StatePtrType, const StatePtrType)> binary_heuristic_generator_;
 

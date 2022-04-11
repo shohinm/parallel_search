@@ -5,7 +5,7 @@
 using namespace std;
 using namespace epase;
 
-Planner::Planner()
+Planner::Planner(ParamsType planner_params)
 {
 
 }
@@ -22,32 +22,37 @@ Planner::~Planner()
 
 }
 
+void Planner::SetActions(vector<shared_ptr<Action>> actions_ptrs)
+{
+    actions_ptrs_ = actions_ptrs;
+}
+
 void Planner::SetStartState(const StateVarsType& state_vars)
 {
 	start_state_ptr_ = constructState(state_vars);
 }
 
-void Planner::SetGoalChecker(std::function<double(const StatePtrType)> callback)
+void Planner::SetGoalChecker(function<double(const StatePtrType)> callback)
 {
 
 }
 
-void Planner::SetStateMapKeyGenerator(std::function<std::size_t(const StateVarsType&)> callback)
+void Planner::SetStateMapKeyGenerator(function<size_t(const StateVarsType&)> callback)
 {
 	state_key_generator_ = callback;
 }
 
-void Planner::SetEdgeKeyGenerator(std::function<std::size_t(const EdgePtrType)> callback)
+void Planner::SetEdgeKeyGenerator(function<size_t(const EdgePtrType&)> callback)
 {
 	edge_key_generator_ = callback;
 }
 
-void Planner::SetHeuristicGenerator(std::function<double(const StatePtrType)> callback)
+void Planner::SetHeuristicGenerator(function<double(const StatePtrType)> callback)
 {
 	unary_heuristic_generator_ = callback;
 }
 
-void Planner::SetStateToStateHeuristicGenerator(std::function<double(const StatePtrType, const StatePtrType)> callback)
+void Planner::SetStateToStateHeuristicGenerator(function<double(const StatePtrType, const StatePtrType)> callback)
 {
 	binary_heuristic_generator_ = callback;
 }
@@ -84,7 +89,7 @@ void Planner::resetStates()
 
 size_t Planner::getEdgeKey(const EdgePtrType& edge_ptr)
 {
-    if (edge_ptr->action_ptr_->type_ != "dummy")
+    if (edge_ptr->action_ptr_->GetType() != "dummy")
         return edge_key_generator_(edge_ptr);
     else // proxy edge for epase
         return state_key_generator_(edge_ptr->parent_state_ptr_->GetStateVars());
@@ -129,7 +134,7 @@ void Planner::constructPlan(StatePtrType state)
 {
     while(state->GetIncomingEdgePtr())
     {
-        plan_.insert(plan_.begin(), PlanElement(state->GetStateVars(), *(state->GetIncomingEdgePtr()->action_ptr_), state->GetIncomingEdgePtr()->GetCost()));        
+        plan_.insert(plan_.begin(), PlanElement(state->GetStateVars(), state->GetIncomingEdgePtr()->action_ptr_, state->GetIncomingEdgePtr()->GetCost()));        
         solution_cost_ += state->GetIncomingEdgePtr()->GetCost();
         state = state->GetIncomingEdgePtr()->parent_state_ptr_;     
     }
