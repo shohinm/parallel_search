@@ -1,3 +1,4 @@
+#include <iostream>
 #include <cmath>
 #include <sbpl/utils/utils.h>
 #include "PointRobotActions.hpp"
@@ -21,6 +22,7 @@ ActionSuccessor PointRobotAction::Apply(StateVarsType state_vars, int thread_id)
        
         if (!in_range)
         {
+        	// cout <<  next_state_vars[0] << ", " << next_state_vars[1] << " not in range" << endl;
             return ActionSuccessor(false, {make_pair(StateVarsType(), -DINF)});
         }
 
@@ -38,6 +40,7 @@ ActionSuccessor PointRobotAction::Apply(StateVarsType state_vars, int thread_id)
         {
             if (!isValidCell(cell.first, cell.second))
             {
+	        	// cout <<  next_state_vars[0] << ", " << next_state_vars[1] << " invalid" << endl;
 	            return ActionSuccessor(false, {make_pair(StateVarsType(), -DINF)});
             }
         }

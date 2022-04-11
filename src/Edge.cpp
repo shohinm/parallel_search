@@ -1,3 +1,4 @@
+#include <iostream>
 #include <Edge.hpp>
 
 using namespace std;
@@ -53,21 +54,21 @@ bool Edge::operator==(const Edge& other_edge) const
     return ((parent_state_ptr_==other_edge.parent_state_ptr_)&&(action_ptr_==other_edge.action_ptr_));
 }
 
-void Print(std::string str="")
+void Edge::Print(std::string str)
 {
-    // std::cout << "______________"<< str <<"_________________" << std::endl;
+    std::cout << "______________"<< str <<"_________________" << std::endl;
 
-    // if (gac_.controller_)
-    //     std::cout << "Edge: " << edge_id_ << " | type: " << gac_.controller_->GetType() << "| Cost: " << GetCost() << "| Frozen cost: " << GetCostFrozen() << "| eval_priority: " << eval_priority_ << "| exp_priority: " << exp_priority_<< std::endl;
-    // else
-    //     std::cout << "Edge: " << edge_id_ << " | type: NULL" << "| Cost: " << GetCost() << "| Frozen cost: " << GetCostFrozen() << "| eval_priority: " << eval_priority_ << "| exp_priority: " << exp_priority_<< std::endl;
+    if (action_ptr_)
+        std::cout << "Edge: " << edge_id_ << " | Type: " << action_ptr_->GetType() << "| Cost: " << cost_ << "| expansion_priority: " << expansion_priority_<< std::endl;
+    else
+        std::cout << "Edge: " << edge_id_ << " | Type: NULL" << "| Cost: " << cost_ << "| expansion_priority: " << expansion_priority_<< std::endl;
 
 
-    // if (parent_state_ptr_)
-    //     parent_state_ptr_->Print("Parent");
-    // if (child_state_ptr_)
-    //     child_state_ptr_->Print("Child");
-    // std::cout << "_______________________________" << std::endl;
+    if (parent_state_ptr_)
+        parent_state_ptr_->Print("Parent");
+    if (child_state_ptr_)
+        child_state_ptr_->Print("Child");
+    std::cout << "_______________________________" << std::endl;
 }
 
 bool IsLesserEdge::operator() (const Edge& lhs, const Edge& rhs)

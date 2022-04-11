@@ -5,21 +5,15 @@
 using namespace std;
 using namespace epase;
 
-Planner::Planner(ParamsType planner_params)
+Planner::Planner(ParamsType planner_params):
+planner_params_(planner_params)
 {
-
+    heuristic_w_ = planner_params_["heuristic_weight"];
 }
 
 Planner::~Planner()
 {
 	cleanUp();
-    start_state_ptr_ = NULL;
-    goal_state_ptr_ = NULL;
-    num_evaluated_edges_ = 0;
-    num_state_expansions_ = 0;   
-    total_time_ = 0;
-    solution_cost_ = 0;
-
 }
 
 void Planner::SetActions(vector<shared_ptr<Action>> actions_ptrs)
@@ -30,11 +24,12 @@ void Planner::SetActions(vector<shared_ptr<Action>> actions_ptrs)
 void Planner::SetStartState(const StateVarsType& state_vars)
 {
 	start_state_ptr_ = constructState(state_vars);
+    start_state_ptr_->Print("Start: ");
 }
 
-void Planner::SetGoalChecker(function<double(const StatePtrType)> callback)
+void Planner::SetGoalChecker(function<bool(const StatePtrType&)> callback)
 {
-
+    goal_checker_ = callback;
 }
 
 void Planner::SetStateMapKeyGenerator(function<size_t(const StateVarsType&)> callback)
@@ -47,12 +42,12 @@ void Planner::SetEdgeKeyGenerator(function<size_t(const EdgePtrType&)> callback)
 	edge_key_generator_ = callback;
 }
 
-void Planner::SetHeuristicGenerator(function<double(const StatePtrType)> callback)
+void Planner::SetHeuristicGenerator(function<double(const StatePtrType&)> callback)
 {
 	unary_heuristic_generator_ = callback;
 }
 
-void Planner::SetStateToStateHeuristicGenerator(function<double(const StatePtrType, const StatePtrType)> callback)
+void Planner::SetStateToStateHeuristicGenerator(function<double(const StatePtrType&, const StatePtrType&)> callback)
 {
 	binary_heuristic_generator_ = callback;
 }
@@ -62,19 +57,31 @@ std::vector<PlanElement> Planner::GetPlan() const
     return plan_;
 }
 
-bool Planner::PrintStats(int exp_idx)
+bool Planner::PrintStats() const
 {
     cout << "Total planning time: " << total_time_ << endl;
     cout << "Solution cost: " << solution_cost_ << endl;
-    cout << "Number of state expansiosn: " << num_state_expansions_ << endl;
+    cout << "Path length: " << plan_.size() << endl;
+    cout << "Number of state expansions: " << num_state_expansions_ << endl;
     cout << "Number of edges evaluaited: " << num_evaluated_edges_ << endl;
 }
 
 void Planner::initialize()
 {
-	cleanUp();
     plan_.clear();
 
+    // Initialize planner stats
+    num_evaluated_edges_ = 0;
+    num_state_expansions_ = 0;   
+    total_time_ = 0;
+    solution_cost_ = 0;
+
+    // Initialize start state
+    start_state_ptr_->SetGValue(0);
+    start_state_ptr_->SetHValue(0);
+    
+    // Reset goal state
+    goal_state_ptr_ = NULL;
 }
 
 void Planner::resetStates()
@@ -94,10 +101,10 @@ void Planner::resetStates()
 
 size_t Planner::getEdgeKey(const EdgePtrType& edge_ptr)
 {
-    if (edge_ptr->action_ptr_ == NULL)
-        return edge_key_generator_(edge_ptr);
-    else // proxy edge for epase
+    if (edge_ptr->action_ptr_ == NULL) // proxy edge
         return state_key_generator_(edge_ptr->parent_state_ptr_->GetStateVars());
+    else 
+        return edge_key_generator_(edge_ptr);
 }
 
 StatePtrType Planner::constructState(const StateVarsType& state)
@@ -120,22 +127,22 @@ StatePtrType Planner::constructState(const StateVarsType& state)
     return state_ptr;
 }
 
-double Planner::computeHeuristic(const StatePtrType state_ptr)
+double Planner::computeHeuristic(const StatePtrType& state_ptr)
 {
     return roundOff(unary_heuristic_generator_(state_ptr));
 }
 
-double Planner::computeHeuristic(const StatePtrType state_ptr_1, const StatePtrType state_ptr_2)
+double Planner::computeHeuristic(const StatePtrType& state_ptr_1, const StatePtrType& state_ptr_2)
 {
     return roundOff(binary_heuristic_generator_(state_ptr_1, state_ptr_2));
 }
 
-bool Planner::isGoalState(StatePtrType state)
+bool Planner::isGoalState(const StatePtrType& state_ptr)
 {
-
+    return goal_checker_(state_ptr);
 }
 
-void Planner::constructPlan(StatePtrType state)
+void Planner::constructPlan(StatePtrType& state)
 {
     while(state->GetIncomingEdgePtr())
     {
@@ -177,7 +184,7 @@ void Planner::cleanUp()
     Edge::ResetStateIDCounter();
 }
 
-
-
-
-
+void Planner::exit()
+{
+    cleanUp();
+}

@@ -69,7 +69,7 @@ vector<vector<int>> loadMap(const char *fname, cv::Mat& img, int &width, int &he
     return scaled_map;
 
 }
-double computeHeuristic(const StatePtrType state_ptr)
+double computeHeuristic(const StatePtrType& state_ptr)
 {
     auto state_vars = state_ptr->GetStateVars();
     double dist_to_goal_region = pow(pow((state_vars[0] - goal[0]), 2) + pow((state_vars[1] - goal[1]), 2), 0.5);
@@ -79,7 +79,7 @@ double computeHeuristic(const StatePtrType state_ptr)
     return dist_to_goal_region;
 }
 
-double computeHeuristicStateToState(const StatePtrType state_ptr_1, const StatePtrType state_ptr_2)
+double computeHeuristicStateToState(const StatePtrType& state_ptr_1, const StatePtrType& state_ptr_2)
 {
     auto state_vars_1 = state_ptr_1->GetStateVars();
     auto state_vars_2 = state_ptr_2->GetStateVars();
@@ -87,6 +87,11 @@ double computeHeuristicStateToState(const StatePtrType state_ptr_1, const StateP
     if (dist < 0)
         dist = 0;
     return dist;
+}
+
+bool isGoalState(const StatePtrType& state_ptr)
+{
+    return (computeHeuristic(state_ptr) == 0);
 }
 
 size_t StateKeyGenerator(const StateVarsType& state_vars)
@@ -147,11 +152,6 @@ size_t EdgeKeyGenerator(const EdgePtrType& edge_ptr)
     return seed;
 }
 
-void loadMap(vector<vector<int>>& map)
-{
-
-}
-
 void constructActions(vector<shared_ptr<Action>>& action_ptrs, vector<vector<int>>& map)
 {
     // Define action parameters
@@ -198,19 +198,21 @@ void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vec
     planner_ptr->SetEdgeKeyGenerator(bind(EdgeKeyGenerator, placeholders::_1));
     planner_ptr->SetHeuristicGenerator(bind(computeHeuristic, placeholders::_1));
     planner_ptr->SetStateToStateHeuristicGenerator(bind(computeHeuristicStateToState, placeholders::_1, placeholders::_2));
+    planner_ptr->SetGoalChecker(bind(isGoalState, placeholders::_1));
 }
 
 int main(int argc, char* argv[])
 {
     // Experiment parameters
-    int num_runs = 50;
-    bool visualize_plan = true;
+    int num_runs = 1;
+    bool visualize_plan = false;
 
     // Define planner parameters
     ParamsType planner_params;
     string planner_name = "epase";
-    planner_params["num_threads"] = 10;
-
+    planner_params["num_threads"] = 1;
+    planner_params["heuristic_weight"] = 1;
+    
     // Read map
     vector<vector<int>> map;
     int width, height;
@@ -278,6 +280,7 @@ int main(int argc, char* argv[])
         int num_edges=0;
 
         planner_ptr->Plan(exp_idx);
+        planner_ptr->PrintStats();
 
         time_vec.emplace_back(t);
         cost_vec.emplace_back(cost);

@@ -25,16 +25,16 @@ class Planner
         
         virtual bool Plan(int exp_idx = 1) = 0;
         std::vector<PlanElement> GetPlan() const;
-        virtual bool PrintStats(int exp_idx);
+        virtual bool PrintStats() const;
 
         void SetActions(std::vector<std::shared_ptr<Action>> actions_ptrs);
         void SetStartState(const StateVarsType& state_vars);
-        void SetGoalChecker(std::function<double(const StatePtrType)> callback);
+        void SetGoalChecker(std::function<bool(const StatePtrType&)> callback);
 
         void SetStateMapKeyGenerator(std::function<std::size_t(const StateVarsType&)> callback);
         void SetEdgeKeyGenerator(std::function<std::size_t(const EdgePtrType&)> callback);
-        void SetHeuristicGenerator(std::function<double(const StatePtrType)> callback);
-        void SetStateToStateHeuristicGenerator(std::function<double(const StatePtrType, const StatePtrType)> callback);
+        void SetHeuristicGenerator(std::function<double(const StatePtrType&)> callback);
+        void SetStateToStateHeuristicGenerator(std::function<double(const StatePtrType&, const StatePtrType&)> callback);
 
 
     protected:
@@ -42,16 +42,18 @@ class Planner
         void resetStates();
         StatePtrType constructState(const StateVarsType& state);
         size_t getEdgeKey(const EdgePtrType& edge_ptr);
-        double computeHeuristic(const StatePtrType state_ptr);
-        double computeHeuristic(const StatePtrType state_ptr_1, const StatePtrType state_ptr_2);
-        bool isGoalState(StatePtrType state);
-        void constructPlan(StatePtrType state);
+        double computeHeuristic(const StatePtrType& state_ptr);
+        double computeHeuristic(const StatePtrType& state_ptr_1, const StatePtrType& state_ptr_2);
+        bool isGoalState(const StatePtrType& state_ptr);
+        void constructPlan(StatePtrType& state);
 
         // Utilities
         template<typename T> bool isFutureReady(T& future){return future.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready;};
         double roundOff(double value, int prec=3);
         void cleanUp();
+        virtual void exit();
 
+        std::unordered_map<std::string, double> planner_params_;
         std::vector<std::shared_ptr<Action>> actions_ptrs_;
 
         StatePtrMapType state_map_;
@@ -62,8 +64,9 @@ class Planner
 
         std::function<std::size_t(const StateVarsType&)> state_key_generator_;
         std::function<std::size_t(const EdgePtrType&)> edge_key_generator_;
-        std::function<double(const StatePtrType)> unary_heuristic_generator_;
-        std::function<double(const StatePtrType, const StatePtrType)> binary_heuristic_generator_;
+        std::function<double(const StatePtrType&)> unary_heuristic_generator_;
+        std::function<double(const StatePtrType&, const StatePtrType&)> binary_heuristic_generator_;
+        std::function<double(const StatePtrType&)> goal_checker_;
 
         // Statistics
         std::vector<PlanElement> plan_;
@@ -71,6 +74,7 @@ class Planner
         int num_state_expansions_;   
         double total_time_;
         double solution_cost_;
+
 };
 
 }

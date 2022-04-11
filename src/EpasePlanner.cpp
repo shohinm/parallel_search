@@ -9,6 +9,7 @@ using namespace epase;
 EpasePlanner::EpasePlanner(ParamsType planner_params):
 Planner(planner_params)
 {    
+    num_threads_  = planner_params["num_threads"];
     vector<LockType> lock_vec(num_threads_-1);
     lock_vec_.swap(lock_vec);
 }
@@ -27,7 +28,6 @@ bool EpasePlanner::Plan(int exp_idx)
     vector<Edge*> popped_edges;
 
     lock_.lock();
-
 
     while(!terminate_)
     {
@@ -126,7 +126,6 @@ bool EpasePlanner::Plan(int exp_idx)
                 terminate_ = true;
                 recheck_flag_ = true;
                 lock_.unlock();
-                PrintStats(exp_idx);
                 exit();
                 cout << "--------------------------------------------------------" << endl;            
 
@@ -146,21 +145,13 @@ bool EpasePlanner::Plan(int exp_idx)
 
         lock_.unlock();
 
-
         // cout << "____________________" << endl;
         // cout << "Open list size: " << edge_open_list_.size() << endl; 
         // cout << "BE size: " << being_expanded_states_.size() << endl;
-        // cout << "Graph size: " << num_vertices(graph_) << endl; 
         // cout << "____________________" << endl;
-
 
         int thread_id = 0;
         bool edge_expansion_assigned = false;
-
-        // cout << "-----------------------" << endl;
-        // cout << " thread: " << thread_id << endl;
-        // curr_edge_ptr->Print("Assigning");
-        // cout << "-----------------------" << endl;
 
         if (num_threads_ == 1)
         {
@@ -276,6 +267,9 @@ void EpasePlanner::expandEdgeLoop(int thread_id)
 void EpasePlanner::expandEdge(Edge* edge_ptr, int thread_id)
 {
     lock_.lock();
+
+    if (VERBOSE)
+        edge_ptr->Print("Expanding");
 
    
     auto state_ptr = edge_ptr->parent_state_ptr_;
@@ -397,7 +391,10 @@ void EpasePlanner::expandEdge(Edge* edge_ptr, int thread_id)
         }
 
         if (edge_ptr->parent_state_ptr_->num_expanded_successors_ > edge_ptr->parent_state_ptr_->num_successors_)
+        {
+            edge_ptr->parent_state_ptr_->Print();
             throw runtime_error("Number of expanded edges cannot be greater than number of successors");
+        }
 
 
         recheck_flag_ = true;
@@ -425,4 +422,6 @@ void EpasePlanner::exit()
         }
     }
     edge_expansion_futures_.clear();
+
+    Planner::exit();
 }

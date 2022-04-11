@@ -48,6 +48,8 @@ public:
     EdgePtrType GetIncomingEdgePtr() {return incoming_edge_ptr_;};
     void ResetIncomingEdgePtr() {incoming_edge_ptr_ = NULL;};
 
+    void Print(std::string str="");
+
     std::atomic<int> num_successors_;
     std::atomic<int> num_expanded_successors_;
 
