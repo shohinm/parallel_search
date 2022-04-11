@@ -89,7 +89,7 @@ void Planner::resetStates()
 
 size_t Planner::getEdgeKey(const EdgePtrType& edge_ptr)
 {
-    if (edge_ptr->action_ptr_->GetType() != "dummy")
+    if (edge_ptr->action_ptr_ == NULL)
         return edge_key_generator_(edge_ptr);
     else // proxy edge for epase
         return state_key_generator_(edge_ptr->parent_state_ptr_->GetStateVars());

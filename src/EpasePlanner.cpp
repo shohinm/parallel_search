@@ -231,7 +231,8 @@ void EpasePlanner::initialize()
     being_expanded_states_.clear();
 
     // Insert proxy edge with start state
-    dummy_action_ptr_ = make_shared<Action>("dummy");
+    // dummy_action_ptr_ = make_shared<Action>("dummy");
+    dummy_action_ptr_ = NULL;
     auto edge_ptr = new Edge(start_state_ptr_, dummy_action_ptr_);
     edge_ptr->expansion_priority_ = heuristic_w_*computeHeuristic(start_state_ptr_);
 
