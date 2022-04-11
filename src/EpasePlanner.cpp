@@ -1,6 +1,8 @@
 #include <iostream>
 #include "EpasePlanner.hpp"
 
+#define VERBOSE 0
+
 using namespace std;
 using namespace epase;
 
@@ -226,6 +228,7 @@ void EpasePlanner::initialize()
     edge_expansion_futures_.clear();
  
     edge_open_list_ = EdgeQueueMinType();
+    being_expanded_states_.clear();
 
     // Insert proxy edge with start state
     dummy_action_ptr_ = make_shared<Action>("dummy");
@@ -271,6 +274,137 @@ void EpasePlanner::expandEdgeLoop(int thread_id)
 
 void EpasePlanner::expandEdge(Edge* edge_ptr, int thread_id)
 {
+    lock_.lock();
+
+   
+    auto state_ptr = edge_ptr->parent_state_ptr_;
+    
+    // Proxy edge, add the real edges to Eopen
+    if (edge_ptr->action_ptr_ == dummy_action_ptr_)
+    {       
+        for (auto& action_ptr: actions_ptrs_)
+        {
+            if (action_ptr->CheckPreconditions(state_ptr->GetStateVars()))
+            {
+                auto edge_ptr_real = new Edge(state_ptr, action_ptr);
+                edge_map_.insert(make_pair(getEdgeKey(edge_ptr_real), edge_ptr_real));
+
+                // edge_ptr_real->exp_priority_ = state_ptr->GetGValue() + heuristic_w_*state_ptr->GetHValue();
+                edge_ptr_real->expansion_priority_ = edge_ptr->expansion_priority_;
+
+                if (VERBOSE)
+                    cout << "Pushing successor with g_val: " << state_ptr->GetGValue() << " | h_val: " << state_ptr->GetHValue() << endl;
+               
+                state_ptr->num_successors_+=1;
+                edge_open_list_.push(edge_ptr_real);
+            }
+        }
+       
+        // num_proxy_expansions_++;
+        recheck_flag_ = true;
+    }
+    else // Real edge, evaluate and add proxy edges for child 
+    {        
+        
+        auto action_ptr = edge_ptr->action_ptr_;
+
+        lock_.unlock();
+        // Evaluate the edge
+        auto t_start = chrono::system_clock::now();
+        auto action_successor = action_ptr->Apply(state_ptr->GetStateVars());
+        auto t_end = chrono::system_clock::now();
+        num_evaluated_edges_++; // Only the edges controllers that satisfied pre-conditions and args are in the open list
+        //********************
+        lock_.lock();
+
+        if (action_successor.success_)
+        {
+            auto successor_state_ptr = constructState(action_successor.successor_state_vars_);
+
+            if (!successor_state_ptr->IsVisited())
+            {
+                auto cost = action_successor.cost_;                
+                double new_g_val = edge_ptr->parent_state_ptr_->GetGValue() + cost;
+                
+                if (successor_state_ptr->GetGValue() > new_g_val)
+                {
+
+                    double h_val = successor_state_ptr->GetHValue();
+                    
+                    if (h_val == -1)
+                    {
+                        h_val = computeHeuristic(successor_state_ptr);
+                        successor_state_ptr->SetHValue(h_val);        
+                    }
+
+                    if (h_val != DINF)
+                    {
+                        successor_state_ptr->SetGValue(new_g_val);
+                        successor_state_ptr->SetIncomingEdgePtr(edge_ptr);
+                        
+                        // Insert poxy edge
+                        auto edge_temp = Edge(successor_state_ptr, dummy_action_ptr_);
+                        auto edge_key = getEdgeKey(&edge_temp);
+                        auto it_edge = edge_map_.find(edge_key); 
+                        Edge* proxy_edge_ptr;
+
+                        if (it_edge == edge_map_.end())
+                        {
+                            proxy_edge_ptr = new Edge(successor_state_ptr, dummy_action_ptr_);
+                            edge_map_.insert(make_pair(edge_key, proxy_edge_ptr));
+                        }
+                        else
+                        {
+                            proxy_edge_ptr = it_edge->second;
+                        }
+
+                        proxy_edge_ptr->expansion_priority_ = new_g_val + heuristic_w_*h_val;
+                        
+                        if (edge_open_list_.contains(proxy_edge_ptr))
+                        {
+                            edge_open_list_.decrease(proxy_edge_ptr);
+                        }
+                        else
+                        {
+                            edge_open_list_.push(proxy_edge_ptr);
+                        }
+
+                    }
+
+                }       
+            }
+        }
+        else
+        {
+            if (VERBOSE)
+            {
+                cout << "Edge returned no successors ";
+                edge_ptr->Print();
+            }
+
+
+        }
+
+        edge_ptr->parent_state_ptr_->num_expanded_successors_ += 1;
+
+        if (edge_ptr->parent_state_ptr_->num_expanded_successors_ == edge_ptr->parent_state_ptr_->num_successors_)
+        {
+            edge_ptr->parent_state_ptr_->UnsetBeingExpanded();
+            auto it_state_be = find(being_expanded_states_.begin(), being_expanded_states_.end(), edge_ptr->parent_state_ptr_);
+            if (it_state_be != being_expanded_states_.end())
+                being_expanded_states_.erase(it_state_be);
+        }
+
+        if (edge_ptr->parent_state_ptr_->num_expanded_successors_ > edge_ptr->parent_state_ptr_->num_successors_)
+            throw runtime_error("Number of expanded edges cannot be greater than number of successors");
+
+
+        recheck_flag_ = true;
+
+    } // if (!edge_ptr->gac_.controller_)
+    
+
+    lock_.unlock();
 
 }
 

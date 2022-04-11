@@ -58,6 +58,8 @@ class Planner
         double roundOff(double value, int prec=3);
         void cleanUp();
 
+        std::vector<std::shared_ptr<Action>> actions_ptrs_;
+
         StatePtrMapType state_map_;
         EdgePtrMapType edge_map_;
         StatePtrType start_state_ptr_;

@@ -12,7 +12,9 @@ class Action
 public:
 	Action(){};
 	Action(const std::string& type):type_(type){};
-    virtual StateVarsType Apply(StateVarsType state){}; 
+    virtual ActionSuccessor Apply(StateVarsType state){}; 
+    virtual bool CheckPreconditions(StateVarsType state){}; 
+
     bool operator==(const Action& other_action) const
     {
         return type_ == other_action.type_;
