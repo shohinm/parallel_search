@@ -10,6 +10,7 @@ class Planner
 {
     public:
 
+        // Typedefs
         typedef std::unordered_map<size_t, StatePtrType> StatePtrMapType; 
         // Lower priority states will be in the front
         typedef smpl::intrusive_heap<State, IsLesserState> StateQueueMinType;
@@ -18,20 +19,12 @@ class Planner
         typedef smpl::intrusive_heap<Edge, IsGreaterEdge> EdgeQueueMaxType;
         // Lower priority edge will be in the front
         typedef smpl::intrusive_heap<Edge, IsLesserEdge> EdgeQueueMinType;
-        // typedef std::tuple<State, Action, double> PlanElement;
-        struct PlanElement 
-        {
-            PlanElement(StateVarsType state, ActionPtrType action_ptr, double cost): state_(state), incoming_action_ptr_(action_ptr), cost_(cost) {};
-            ~PlanElement(){};
-            StateVarsType state_;
-            ActionPtrType incoming_action_ptr_;
-            double cost_;
-        };
 
         Planner(ParamsType planner_params);
         virtual ~Planner();
         
         virtual bool Plan(int exp_idx = 1) = 0;
+        std::vector<PlanElement> GetPlan() const;
         virtual bool PrintStats(int exp_idx);
 
         void SetActions(std::vector<std::shared_ptr<Action>> actions_ptrs);

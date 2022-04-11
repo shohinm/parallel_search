@@ -31,8 +31,15 @@ namespace epase
 		std::vector<std::pair<StateVarsType, double>> successor_state_vars_costs_;
 	};
 
-
-
+    struct PlanElement 
+    {
+        PlanElement(StateVarsType state, ActionPtrType action_ptr, double cost): state_(state), incoming_action_ptr_(action_ptr), cost_(cost) {};
+        ~PlanElement(){};
+        StateVarsType state_;
+        ActionPtrType incoming_action_ptr_;
+        double cost_;
+    };
+    
 }
 
 #endif

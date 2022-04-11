@@ -57,6 +57,11 @@ void Planner::SetStateToStateHeuristicGenerator(function<double(const StatePtrTy
 	binary_heuristic_generator_ = callback;
 }
 
+std::vector<PlanElement> Planner::GetPlan() const
+{
+    return plan_;
+}
+
 bool Planner::PrintStats(int exp_idx)
 {
     cout << "Total planning time: " << total_time_ << endl;
