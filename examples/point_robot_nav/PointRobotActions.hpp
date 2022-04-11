@@ -11,7 +11,7 @@ class PointRobotAction : public Action
 
 public:
     PointRobotAction(const std::string& type, ParamsType params): Action(type, params) {};
-    ActionSuccessor Apply(StateVarsType state); 
+    ActionSuccessor Apply(StateVarsType state_vars, int thread_id); 
     bool CheckPreconditions(StateVarsType state); 
 protected:
     std::vector<double> move_dir_;

@@ -311,7 +311,7 @@ void EpasePlanner::expandEdge(Edge* edge_ptr, int thread_id)
         lock_.unlock();
         // Evaluate the edge
         auto t_start = chrono::system_clock::now();
-        auto action_successor = action_ptr->Apply(state_ptr->GetStateVars());
+        auto action_successor = action_ptr->Apply(state_ptr->GetStateVars(), thread_id);
         auto t_end = chrono::system_clock::now();
         num_evaluated_edges_++; // Only the edges controllers that satisfied pre-conditions and args are in the open list
         //********************

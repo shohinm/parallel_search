@@ -4,7 +4,7 @@ using namespace std;
 using namespace epase;
 
 
-ActionSuccessor PointRobotAction::Apply(StateVarsType state)
+ActionSuccessor PointRobotAction::Apply(StateVarsType state_vars, int thread_id)
 {
 
 }
