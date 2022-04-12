@@ -33,6 +33,8 @@ class EpasePlanner : public Planner
         std::atomic<bool> terminate_;
         ActionPtrType dummy_action_ptr_;
 
+	    double h_val_min_;
+
 };
 
 }

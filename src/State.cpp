@@ -16,12 +16,14 @@ size_t State::id_counter_ = 0;
 
 State::State(const StateVarsType& vars):
 vars_(vars),
-g_val_(numeric_limits<double>::infinity()),
-f_val_(numeric_limits<double>::infinity()),
+g_val_(DINF),
+f_val_(DINF),
+h_val_(-1),
 is_visited_(false),
 being_expanded_(false),
 num_successors_(0),
-num_expanded_successors_(0)
+num_expanded_successors_(0),
+incoming_edge_ptr_(NULL)
 {
     state_id_ = id_counter_++;
 }

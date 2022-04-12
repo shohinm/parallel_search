@@ -24,7 +24,6 @@ void Planner::SetActions(vector<shared_ptr<Action>> actions_ptrs)
 void Planner::SetStartState(const StateVarsType& state_vars)
 {
 	start_state_ptr_ = constructState(state_vars);
-    start_state_ptr_->Print("Start: ");
 }
 
 void Planner::SetGoalChecker(function<bool(const StatePtrType&)> callback)
@@ -146,7 +145,11 @@ void Planner::constructPlan(StatePtrType& state)
 {
     while(state->GetIncomingEdgePtr())
     {
-        plan_.insert(plan_.begin(), PlanElement(state->GetStateVars(), state->GetIncomingEdgePtr()->action_ptr_, state->GetIncomingEdgePtr()->GetCost()));        
+        if (state->GetIncomingEdgePtr()) // For start state, there is no incoming edge
+            plan_.insert(plan_.begin(), PlanElement(state->GetStateVars(), state->GetIncomingEdgePtr()->action_ptr_, state->GetIncomingEdgePtr()->GetCost()));        
+        else
+            plan_.insert(plan_.begin(), PlanElement(state->GetStateVars(), NULL, 0));        
+
         solution_cost_ += state->GetIncomingEdgePtr()->GetCost();
         state = state->GetIncomingEdgePtr()->parent_state_ptr_;     
     }

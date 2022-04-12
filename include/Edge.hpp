@@ -13,14 +13,14 @@ namespace epase
 class Edge : public smpl::heap_element
 {
     public:
-        Edge(){};
+        // Edge(){};
         Edge(StatePtrType parent_ptr, StatePtrType child_ptr, ActionPtrType action_ptr): 
         parent_state_ptr_(parent_ptr), child_state_ptr_(child_ptr), action_ptr_(action_ptr),
         is_closed_(false), is_eval_(false), is_invalid_(false)
         {edge_id_ = id_counter_++;};
         Edge(StatePtrType parent_ptr, ActionPtrType action_ptr): 
-        parent_state_ptr_(parent_ptr), action_ptr_(action_ptr),
-        is_closed_(false), is_eval_(false), is_invalid_(false), child_state_ptr_(NULL)
+        parent_state_ptr_(parent_ptr), child_state_ptr_(NULL), action_ptr_(action_ptr),
+        is_closed_(false), is_eval_(false), is_invalid_(false)
         {edge_id_ = id_counter_++;};
         Edge(const Edge& other_edge);
         Edge& operator=(const Edge& other_edge);

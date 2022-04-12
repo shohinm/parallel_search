@@ -230,6 +230,8 @@ void EpasePlanner::initialize()
     edge_map_.insert(make_pair(getEdgeKey(edge_ptr), edge_ptr));
     edge_open_list_.push(edge_ptr);   
 
+    h_val_min_ = DINF;
+
 
 }
 
@@ -268,10 +270,8 @@ void EpasePlanner::expandEdge(Edge* edge_ptr, int thread_id)
 {
     lock_.lock();
 
-    if (VERBOSE)
-        edge_ptr->Print("Expanding");
+    if (VERBOSE) edge_ptr->Print("Expanding");
 
-   
     auto state_ptr = edge_ptr->parent_state_ptr_;
     
     // Proxy edge, add the real edges to Eopen
@@ -334,6 +334,7 @@ void EpasePlanner::expandEdge(Edge* edge_ptr, int thread_id)
 
                     if (h_val != DINF)
                     {
+                        h_val_min_ = h_val < h_val_min_ ? h_val : h_val_min_;
                         successor_state_ptr->SetGValue(new_g_val);
                         successor_state_ptr->SetIncomingEdgePtr(edge_ptr);
                         

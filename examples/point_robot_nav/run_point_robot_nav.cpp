@@ -89,9 +89,9 @@ double computeHeuristicStateToState(const StatePtrType& state_ptr_1, const State
     return dist;
 }
 
-bool isGoalState(const StatePtrType& state_ptr)
+bool isGoalState(const StatePtrType& state_ptr, double dist_thresh)
 {
-    return (computeHeuristic(state_ptr) == 0);
+    return (computeHeuristic(state_ptr) < dist_thresh);
 }
 
 size_t StateKeyGenerator(const StateVarsType& state_vars)
@@ -152,10 +152,9 @@ size_t EdgeKeyGenerator(const EdgePtrType& edge_ptr)
     return seed;
 }
 
-void constructActions(vector<shared_ptr<Action>>& action_ptrs, vector<vector<int>>& map)
+void constructActions(vector<shared_ptr<Action>>& action_ptrs, ParamsType& action_params, vector<vector<int>>& map)
 {
     // Define action parameters
-    ParamsType action_params;
     action_params["length"] = 25;
     action_params["footprint_size"] = 16;
     action_params["cache_footprint"] = 1;
@@ -186,7 +185,7 @@ void constructActions(vector<shared_ptr<Action>>& action_ptrs, vector<vector<int
 
 }
 
-void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vector<shared_ptr<Action>>& action_ptrs, ParamsType& planner_params)
+void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vector<shared_ptr<Action>>& action_ptrs, ParamsType& planner_params, ParamsType& action_params)
 {
     if (planner_name == "epase")
         planner_ptr = make_shared<EpasePlanner>(planner_params);
@@ -198,35 +197,14 @@ void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vec
     planner_ptr->SetEdgeKeyGenerator(bind(EdgeKeyGenerator, placeholders::_1));
     planner_ptr->SetHeuristicGenerator(bind(computeHeuristic, placeholders::_1));
     planner_ptr->SetStateToStateHeuristicGenerator(bind(computeHeuristicStateToState, placeholders::_1, placeholders::_2));
-    planner_ptr->SetGoalChecker(bind(isGoalState, placeholders::_1));
+    planner_ptr->SetGoalChecker(bind(isGoalState, placeholders::_1, action_params["length"]));
 }
 
-int main(int argc, char* argv[])
+void loadStartsGoalsFromFile(vector<vector<double>>& starts, vector<vector<double>>& goals, int scale, int num_runs)
 {
-    // Experiment parameters
-    int num_runs = 1;
-    bool visualize_plan = false;
-
-    // Define planner parameters
-    ParamsType planner_params;
-    string planner_name = "epase";
-    planner_params["num_threads"] = 1;
-    planner_params["heuristic_weight"] = 1;
-    
-    // Read map
-    vector<vector<int>> map;
-    int width, height;
-    cv::Mat img;
-    int scale = 5;
-    map = loadMap("../examples/point_robot_nav/resources/hrt201n.map", img, width, height, scale);
-    cout << "Map size: " << map.size() << ", " << map[0].size() << endl;
-
-    // Read starts and goals from text file
-    vector<vector<double>> starts, goals;
     ifstream starts_fin("../examples/point_robot_nav/resources/nav2d_starts.txt");
     ifstream goals_fin("../examples/point_robot_nav/resources/nav2d_goals.txt");    
-    
-
+   
     for (int j = 0; j < num_runs; ++j)
     {
         vector<double> start, goal;
@@ -247,15 +225,57 @@ int main(int argc, char* argv[])
         starts_fin >> cost;            
         starts_fin >> length;            
     }
+}
 
+int main(int argc, char* argv[])
+{
+    // Experiment parameters
+    int num_runs = 1;
+    int scale = 5;
+    bool visualize_plan = false;
+    bool load_starts_goals_from_file = false;
+
+    // Define planner parameters
+    ParamsType planner_params;
+    string planner_name = "epase";
+    planner_params["num_threads"] = 5;
+    planner_params["heuristic_weight"] = 1;
+    
+    // Read map
+    vector<vector<int>> map;
+    int width, height;
+    cv::Mat img;
+    map = loadMap("../examples/point_robot_nav/resources/hrt201n.map", img, width, height, scale);
+    cout << "Map size: " << map.size() << ", " << map[0].size() << endl;
+
+    // Read starts and goals from text file
+    vector<vector<double>> starts, goals;
+
+    if (load_starts_goals_from_file)
+        loadStartsGoalsFromFile(starts, goals, scale, num_runs);
+    else
+    {
+        starts = vector<vector<double>> (num_runs, {scale*10, scale*61});
+        goals = vector<vector<double>> (num_runs, {scale*200, scale*170});
+    }
+
+    // Removee
+    // cv::namedWindow("Map", cv::WINDOW_AUTOSIZE );// Create a window for display.
+    // Display map with start and goal
+    // cv::circle(img, cv::Point(starts[0][0], starts[0][1]), 16, cv::Scalar(0, 255, 0), -1, 8);
+    // cv::circle(img, cv::Point(goals[0][0], goals[0][1]), 16, cv::Scalar(0, 0, 255), -1, 8 );
+    // cv::imshow("Map", img);
+    // cv::waitKey(0);
+    //
 
     // Construct actions
+    ParamsType action_params;
     vector<shared_ptr<Action>> action_ptrs;
-    constructActions(action_ptrs, map);
+    constructActions(action_ptrs, action_params, map);
 
     // Construct planner
     shared_ptr<Planner> planner_ptr;
-    constructPlanner(planner_name, planner_ptr, action_ptrs, planner_params);
+    constructPlanner(planner_name, planner_ptr, action_ptrs, planner_params, action_params);
 
     // Run experiments
     int start_goal_idx = 0;
