@@ -17,11 +17,12 @@ PasePlanner::~PasePlanner()
     
 }
 
-bool PasePlanner::Plan(int exp_idx)
+bool PasePlanner::Plan()
 {
     initialize();
     
     auto t_start = chrono::system_clock::now();
+    planner_stats_.num_threads_spawned_ = 1;
 
     if (num_threads_ == 1)
         paseThread(0);
@@ -32,6 +33,8 @@ bool PasePlanner::Plan(int exp_idx)
             if (VERBOSE) cout << "Spawining state expansion thread " << thread_id << endl;
             state_expansion_futures_.emplace_back(async(launch::async, &PasePlanner::paseThread, this, thread_id));
         }        
+        
+        planner_stats_.num_threads_spawned_ += state_expansion_futures_.size();
     }
 
     while(!terminate_)

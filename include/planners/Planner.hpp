@@ -28,7 +28,7 @@ class Planner
         Planner(ParamsType planner_params);
         virtual ~Planner();
         
-        virtual bool Plan(int exp_idx = 1) = 0;
+        virtual bool Plan() = 0;
         std::vector<PlanElement> GetPlan() const;
         virtual PlannerStats GetStats() const;
 

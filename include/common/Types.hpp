@@ -14,22 +14,22 @@ namespace epase
     class Edge;
     class Action;
 
-	#define DINF std::numeric_limits<double>::infinity()
+    #define DINF std::numeric_limits<double>::infinity()
 
     typedef std::vector<double> StateVarsType;
     typedef State* StatePtrType;
     typedef std::shared_ptr<Action> ActionPtrType;
     typedef Edge* EdgePtrType;
     typedef std::mutex LockType;
-	typedef std::unordered_map<std::string, double> ParamsType;
-	
-	struct ActionSuccessor
-	{
-		ActionSuccessor(bool success, std::vector<std::pair<StateVarsType, double>> successor_state_vars_costs): 
-		success_(success), successor_state_vars_costs_(successor_state_vars_costs){};
-		bool success_;
-		std::vector<std::pair<StateVarsType, double>> successor_state_vars_costs_;
-	};
+    typedef std::unordered_map<std::string, double> ParamsType;
+    
+    struct ActionSuccessor
+    {
+        ActionSuccessor(bool success, std::vector<std::pair<StateVarsType, double>> successor_state_vars_costs): 
+        success_(success), successor_state_vars_costs_(successor_state_vars_costs){};
+        bool success_;
+        std::vector<std::pair<StateVarsType, double>> successor_state_vars_costs_;
+    };
 
     struct PlanElement 
     {
@@ -42,11 +42,12 @@ namespace epase
 
     struct PlannerStats
     {
-	    double total_time_=-1; // seconds
-	    double path_cost_=-1;
-	    double path_length_=-1;
-	    int num_state_expansions_=-1;
-	    int num_evaluated_edges_=-1;
+        double total_time_=-1; // seconds
+        double path_cost_=-1;
+        double path_length_=-1;
+        int num_state_expansions_=-1;
+        int num_evaluated_edges_=-1;
+        int num_threads_spawned_ = -1;
     };
 }
 

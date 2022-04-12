@@ -19,7 +19,7 @@ EpasePlanner::~EpasePlanner()
     
 }
 
-bool EpasePlanner::Plan(int exp_idx)
+bool EpasePlanner::Plan()
 {
     
     initialize();    
@@ -144,11 +144,6 @@ bool EpasePlanner::Plan(int exp_idx)
 
         lock_.unlock();
 
-        // cout << "____________________" << endl;
-        // cout << "Open list size: " << edge_open_list_.size() << endl; 
-        // cout << "BE size: " << being_expanded_states_.size() << endl;
-        // cout << "____________________" << endl;
-
         int thread_id = 0;
         bool edge_expansion_assigned = false;
 
@@ -171,7 +166,6 @@ bool EpasePlanner::Plan(int exp_idx)
                     {
                         if (VERBOSE) cout << "Spawining edge expansion thread " << thread_id << endl;
                         edge_expansion_futures_.emplace_back(async(launch::async, &EpasePlanner::expandEdgeLoop, this, thread_id));
-                        // cout << "New threads size: " << edge_expansion_futures_.size() << endl;
                     }
                     lock_vec_[thread_id].lock();
                     edge_expansion_vec_[thread_id] = curr_edge_ptr;
@@ -408,6 +402,7 @@ void EpasePlanner::expandEdge(Edge* edge_ptr, int thread_id)
 
 void EpasePlanner::exit()
 {
+    planner_stats_.num_threads_spawned_ = edge_expansion_futures_.size()+1;
     bool all_expansion_threads_terminated = false;
     while (!all_expansion_threads_terminated)
     {

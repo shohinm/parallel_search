@@ -12,7 +12,7 @@ class PasePlanner : public Planner
     public:
         PasePlanner(ParamsType planner_params);
         ~PasePlanner();
-        bool Plan(int exp_idx = 1);
+        bool Plan();
 
     protected:
         void initialize();

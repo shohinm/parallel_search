@@ -12,7 +12,7 @@ class EpasePlanner : public Planner
     public:
         EpasePlanner(ParamsType planner_params);
         ~EpasePlanner();
-        bool Plan(int exp_idx = 1);
+        bool Plan();
 
     protected:
         void initialize();
