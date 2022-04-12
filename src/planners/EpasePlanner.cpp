@@ -122,7 +122,7 @@ bool EpasePlanner::Plan(int exp_idx)
                 
                 // Construct path
                 goal_state_ptr_ = curr_edge_ptr->parent_state_ptr_;
-                constructPlan(curr_edge_ptr->parent_state_ptr_);   
+                constructPlan(goal_state_ptr_);   
                 terminate_ = true;
                 recheck_flag_ = true;
                 lock_.unlock();
@@ -169,7 +169,7 @@ bool EpasePlanner::Plan(int exp_idx)
                     int num_threads_current = edge_expansion_futures_.size();
                     if (thread_id >= num_threads_current)
                     {
-                        // cout << "Spawning thread " << thread_id << endl;
+                        if (VERBOSE) cout << "Spawining edge expansion thread " << thread_id << endl;
                         edge_expansion_futures_.emplace_back(async(launch::async, &EpasePlanner::expandEdgeLoop, this, thread_id));
                         // cout << "New threads size: " << edge_expansion_futures_.size() << endl;
                     }
@@ -307,9 +307,9 @@ void EpasePlanner::expandEdge(Edge* edge_ptr, int thread_id)
         auto t_start = chrono::system_clock::now();
         auto action_successor = action_ptr->Apply(state_ptr->GetStateVars(), thread_id);
         auto t_end = chrono::system_clock::now();
-        planner_stats_.num_evaluated_edges_++; // Only the edges controllers that satisfied pre-conditions and args are in the open list
         //********************
         lock_.lock();
+        planner_stats_.num_evaluated_edges_++; // Only the edges controllers that satisfied pre-conditions and args are in the open list
 
         if (action_successor.success_)
         {
@@ -339,6 +339,7 @@ void EpasePlanner::expandEdge(Edge* edge_ptr, int thread_id)
                     {
                         h_val_min_ = h_val < h_val_min_ ? h_val : h_val_min_;
                         successor_state_ptr->SetGValue(new_g_val);
+                        successor_state_ptr->SetFValue(new_g_val + heuristic_w_*h_val);
                         successor_state_ptr->SetIncomingEdgePtr(edge_ptr);
                         
                         // Insert poxy edge
@@ -374,15 +375,10 @@ void EpasePlanner::expandEdge(Edge* edge_ptr, int thread_id)
             }
         }
         else
-        {
             if (VERBOSE)
-            {
-                cout << "Edge returned no successors ";
-                edge_ptr->Print();
-            }
+                edge_ptr->Print("No successors for");
 
-
-        }
+        
 
         edge_ptr->parent_state_ptr_->num_expanded_successors_ += 1;
 

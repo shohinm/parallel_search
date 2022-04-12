@@ -1,3 +1,6 @@
+#ifndef PASE_PLANNER_HPP
+#define PASE_PLANNER_HPP
+
 #include <future>
 #include <planners/Planner.hpp>
 
@@ -13,7 +16,8 @@ class PasePlanner : public Planner
 
     protected:
         void initialize();
-        void expandEdge(Edge* edge_ptr, int thread_id);
+        void paseThread(int thread_id);
+        void expandState(State* state_ptr, int thread_id);
         void exit();
 
         StateQueueMinType state_open_list_;
@@ -28,6 +32,10 @@ class PasePlanner : public Planner
         // Control variables
         std::atomic<bool> recheck_flag_;
         std::atomic<bool> terminate_;
+        std::atomic<bool> plan_found_;
+
 };
 
 }
+
+#endif

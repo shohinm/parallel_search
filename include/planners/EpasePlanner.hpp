@@ -1,3 +1,6 @@
+#ifndef EPASE_PLANNER_HPP
+#define EPASE_PLANNER_HPP
+
 #include <future>
 #include <planners/Planner.hpp>
 
@@ -35,3 +38,5 @@ class EpasePlanner : public Planner
 };
 
 }
+
+#endif

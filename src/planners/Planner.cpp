@@ -73,7 +73,7 @@ void Planner::initialize()
 
     // Initialize start state
     start_state_ptr_->SetGValue(0);
-    start_state_ptr_->SetHValue(0);
+    start_state_ptr_->SetHValue(computeHeuristic(start_state_ptr_));
     
     // Reset goal state
     goal_state_ptr_ = NULL;

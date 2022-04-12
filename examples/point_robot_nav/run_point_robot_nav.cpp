@@ -1,4 +1,5 @@
 #include <cmath>
+#include <cstdlib>
 #include <iostream>
 #include <fstream>
 #include <numeric>
@@ -7,6 +8,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <boost/functional/hash.hpp>
 #include "PointRobotActions.hpp"
+#include <planners/PasePlanner.hpp>
 #include <planners/EpasePlanner.hpp>
 
 using namespace std;
@@ -194,8 +196,10 @@ void constructActions(vector<shared_ptr<Action>>& action_ptrs, ParamsType& actio
 
 void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vector<shared_ptr<Action>>& action_ptrs, ParamsType& planner_params, ParamsType& action_params)
 {
-    if (planner_name == "epase")
-        planner_ptr = make_shared<EpasePlanner>(planner_params);
+    if (planner_name == "pase")
+        planner_ptr = make_shared<PasePlanner>(planner_params);
+    else if (planner_name == "epase")
+        planner_ptr = make_shared<EpasePlanner>(planner_params); 
     else
         throw runtime_error("Planner type not identified!");      
 
@@ -236,6 +240,10 @@ void loadStartsGoalsFromFile(vector<vector<double>>& starts, vector<vector<doubl
 
 int main(int argc, char* argv[])
 {
+
+    if (argc != 3)
+        throw runtime_error("Format: run_point_robot nav [planner_name] [num_threads]");
+
     // Experiment parameters
     int num_runs = 50;
     int scale = 5;
@@ -244,9 +252,10 @@ int main(int argc, char* argv[])
 
     // Define planner parameters
     ParamsType planner_params;
-    string planner_name = "epase";
-    planner_params["num_threads"] = 5;
-    planner_params["heuristic_weight"] = 1;
+    // string planner_name = "pase";
+    string planner_name = argv[1];
+    planner_params["num_threads"] = atoi(argv[2]);
+    planner_params["heuristic_weight"] = 50;
     
     // Read map
     vector<vector<int>> map;
