@@ -10,11 +10,11 @@
 namespace epase
 {
 
-class State
+class State : public smpl::heap_element
 {
 
 public:
-	// State();
+
 	State(const StateVarsType& vars=StateVarsType());
 	~State() {};
 

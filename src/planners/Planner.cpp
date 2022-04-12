@@ -80,6 +80,10 @@ void Planner::initialize()
 
     // Reset state
     planner_stats_ = PlannerStats();
+
+    // Reset h_min
+    h_val_min_ = DINF;
+
 }
 
 

@@ -71,10 +71,7 @@ class Planner
         // Statistics
         std::vector<PlanElement> plan_;
         PlannerStats planner_stats_;
-        // int num_evaluated_edges_;
-        // int num_state_expansions_;   
-        // double total_time_;
-        // double path_cost_;
+        double h_val_min_;
 
 };
 

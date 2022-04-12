@@ -24,6 +24,7 @@ set(SOURCES
     src/common/State.cpp 
     src/common/Edge.cpp
     src/planners/Planner.cpp
+    src/planners/PasePlanner.cpp
     src/planners/EpasePlanner.cpp
 )
 
