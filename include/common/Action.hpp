@@ -1,7 +1,7 @@
 #ifndef ACTION_HPP
 #define ACTION_HPP
 
-#include <State.hpp>
+#include <common/State.hpp>
 
 namespace epase
 {

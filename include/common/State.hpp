@@ -5,7 +5,7 @@
 #include <memory>
 #include <atomic>
 #include <climits>
-#include "Types.hpp"
+#include <common/Types.hpp>
 
 namespace epase
 {

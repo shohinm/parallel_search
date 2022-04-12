@@ -7,7 +7,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <boost/functional/hash.hpp>
 #include "PointRobotActions.hpp"
-#include <EpasePlanner.hpp>
+#include <planners/EpasePlanner.hpp>
 
 using namespace std;
 using namespace epase;

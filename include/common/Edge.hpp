@@ -4,8 +4,8 @@
 #include <thread>
 #include <mutex>
 #include <atomic>
-#include "Types.hpp"
-#include "Action.hpp"
+#include <common/Types.hpp>
+#include <common/Action.hpp>
 
 namespace epase
 {

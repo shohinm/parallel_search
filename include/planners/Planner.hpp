@@ -1,7 +1,7 @@
 #include <functional>
 #include <future>
-#include "Types.hpp"
-#include "Edge.hpp"
+#include <common/Types.hpp>
+#include <common/Edge.hpp>
 
 namespace epase
 {

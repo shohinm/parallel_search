@@ -1,7 +1,7 @@
 #ifndef POINT_ROBOT_ACTION_HPP
 #define POINT_ROBOT_ACTION_HPP
 
-#include <Action.hpp>
+#include <common/Action.hpp>
 
 namespace epase
 {

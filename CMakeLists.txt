@@ -21,10 +21,10 @@ include_directories(include
 link_directories(${SBPL_LIBRARY_DIRS})
 
 set(SOURCES
-    src/State.cpp 
-    src/Edge.cpp
-    src/Planner.cpp
-    src/EpasePlanner.cpp
+    src/common/State.cpp 
+    src/common/Edge.cpp
+    src/planners/Planner.cpp
+    src/planners/EpasePlanner.cpp
 )
 
 add_executable(run_point_robot_nav

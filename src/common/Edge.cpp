@@ -1,5 +1,5 @@
 #include <iostream>
-#include <Edge.hpp>
+#include <common/Edge.hpp>
 
 using namespace std;
 using namespace epase;
