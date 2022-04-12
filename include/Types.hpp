@@ -39,7 +39,15 @@ namespace epase
         ActionPtrType incoming_action_ptr_;
         double cost_;
     };
-    
+
+    struct PlannerStats
+    {
+	    double total_time_=-1; // seconds
+	    double path_cost_=-1;
+	    double path_length_=-1;
+	    int num_state_expansions_=-1;
+	    int num_evaluated_edges_=-1;
+    };
 }
 
 #endif

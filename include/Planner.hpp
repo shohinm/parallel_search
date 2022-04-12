@@ -25,7 +25,7 @@ class Planner
         
         virtual bool Plan(int exp_idx = 1) = 0;
         std::vector<PlanElement> GetPlan() const;
-        virtual bool PrintStats() const;
+        virtual PlannerStats GetStats() const;
 
         void SetActions(std::vector<std::shared_ptr<Action>> actions_ptrs);
         void SetStartState(const StateVarsType& state_vars);
@@ -70,10 +70,11 @@ class Planner
 
         // Statistics
         std::vector<PlanElement> plan_;
-        int num_evaluated_edges_;
-        int num_state_expansions_;   
-        double total_time_;
-        double solution_cost_;
+        PlannerStats planner_stats_;
+        // int num_evaluated_edges_;
+        // int num_state_expansions_;   
+        // double total_time_;
+        // double path_cost_;
 
 };
 

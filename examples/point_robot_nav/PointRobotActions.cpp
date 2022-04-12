@@ -21,17 +21,14 @@ ActionSuccessor PointRobotAction::Apply(StateVarsType state_vars, int thread_id)
         bool in_range = inRange(next_state_vars[0], next_state_vars[1]);
        
         if (!in_range)
-        {
-        	// cout <<  next_state_vars[0] << ", " << next_state_vars[1] << " not in range" << endl;
             return ActionSuccessor(false, {make_pair(StateVarsType(), -DINF)});
-        }
 
         bool is_collision =  false;
 
-        auto t_start = chrono::system_clock::now();
+        // auto t_start = chrono::system_clock::now();
         auto footprint = getFootPrintRectangular(next_state_vars[0], next_state_vars[1], params_["footprint_size"]);
-        auto t_end = chrono::system_clock::now();
-        double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
+        // auto t_end = chrono::system_clock::now();
+        // double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
         // cout << "footprint calculation time: " << 1e-6*t_elapsed  << " ms " << endl;
         // cout << "New position: " << next_state_vars[0] << ", " << next_state_vars[1] << endl;
         // displayMap({footprint}, 100);
@@ -39,14 +36,10 @@ ActionSuccessor PointRobotAction::Apply(StateVarsType state_vars, int thread_id)
         for (auto& cell : footprint)
         {
             if (!isValidCell(cell.first, cell.second))
-            {
-	        	// cout <<  next_state_vars[0] << ", " << next_state_vars[1] << " invalid" << endl;
 	            return ActionSuccessor(false, {make_pair(StateVarsType(), -DINF)});
-            }
         }
 
     }
-
     
     double cost = pow(pow((next_state_vars[0] - state_vars[0]), 2) + pow((next_state_vars[1] - state_vars[1]), 2), 0.5);;
     return ActionSuccessor(true, {make_pair(next_state_vars, cost)});

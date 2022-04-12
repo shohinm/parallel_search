@@ -1,6 +1,7 @@
 #include <cmath>
 #include <iostream>
 #include <fstream>
+#include <numeric>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -16,6 +17,12 @@ vector<double> goal;
 double to_degrees(double rads)
 {
     return rads * 180.0 / M_PI;
+}
+
+double roundOff(double value, unsigned char prec)
+{
+    double pow_10 = pow(10.0, (double)prec);
+    return round(value * pow_10) / pow_10;
 }
 
 vector<vector<int>> loadMap(const char *fname, cv::Mat& img, int &width, int &height, int scale=1)
@@ -230,10 +237,10 @@ void loadStartsGoalsFromFile(vector<vector<double>>& starts, vector<vector<doubl
 int main(int argc, char* argv[])
 {
     // Experiment parameters
-    int num_runs = 1;
+    int num_runs = 50;
     int scale = 5;
     bool visualize_plan = false;
-    bool load_starts_goals_from_file = false;
+    bool load_starts_goals_from_file = true;
 
     // Define planner parameters
     ParamsType planner_params;
@@ -246,7 +253,6 @@ int main(int argc, char* argv[])
     int width, height;
     cv::Mat img;
     map = loadMap("../examples/point_robot_nav/resources/hrt201n.map", img, width, height, scale);
-    cout << "Map size: " << map.size() << ", " << map[0].size() << endl;
 
     // Read starts and goals from text file
     vector<vector<double>> starts, goals;
@@ -258,15 +264,6 @@ int main(int argc, char* argv[])
         starts = vector<vector<double>> (num_runs, {scale*10, scale*61});
         goals = vector<vector<double>> (num_runs, {scale*200, scale*170});
     }
-
-    // Removee
-    // cv::namedWindow("Map", cv::WINDOW_AUTOSIZE );// Create a window for display.
-    // Display map with start and goal
-    // cv::circle(img, cv::Point(starts[0][0], starts[0][1]), 16, cv::Scalar(0, 255, 0), -1, 8);
-    // cv::circle(img, cv::Point(goals[0][0], goals[0][1]), 16, cv::Scalar(0, 0, 255), -1, 8 );
-    // cv::imshow("Map", img);
-    // cv::waitKey(0);
-    //
 
     // Construct actions
     ParamsType action_params;
@@ -282,8 +279,16 @@ int main(int argc, char* argv[])
     vector<double> time_vec, cost_vec;
     vector<int> num_edges_vec;
 
+    cout << "Map size: (" << map.size() << ", " << map[0].size() << ") | " 
+    << " | planner: " << planner_name   
+    << " | heuristic_weight: " << planner_params["heuristic_weight"]   
+    << " | num_threads: " << planner_params["num_threads"]   
+    << endl;
+    cout <<  "---------------------------------------------------" << endl;
+
     for (int exp_idx = 0; exp_idx < num_runs; ++exp_idx )
     {
+        cout << "Experiment: " << exp_idx;
 
         if (start_goal_idx >= starts.size()) 
             start_goal_idx = 0;
@@ -299,15 +304,19 @@ int main(int argc, char* argv[])
         double t=0, cost=0;
         int num_edges=0;
 
-        planner_ptr->Plan(exp_idx);
-        planner_ptr->PrintStats();
+        bool plan_found = planner_ptr->Plan(exp_idx);
+        if (plan_found)
+        {
+            auto planner_stats = planner_ptr->GetStats();
+            time_vec.emplace_back(planner_stats.total_time_);
+            cost_vec.emplace_back(planner_stats.path_cost_);
+            num_edges_vec.emplace_back(planner_stats.num_evaluated_edges_);
+            cout << " | Time (s): " << planner_stats.total_time_ << " | Cost: " << planner_stats.path_cost_ << endl;
+        }
+        else
+            cout << " | Plan not found!" << endl;
 
-        time_vec.emplace_back(t);
-        cost_vec.emplace_back(cost);
-        num_edges_vec.emplace_back(num_edges);
-
-        ++start_goal_idx;
-    
+        ++start_goal_idx;            
         // if (visualize_plan)
         // {
         //     // Display map with start and goal
@@ -328,12 +337,12 @@ int main(int argc, char* argv[])
         // }  
     }
 
-    // cout << "************************\n";
-    // cout << "Number of runs: " << time_vec.size() << endl;
-    // cout << "Mean time: " << accumulate(time_vec.begin(), time_vec.end(), 0.0)/time_vec.size() << endl;
-    // cout << "Mean cost: " << accumulate(cost_vec.begin(), cost_vec.end(), 0.0)/cost_vec.size() << endl;    
-    // cout << "Mean evaluated edges: " << roundOff(accumulate(num_edges_vec.begin(), num_edges_vec.end(), 0.0)/double(num_edges_vec.size()), 2) << endl;
-    // cout << "************************\n";
+    cout << endl << "************************" << endl;
+    cout << "Number of runs: " << num_runs << endl;
+    cout << "Mean time: " << accumulate(time_vec.begin(), time_vec.end(), 0.0)/time_vec.size() << endl;
+    cout << "Mean cost: " << accumulate(cost_vec.begin(), cost_vec.end(), 0.0)/cost_vec.size() << endl;    
+    cout << "Mean evaluated edges: " << roundOff(accumulate(num_edges_vec.begin(), num_edges_vec.end(), 0.0)/double(num_edges_vec.size()), 2) << endl;
+    cout << "************************" << endl;
 
 
 

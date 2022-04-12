@@ -40,7 +40,7 @@ bool EpasePlanner::Plan(int exp_idx)
                 terminate_ = true;
                 auto t_end = chrono::system_clock::now();
                 double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
-                total_time_ = 1e-9*t_elapsed;
+                planner_stats_.total_time_ = 1e-9*t_elapsed;
                 cout << "Goal Not Reached" << endl;   
                 lock_.unlock();
                 exit();
@@ -114,20 +114,19 @@ bool EpasePlanner::Plan(int exp_idx)
             {
                 auto t_end = chrono::system_clock::now();
                 double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
-                total_time_ = 1e-9*t_elapsed;
+                planner_stats_.total_time_ = 1e-9*t_elapsed;
 
-                // Reconstruct and return path
-                cout << "--------------------------------------------------------" << endl;            
-                cout << "Goal Reached!" << endl;
-                // cout << "Number of edge expansions threads spawned: " << edge_expansion_futures_.size() << endl;
-                cout << "--------------------------------------------------------" << endl;            
+                // cout << "--------------------------------------------------------" << endl;            
+                // cout << "Goal Reached!" << endl;
+                // cout << "--------------------------------------------------------" << endl;            
+                
+                // Construct path
                 goal_state_ptr_ = curr_edge_ptr->parent_state_ptr_;
                 constructPlan(curr_edge_ptr->parent_state_ptr_);   
                 terminate_ = true;
                 recheck_flag_ = true;
                 lock_.unlock();
                 exit();
-                cout << "--------------------------------------------------------" << endl;            
 
                 return true;
             }
@@ -137,7 +136,7 @@ bool EpasePlanner::Plan(int exp_idx)
         // Insert the state in BE and mark it closed if the edge being expanded is dummy edge
         if (curr_edge_ptr->action_ptr_ == dummy_action_ptr_)
         {
-            num_state_expansions_++;  
+            planner_stats_.num_state_expansions_++;  
             curr_edge_ptr->parent_state_ptr_->SetVisited();
             curr_edge_ptr->parent_state_ptr_->SetBeingExpanded();
             being_expanded_states_.emplace_back(curr_edge_ptr->parent_state_ptr_);
@@ -194,8 +193,8 @@ bool EpasePlanner::Plan(int exp_idx)
     terminate_ = true;
     auto t_end = chrono::system_clock::now();
     double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
-    total_time_ = 1e-9*t_elapsed;
-    cout << "Goal Not Reached, Number of states expanded: " << num_state_expansions_ << endl;   
+    planner_stats_.total_time_ = 1e-9*t_elapsed;
+    // cout << "Goal Not Reached, Number of states expanded: " << planner_stats_.num_state_expansions_ << endl;   
     lock_.unlock();
     exit();
     return false;
@@ -308,17 +307,21 @@ void EpasePlanner::expandEdge(Edge* edge_ptr, int thread_id)
         auto t_start = chrono::system_clock::now();
         auto action_successor = action_ptr->Apply(state_ptr->GetStateVars(), thread_id);
         auto t_end = chrono::system_clock::now();
-        num_evaluated_edges_++; // Only the edges controllers that satisfied pre-conditions and args are in the open list
+        planner_stats_.num_evaluated_edges_++; // Only the edges controllers that satisfied pre-conditions and args are in the open list
         //********************
         lock_.lock();
 
         if (action_successor.success_)
         {
             auto successor_state_ptr = constructState(action_successor.successor_state_vars_costs_.back().first);
+            double cost = action_successor.successor_state_vars_costs_.back().second;                
+
+            // Set successor and cost in expanded edge
+            edge_ptr->child_state_ptr_ = successor_state_ptr;
+            edge_ptr->SetCost(cost);
 
             if (!successor_state_ptr->IsVisited())
             {
-                double cost = action_successor.successor_state_vars_costs_.back().second;                
                 double new_g_val = edge_ptr->parent_state_ptr_->GetGValue() + cost;
                 
                 if (successor_state_ptr->GetGValue() > new_g_val)

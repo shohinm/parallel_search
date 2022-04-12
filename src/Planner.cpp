@@ -56,13 +56,9 @@ std::vector<PlanElement> Planner::GetPlan() const
     return plan_;
 }
 
-bool Planner::PrintStats() const
+PlannerStats Planner::GetStats() const
 {
-    cout << "Total planning time: " << total_time_ << endl;
-    cout << "Solution cost: " << solution_cost_ << endl;
-    cout << "Path length: " << plan_.size() << endl;
-    cout << "Number of state expansions: " << num_state_expansions_ << endl;
-    cout << "Number of edges evaluaited: " << num_evaluated_edges_ << endl;
+    return planner_stats_;
 }
 
 void Planner::initialize()
@@ -70,10 +66,10 @@ void Planner::initialize()
     plan_.clear();
 
     // Initialize planner stats
-    num_evaluated_edges_ = 0;
-    num_state_expansions_ = 0;   
-    total_time_ = 0;
-    solution_cost_ = 0;
+    planner_stats_.num_evaluated_edges_ = 0;
+    planner_stats_.num_state_expansions_ = 0;   
+    planner_stats_.total_time_ = 0;
+    planner_stats_.path_cost_ = 0;
 
     // Initialize start state
     start_state_ptr_->SetGValue(0);
@@ -81,7 +77,11 @@ void Planner::initialize()
     
     // Reset goal state
     goal_state_ptr_ = NULL;
+
+    // Reset state
+    planner_stats_ = PlannerStats();
 }
+
 
 void Planner::resetStates()
 {
@@ -150,7 +150,7 @@ void Planner::constructPlan(StatePtrType& state)
         else
             plan_.insert(plan_.begin(), PlanElement(state->GetStateVars(), NULL, 0));        
 
-        solution_cost_ += state->GetIncomingEdgePtr()->GetCost();
+        planner_stats_.path_cost_ += state->GetIncomingEdgePtr()->GetCost();
         state = state->GetIncomingEdgePtr()->parent_state_ptr_;     
     }
 }
