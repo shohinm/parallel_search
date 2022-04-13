@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 
 project (epase)
+add_compile_options(-std=c++17)
 
 find_package(OpenCV REQUIRED)
 find_package(SBPL REQUIRED)
