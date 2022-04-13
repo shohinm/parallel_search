@@ -8,6 +8,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <boost/functional/hash.hpp>
 #include "PointRobotActions.hpp"
+#include <planners/WastarPlanner.hpp>
 #include <planners/PasePlanner.hpp>
 #include <planners/EpasePlanner.hpp>
 
@@ -200,7 +201,9 @@ void constructActions(vector<shared_ptr<Action>>& action_ptrs, ParamsType& actio
 
 void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vector<shared_ptr<Action>>& action_ptrs, ParamsType& planner_params, ParamsType& action_params)
 {
-    if (planner_name == "pase")
+    if (planner_name == "wastar")
+        planner_ptr = make_shared<WastarPlanner>(planner_params);
+    else if (planner_name == "pase")
         planner_ptr = make_shared<PasePlanner>(planner_params);
     else if (planner_name == "epase")
         planner_ptr = make_shared<EpasePlanner>(planner_params); 
@@ -244,9 +247,18 @@ void loadStartsGoalsFromFile(vector<vector<double>>& starts, vector<vector<doubl
 
 int main(int argc, char* argv[])
 {
+    int num_threads;
 
-    if (argc != 3)
-        throw runtime_error("Format: run_point_robot nav [planner_name] [num_threads]");
+    if (!strcmp(argv[1], "wastar"))
+    {
+        if (argc != 2) throw runtime_error("Format: run_point_robot_nav wastar");
+        num_threads = 1;
+    }
+    else
+    {
+        if (argc != 3) throw runtime_error("Format: run_point_robot_nav [planner_name] [num_threads]");
+        num_threads = atoi(argv[2]);
+    }
 
     // Experiment parameters
     int num_runs = 50;
@@ -258,7 +270,7 @@ int main(int argc, char* argv[])
     ParamsType planner_params;
     // string planner_name = "pase";
     string planner_name = argv[1];
-    planner_params["num_threads"] = atoi(argv[2]);
+    planner_params["num_threads"] = num_threads;
     planner_params["heuristic_weight"] = 50;
     
     // Read map

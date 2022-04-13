@@ -25,13 +25,13 @@ bool EpasePlanner::Plan()
     initialize();    
     auto t_start = chrono::system_clock::now();
     
-    vector<Edge*> popped_edges;
+    vector<EdgePtrType> popped_edges;
 
     lock_.lock();
 
     while(!terminate_)
     {
-        Edge* curr_edge_ptr = NULL;
+        EdgePtrType curr_edge_ptr = NULL;
 
         while (!curr_edge_ptr && !terminate_)
         {
@@ -210,9 +210,7 @@ void EpasePlanner::initialize()
     edge_expansion_status_.resize(num_threads_-1, 0);
 
     edge_expansion_futures_.clear();
- 
-    edge_open_list_ = EdgeQueueMinType();
-    being_expanded_states_.clear();
+     being_expanded_states_.clear();
 
     // Insert proxy edge with start state
     // dummy_action_ptr_ = make_shared<Action>("dummy");
@@ -259,7 +257,7 @@ void EpasePlanner::expandEdgeLoop(int thread_id)
     }    
 }
 
-void EpasePlanner::expandEdge(Edge* edge_ptr, int thread_id)
+void EpasePlanner::expandEdge(EdgePtrType edge_ptr, int thread_id)
 {
     lock_.lock();
 
@@ -340,7 +338,7 @@ void EpasePlanner::expandEdge(Edge* edge_ptr, int thread_id)
                         auto edge_temp = Edge(successor_state_ptr, dummy_action_ptr_);
                         auto edge_key = getEdgeKey(&edge_temp);
                         auto it_edge = edge_map_.find(edge_key); 
-                        Edge* proxy_edge_ptr;
+                        EdgePtrType proxy_edge_ptr;
 
                         if (it_edge == edge_map_.end())
                         {
@@ -417,6 +415,8 @@ void EpasePlanner::exit()
         }
     }
     edge_expansion_futures_.clear();
+
+    edge_open_list_ = EdgeQueueMinType();
 
     Planner::exit();
 }

@@ -17,7 +17,7 @@ class PasePlanner : public Planner
     protected:
         void initialize();
         void paseThread(int thread_id);
-        void expandState(State* state_ptr, int thread_id);
+        void expandState(StatePtrType state_ptr, int thread_id);
         void exit();
 
         StateQueueMinType state_open_list_;

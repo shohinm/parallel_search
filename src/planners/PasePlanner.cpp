@@ -181,7 +181,7 @@ void PasePlanner::paseThread(int thread_id)
 
 }
 
-void PasePlanner::expandState(State* state_ptr, int thread_id)
+void PasePlanner::expandState(StatePtrType state_ptr, int thread_id)
 {
     
     if (VERBOSE) state_ptr->Print("Expanding");
@@ -258,8 +258,6 @@ void PasePlanner::expandState(State* state_ptr, int thread_id)
         being_expanded_states_.erase(it_state_be);
 
     recheck_flag_ = true;
-
-
 }
 
 void PasePlanner::exit()
@@ -280,8 +278,7 @@ void PasePlanner::exit()
     state_expansion_futures_.clear();
 
     // Clear open list
-    while(!state_open_list_.empty())
-        state_open_list_.pop(); 
+    state_open_list_ = StateQueueMinType();
 
     Planner::exit();
 }

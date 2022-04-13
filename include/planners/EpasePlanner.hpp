@@ -17,7 +17,7 @@ class EpasePlanner : public Planner
     protected:
         void initialize();
         void expandEdgeLoop(int thread_id);    
-        void expandEdge(Edge* edge_ptr, int thread_id);
+        void expandEdge(EdgePtrType edge_ptr, int thread_id);
         void exit();
 
         EdgeQueueMinType edge_open_list_;
@@ -28,7 +28,7 @@ class EpasePlanner : public Planner
         mutable LockType lock_;
         mutable std::vector<LockType> lock_vec_; 
         std::vector<std::future<void>> edge_expansion_futures_;
-        std::vector<Edge*> edge_expansion_vec_;
+        std::vector<EdgePtrType> edge_expansion_vec_;
         std::vector<int> edge_expansion_status_;
 
         // Control variables
