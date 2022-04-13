@@ -4,7 +4,7 @@
 #include "PointRobotActions.hpp"
 
 using namespace std;
-using namespace epase;
+using namespace ps;
 
 
 ActionSuccessor PointRobotAction::Apply(StateVarsType state_vars, int thread_id)

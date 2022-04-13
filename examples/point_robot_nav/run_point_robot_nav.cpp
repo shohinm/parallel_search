@@ -13,7 +13,7 @@
 #include <planners/EpasePlanner.hpp>
 
 using namespace std;
-using namespace epase;
+using namespace ps;
 
 vector<double> goal;
 

@@ -7,7 +7,7 @@
 #include <common/Types.hpp>
 #include <common/Action.hpp>
 
-namespace epase
+namespace ps
 {
 
 class Edge : public smpl::heap_element

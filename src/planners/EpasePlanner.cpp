@@ -5,7 +5,7 @@
 #define VERBOSE 0
 
 using namespace std;
-using namespace epase;
+using namespace ps;
 
 EpasePlanner::EpasePlanner(ParamsType planner_params):
 Planner(planner_params)

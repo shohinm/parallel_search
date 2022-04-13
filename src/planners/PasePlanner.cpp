@@ -3,7 +3,7 @@
 #include <planners/PasePlanner.hpp>
 
 using namespace std;
-using namespace epase;
+using namespace ps;
 
 PasePlanner::PasePlanner(ParamsType planner_params):
 Planner(planner_params)

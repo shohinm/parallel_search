@@ -8,7 +8,7 @@
 #include <unordered_map>
 #include "intrusive_heap.h"
 
-namespace epase
+namespace ps
 {
     class State;
     class Edge;

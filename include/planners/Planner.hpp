@@ -8,7 +8,7 @@
 #include <common/Types.hpp>
 #include <common/Edge.hpp>
 
-namespace epase
+namespace ps
 {
 
 class Planner

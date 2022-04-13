@@ -1,6 +1,6 @@
 #include "ActionsTemplate.hpp"
 
-using namespace epase;
+using namespace ps;
 
 ActionTemplate::ActionTemplate(const std::string& type, ParamsType params): 
 Action(type, params)

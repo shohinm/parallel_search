@@ -7,7 +7,7 @@
 #include <climits>
 #include <common/Types.hpp>
 
-namespace epase
+namespace ps
 {
 
 class State : public smpl::heap_element

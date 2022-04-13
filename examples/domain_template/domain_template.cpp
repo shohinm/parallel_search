@@ -2,7 +2,7 @@
 #include <planners/EpasePlanner.hpp>
 
 using namespace std;
-using namespace epase;
+using namespace ps;
 
 /**
  * @brief      Calculates the heuristic.

@@ -2,7 +2,7 @@
 #include <common/State.hpp>
 
 using namespace std;
-using namespace epase;
+using namespace ps;
 
 size_t State::id_counter_ = 0;
 

@@ -3,7 +3,7 @@
 
 #include <common/Action.hpp>
 
-namespace epase
+namespace ps
 {
 
 class ActionTemplate : public Action

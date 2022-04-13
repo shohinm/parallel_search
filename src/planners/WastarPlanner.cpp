@@ -2,7 +2,7 @@
 #include <planners/WastarPlanner.hpp>
 
 using namespace std;
-using namespace epase;
+using namespace ps;
 
 WastarPlanner::WastarPlanner(ParamsType planner_params):
 Planner(planner_params)

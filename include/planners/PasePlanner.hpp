@@ -4,7 +4,7 @@
 #include <future>
 #include <planners/Planner.hpp>
 
-namespace epase
+namespace ps
 {
 
 class PasePlanner : public Planner
