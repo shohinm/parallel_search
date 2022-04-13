@@ -1,4 +1,5 @@
 #include <iostream>
+#include <algorithm>
 #include <planners/PasePlanner.hpp>
 
 using namespace std;

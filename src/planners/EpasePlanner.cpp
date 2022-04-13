@@ -1,4 +1,5 @@
 #include <iostream>
+#include <algorithm>
 #include <planners/EpasePlanner.hpp>
 
 #define VERBOSE 0
