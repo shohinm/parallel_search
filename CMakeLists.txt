@@ -37,3 +37,11 @@ target_link_libraries(run_point_robot_nav
         ${OpenCV_LIBRARIES}
         ${SBPL_LIBRARIES}
         pthread)
+
+add_executable(domain_template
+        examples/domain_template/domain_template.cpp
+        examples/domain_template/ActionsTemplate.cpp
+        ${SOURCES})
+
+target_link_libraries(domain_template
+        pthread)
