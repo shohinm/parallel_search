@@ -311,6 +311,8 @@ int main(int argc, char* argv[])
     << endl;
     cout <<  "---------------------------------------------------" << endl;
 
+    if (visualize_plan) cv::namedWindow("Plan", cv::WINDOW_AUTOSIZE );// Create a window for display.
+    
     for (int exp_idx = 0; exp_idx < num_runs; ++exp_idx )
     {
         cout << "Experiment: " << exp_idx;
@@ -345,25 +347,29 @@ int main(int argc, char* argv[])
         else
             cout << " | Plan not found!" << endl;
 
-        ++start_goal_idx;            
-        // if (visualize_plan)
-        // {
-        //     // Display map with start and goal
-        //     cv::namedWindow("Plan", cv::WINDOW_AUTOSIZE );// Create a window for display.
-        //     for (auto& plan_element: mplp_ptr->GetPlan())
-        //     {
-        //         auto pose = plan_element.intermediate_states_costs_.front().first.GetRobotState()->GetPose2D();
-        //         cv::circle(img, cv::Point(pose(0), pose(1)), cfg["controllers"]["short"]["footprint_size"].as<int>(), cv::Scalar(255, 0, 0), -1, 8);
-        //     }
-        //     cv::circle(img, cv::Point(starts[exp_idx][0], starts[exp_idx][1]), cfg["controllers"]["short"]["footprint_size"].as<int>(), cv::Scalar(0, 255, 0), -1, 8);
-        //     cv::circle(img, cv::Point(goals[exp_idx][0], goals[exp_idx][1]), cfg["controllers"]["short"]["footprint_size"].as<int>(), cv::Scalar(0, 0, 255), -1, 8 );
+        ++start_goal_idx;   
 
-        //     cv::Mat img2;
-        //     cv::resize(img, img2, cv::Size(4*img.cols/scale, 4*img.rows/scale));
-        //     cv::imshow("Plan", img2);
+        if (visualize_plan)
+        {
+            cv::Mat img2 = img.clone();
 
-        //     cv::waitKey(0);
-        // }  
+            // Display map with start and goal
+            for (auto& plan_element: planner_ptr->GetPlan())
+            {
+                cv::circle(img2, cv::Point(plan_element.state_[0], plan_element.state_[1]), action_params["footprint_size"], cv::Scalar(255, 0, 0), -1, 8);
+            }
+            cv::circle(img2, cv::Point(starts[exp_idx][0], starts[exp_idx][1]), action_params["footprint_size"], cv::Scalar(0, 255, 0), -1, 8);
+            cv::circle(img2, cv::Point(goals[exp_idx][0], goals[exp_idx][1]), action_params["footprint_size"], cv::Scalar(0, 0, 255), -1, 8 );
+
+            cv::resize(img2, img2, cv::Size(4*img.cols/scale, 4*img.rows/scale));
+            cv::imshow("Plan", img2);
+            cv::waitKey(500);
+
+            // img2 = cv::Mat(img2.rows, img2.cols, CV_8UC3);
+            img2.setTo(cv::Scalar(0,0,0));
+            cv::imshow("Plan", img2);
+
+        }  
     }
 
     cout << endl << "************************" << endl;
