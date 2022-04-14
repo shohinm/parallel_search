@@ -7,7 +7,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <boost/functional/hash.hpp>
-#include "PointRobotActions.hpp"
+#include "RobotNav2dActions.hpp"
 #include <planners/WastarPlanner.hpp>
 #include <planners/PasePlanner.hpp>
 #include <planners/EpasePlanner.hpp>
@@ -171,7 +171,7 @@ void constructActions(vector<shared_ptr<Action>>& action_ptrs, ParamsType& actio
     // Define action parameters
     action_params["length"] = 25;
     action_params["footprint_size"] = 16;
-    action_params["cache_footprint"] = 1;
+    action_params["cache_footprint"] = 0;
     
     auto move_up_controller_ptr = make_shared<MoveUpAction>("MoveUp", action_params, map);
     action_ptrs.emplace_back(move_up_controller_ptr);
@@ -220,8 +220,8 @@ void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vec
 
 void loadStartsGoalsFromFile(vector<vector<double>>& starts, vector<vector<double>>& goals, int scale, int num_runs)
 {
-    ifstream starts_fin("../examples/point_robot_nav/resources/nav2d_starts.txt");
-    ifstream goals_fin("../examples/point_robot_nav/resources/nav2d_goals.txt");    
+    ifstream starts_fin("../examples/robot_nav_2d/resources/nav2d_starts.txt");
+    ifstream goals_fin("../examples/robot_nav_2d/resources/nav2d_goals.txt");    
    
     for (int j = 0; j < num_runs; ++j)
     {
@@ -251,19 +251,19 @@ int main(int argc, char* argv[])
 
     if (!strcmp(argv[1], "wastar"))
     {
-        if (argc != 2) throw runtime_error("Format: run_point_robot_nav wastar");
+        if (argc != 2) throw runtime_error("Format: run_robot_nav_2d wastar");
         num_threads = 1;
     }
     else
     {
-        if (argc != 3) throw runtime_error("Format: run_point_robot_nav [planner_name] [num_threads]");
+        if (argc != 3) throw runtime_error("Format: run_robot_nav_2d [planner_name] [num_threads]");
         num_threads = atoi(argv[2]);
     }
 
     // Experiment parameters
-    int num_runs = 50;
+    int num_runs = 20;
     int scale = 5;
-    bool visualize_plan = false;
+    bool visualize_plan = true;
     bool load_starts_goals_from_file = true;
 
     // Define planner parameters
@@ -277,7 +277,7 @@ int main(int argc, char* argv[])
     vector<vector<int>> map;
     int width, height;
     cv::Mat img;
-    map = loadMap("../examples/point_robot_nav/resources/hrt201n.map", img, width, height, scale);
+    map = loadMap("../examples/robot_nav_2d/resources/hrt201n.map", img, width, height, scale);
 
     // Read starts and goals from text file
     vector<vector<double>> starts, goals;
@@ -305,9 +305,10 @@ int main(int argc, char* argv[])
     vector<int> num_edges_vec, threads_used_vec;
 
     cout << "Map size: (" << map.size() << ", " << map[0].size() << ") | " 
-    << " | planner: " << planner_name   
-    << " | heuristic_weight: " << planner_params["heuristic_weight"]   
-    << " | num_threads: " << planner_params["num_threads"]   
+    << " | Planner: " << planner_name   
+    << " | Heuristic weight: " << planner_params["heuristic_weight"]   
+    << " | Number of threads: " << planner_params["num_threads"]   
+    << " | Number of runs: " << num_runs
     << endl;
     cout <<  "---------------------------------------------------" << endl;
 

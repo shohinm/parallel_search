@@ -30,12 +30,12 @@ set(SOURCES
     src/planners/EpasePlanner.cpp
 )
 
-add_executable(run_point_robot_nav
-        examples/point_robot_nav/run_point_robot_nav.cpp
-        examples/point_robot_nav/PointRobotActions.cpp
+add_executable(run_robot_nav_2d
+        examples/robot_nav_2d/run_robot_nav_2d.cpp
+        examples/robot_nav_2d/RobotNav2dActions.cpp
         ${SOURCES})
 
-target_link_libraries(run_point_robot_nav
+target_link_libraries(run_robot_nav_2d
         ${OpenCV_LIBRARIES}
         ${SBPL_LIBRARIES}
         pthread)

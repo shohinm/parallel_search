@@ -1,13 +1,13 @@
 #include <iostream>
 #include <cmath>
 #include <sbpl/utils/utils.h>
-#include "PointRobotActions.hpp"
+#include "RobotNav2dActions.hpp"
 
 using namespace std;
 using namespace ps;
 
 
-ActionSuccessor PointRobotAction::Apply(StateVarsType state_vars, int thread_id)
+ActionSuccessor RobotNav2dAction::Apply(StateVarsType state_vars, int thread_id)
 {
 	vector<double> next_state_vars(3, 0);
     for (int i = 0; i < params_["length"]; ++i)
@@ -46,12 +46,12 @@ ActionSuccessor PointRobotAction::Apply(StateVarsType state_vars, int thread_id)
 
 }
 
-bool PointRobotAction::CheckPreconditions(StateVarsType state)
+bool RobotNav2dAction::CheckPreconditions(StateVarsType state)
 {
 	return true;
 }
 
-bool PointRobotAction::isValidCell(int x, int y)
+bool RobotNav2dAction::isValidCell(int x, int y)
 {   
     int x_limit =  map_.size();
     int y_limit =  map_[0].size();
@@ -61,7 +61,7 @@ bool PointRobotAction::isValidCell(int x, int y)
             (map_[round(x)][round(y)] == 0));
 }
 
-bool PointRobotAction::inRange(int x, int y)
+bool RobotNav2dAction::inRange(int x, int y)
 {   
     int x_limit =  map_.size();
     int y_limit =  map_[0].size();
@@ -70,7 +70,7 @@ bool PointRobotAction::inRange(int x, int y)
             (y >= 0) && (y < y_limit));
 }
 
-vector<pair<int, int>> PointRobotAction::getFootPrintRectangular(int x, int y, int footprint_size)
+vector<pair<int, int>> RobotNav2dAction::getFootPrintRectangular(int x, int y, int footprint_size)
 {
     vector<pair<int,int>> footprint;
 
