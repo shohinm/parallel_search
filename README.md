@@ -1,10 +1,10 @@
 
 # Parallel Search-Based Planning Algorithms
 
-This repository maintains open-source implementations of several parallel search-based planning algorithms. Currently the following algorithms are available:
+This repository maintains open-source implementations of several parallel search-based planning algorithms. Currently, the following algorithms are available:
 * [wA*: Weighted A*](https://www.sciencedirect.com/science/article/pii/000437027090007X) [Pohl 1970]
-* [PA*SE: Parallel A* For Slow Evaluations](https://www.aaai.org/ocs/index.php/ICAPS/ICAPS14/paper/view/7952/8029) [Phillips et al. 2014]
-* [ePA*SE: Edge-based Parallel A* For Slow Evaluations](https://arxiv.org/pdf/2203.01369.pdf) [Mukherjee et al. 2022]
+* [PA\*SE: Parallel A* For Slow Evaluations](https://www.aaai.org/ocs/index.php/ICAPS/ICAPS14/paper/view/7952/8029) [Phillips et al. 2014]
+* [ePA\*SE: Edge-based Parallel A* For Slow Evaluations](https://arxiv.org/pdf/2203.01369.pdf) [Mukherjee et al. 2022]
 
 If you use ePA*SE, please use the following citation:
 ```
