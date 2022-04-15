@@ -37,15 +37,15 @@ The planning code only uses C++ standard libraries and has no external dependenc
 Run the following commands from within the build directory:
 * wA*
     ```
-    ./robot_nav_2d wastar
+    ./run_robot_nav_2d wastar
     ```
 * PA*SE with 5 threads
     ```
-    ./robot_nav_2d wastar pase 5
+    ./run_robot_nav_2d pase 5
     ```
 * ePA*SE with 5 threads
     ```
-    ./robot_nav_2d wastar epase 5
+    ./run_robot_nav_2d epase 5
     ```
   
     
