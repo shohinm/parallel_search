@@ -20,6 +20,7 @@ protected:
     std::vector<double> move_dir_;
     std::vector<std::vector<int>> map_;
     std::vector<std::pair<int, int>> footprint_;
+    LockType lock_;
 };
 
 class MoveUpAction : public RobotNav2dAction

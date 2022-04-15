@@ -76,7 +76,13 @@ vector<pair<int, int>> RobotNav2dAction::getFootPrintRectangular(int x, int y, i
 
     if (params_["cache_footprint"])
     {
-        if (footprint_.size() == 0)
+
+        lock_.lock();
+        auto footprint =  footprint_;
+        lock_.unlock();
+
+
+        if (footprint.size() == 0)
         {
             // sbpl's footprint calculation method
             vector<sbpl_2Dpt_t> polygon;
@@ -93,11 +99,15 @@ vector<pair<int, int>> RobotNav2dAction::getFootPrintRectangular(int x, int y, i
 
             for (auto cell : cells)
             {
-                footprint_.push_back(pair<int,int>(cell.x, cell.y));
+                footprint.push_back(pair<int,int>(cell.x, cell.y));
             }
+    
+            lock_.lock();
+            footprint_ = footprint;
+            lock_.unlock();
+
         }
 
-        footprint = footprint_;
         for (auto& coord : footprint)
         {
             coord.first += x;
