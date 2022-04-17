@@ -28,6 +28,7 @@ set(SOURCES
     src/planners/WastarPlanner.cpp
     src/planners/PasePlanner.cpp
     src/planners/EpasePlanner.cpp
+    src/planners/MplpPlanner.cpp
 )
 
 add_executable(run_robot_nav_2d

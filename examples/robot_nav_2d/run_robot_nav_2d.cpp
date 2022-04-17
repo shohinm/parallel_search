@@ -207,6 +207,8 @@ void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vec
         planner_ptr = make_shared<PasePlanner>(planner_params);
     else if (planner_name == "epase")
         planner_ptr = make_shared<EpasePlanner>(planner_params); 
+    else if (planner_name == "mplp")
+        planner_ptr = make_shared<EpasePlanner>(planner_params); 
     else
         throw runtime_error("Planner type not identified!");      
 
@@ -253,6 +255,11 @@ int main(int argc, char* argv[])
     {
         if (argc != 2) throw runtime_error("Format: run_robot_nav_2d wastar");
         num_threads = 1;
+    }
+    else if (!strcmp(argv[1], "mplp"))
+    {
+        if (argc != 3) throw runtime_error("Format: run_robot_nav_2d [planner_name] [num_threads]");
+        if (atoi(argv[2]) < 4) throw runtime_error("mplp requires a minimum of 4 threads");
     }
     else
     {

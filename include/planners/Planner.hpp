@@ -50,7 +50,7 @@ class Planner
         double computeHeuristic(const StatePtrType& state_ptr);
         double computeHeuristic(const StatePtrType& state_ptr_1, const StatePtrType& state_ptr_2);
         bool isGoalState(const StatePtrType& state_ptr);
-        void constructPlan(StatePtrType& state);
+        void constructPlan(StatePtrType& state_ptr);
 
         // Utilities
         template<typename T> bool isFutureReady(T& future){return future.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready;};

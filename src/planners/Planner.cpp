@@ -145,17 +145,17 @@ bool Planner::isGoalState(const StatePtrType& state_ptr)
     return goal_checker_(state_ptr);
 }
 
-void Planner::constructPlan(StatePtrType& state)
+void Planner::constructPlan(StatePtrType& state_ptr)
 {
-    while(state->GetIncomingEdgePtr())
+    while(state_ptr->GetIncomingEdgePtr())
     {
-        if (state->GetIncomingEdgePtr()) // For start state, there is no incoming edge
-            plan_.insert(plan_.begin(), PlanElement(state->GetStateVars(), state->GetIncomingEdgePtr()->action_ptr_, state->GetIncomingEdgePtr()->GetCost()));        
+        if (state_ptr->GetIncomingEdgePtr()) // For start state_ptr, there is no incoming edge
+            plan_.insert(plan_.begin(), PlanElement(state_ptr->GetStateVars(), state_ptr->GetIncomingEdgePtr()->action_ptr_, state_ptr->GetIncomingEdgePtr()->GetCost()));        
         else
-            plan_.insert(plan_.begin(), PlanElement(state->GetStateVars(), NULL, 0));        
+            plan_.insert(plan_.begin(), PlanElement(state_ptr->GetStateVars(), NULL, 0));        
 
-        planner_stats_.path_cost_ += state->GetIncomingEdgePtr()->GetCost();
-        state = state->GetIncomingEdgePtr()->parent_state_ptr_;     
+        planner_stats_.path_cost_ += state_ptr->GetIncomingEdgePtr()->GetCost();
+        state_ptr = state_ptr->GetIncomingEdgePtr()->parent_state_ptr_;     
     }
 }
 

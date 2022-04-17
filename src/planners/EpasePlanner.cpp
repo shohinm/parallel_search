@@ -221,10 +221,6 @@ void EpasePlanner::initialize()
 
     edge_map_.insert(make_pair(getEdgeKey(edge_ptr), edge_ptr));
     edge_open_list_.push(edge_ptr);   
-
-    h_val_min_ = DINF;
-
-
 }
 
 void EpasePlanner::expandEdgeLoop(int thread_id)

@@ -28,6 +28,7 @@ Edge::Edge(const Edge& other_edge)
     child_state_ptr_ = other_edge.child_state_ptr_;
     action_ptr_ = other_edge.action_ptr_;
     expansion_priority_ = other_edge.expansion_priority_;
+    evaluation_priority_ = other_edge.evaluation_priority_;
     is_closed_ = other_edge.is_closed_.load();
     is_eval_ = other_edge.is_eval_.load();
     is_invalid_ = other_edge.is_invalid_.load();
@@ -41,6 +42,7 @@ Edge& Edge::operator=(const Edge& other_edge)
     child_state_ptr_ = other_edge.child_state_ptr_;
     action_ptr_ = other_edge.action_ptr_;
     expansion_priority_ = other_edge.expansion_priority_;
+    evaluation_priority_ = other_edge.evaluation_priority_;
     is_closed_ = other_edge.is_closed_.load();
     is_eval_ = other_edge.is_eval_.load();
     is_invalid_ = other_edge.is_invalid_.load();
@@ -83,8 +85,8 @@ bool IsLesserEdge::operator() (const Edge& lhs, const Edge& rhs)
 bool IsGreaterEdge::operator() (const Edge& lhs, const Edge& rhs)
 {
     // Default fifo ordering
-    if (lhs.expansion_priority_ == rhs.expansion_priority_) // tie breaking
+    if (lhs.evaluation_priority_ == rhs.evaluation_priority_) // tie breaking
         return lhs.edge_id_ < rhs.edge_id_;
     else
-        return lhs.expansion_priority_ > rhs.expansion_priority_;
+        return lhs.evaluation_priority_ > rhs.evaluation_priority_;
 }
