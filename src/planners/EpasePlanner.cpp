@@ -298,7 +298,7 @@ void EpasePlanner::expandEdge(EdgePtrType edge_ptr, int thread_id)
         lock_.unlock();
         // Evaluate the edge
         auto t_start = chrono::system_clock::now();
-        auto action_successor = action_ptr->Apply(state_ptr->GetStateVars(), thread_id);
+        auto action_successor = action_ptr->GetSuccessor(state_ptr->GetStateVars(), thread_id);
         auto t_end = chrono::system_clock::now();
         //********************
         lock_.lock();

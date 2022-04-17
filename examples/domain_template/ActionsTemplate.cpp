@@ -8,7 +8,7 @@ Action(type, params)
 
 }
 
-ActionSuccessor ActionTemplate::Apply(StateVarsType state_vars, int thread_id)
+ActionSuccessor ActionTemplate::GetSuccessor(StateVarsType state_vars, int thread_id)
 {
 
 }

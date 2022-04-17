@@ -83,7 +83,7 @@ void WastarPlanner::expandState(StatePtrType state_ptr)
         {
             // Evaluate the edge
             auto t_start = chrono::system_clock::now();
-            auto action_successor = action_ptr->Apply(state_ptr->GetStateVars());
+            auto action_successor = action_ptr->GetSuccessor(state_ptr->GetStateVars());
             auto t_end = chrono::system_clock::now();
             //********************
 

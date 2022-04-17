@@ -11,7 +11,7 @@ class RobotNav2dAction : public Action
 
 public:
     RobotNav2dAction(const std::string& type, ParamsType params, std::vector<std::vector<int>> map): Action(type, params), map_(map) {};
-    ActionSuccessor Apply(StateVarsType state_vars, int thread_id); 
+    ActionSuccessor GetSuccessor(StateVarsType state_vars, int thread_id); 
     bool CheckPreconditions(StateVarsType state); 
 protected:
     bool isValidCell(int x, int y);

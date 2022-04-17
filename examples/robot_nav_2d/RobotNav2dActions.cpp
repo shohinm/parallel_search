@@ -7,7 +7,7 @@ using namespace std;
 using namespace ps;
 
 
-ActionSuccessor RobotNav2dAction::Apply(StateVarsType state_vars, int thread_id)
+ActionSuccessor RobotNav2dAction::GetSuccessor(StateVarsType state_vars, int thread_id)
 {
 	vector<double> next_state_vars(3, 0);
     for (int i = 0; i < params_["length"]; ++i)
