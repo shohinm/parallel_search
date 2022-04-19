@@ -2,8 +2,6 @@
 #include <algorithm>
 #include <planners/MplpPlanner.hpp>
 
-#define VERBOSE 0
-
 using namespace std;
 using namespace ps;
 
@@ -11,7 +9,7 @@ MplpPlanner::MplpPlanner(ParamsType planner_params):
 Planner(planner_params)
 {    
     num_threads_  = planner_params["num_threads"];
-    vector<LockType> lock_vec(num_threads_-1);
+    vector<LockType> lock_vec(num_threads_);
     lock_vec_.swap(lock_vec);
 }
 
@@ -27,6 +25,7 @@ bool MplpPlanner::Plan()
 
     delegate_edges_process_ = shared_ptr<thread>(new thread(&MplpPlanner::delegateEdges, this));
     monitor_paths_process_ = shared_ptr<thread>(new thread(&MplpPlanner::monitorPaths, this));    
+    planner_stats_.num_threads_spawned_ = 3;
 
     int plan_idx = 0;
     bool path_exists = true;
@@ -56,6 +55,7 @@ bool MplpPlanner::Plan()
 
     auto t_end = chrono::system_clock::now();
     double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
+    planner_stats_.total_time_ = 1e-9*t_elapsed;
 
     exit();
 
@@ -85,7 +85,10 @@ void MplpPlanner::initialize()
 void MplpPlanner::initializeReplanning()
 {
     resetStates();
-    state_open_list_ = StateQueueMinType();
+
+    while (!state_open_list_.empty())
+        state_open_list_.pop();
+    
     start_state_ptr_->SetGValue(0);
     state_open_list_.push(start_state_ptr_);
 }
@@ -93,10 +96,11 @@ void MplpPlanner::initializeReplanning()
 bool MplpPlanner::replanMPLP()
 {
     if (VERBOSE) cout << "------------ Replanning MPLP ------------" << endl;
-    
+
     auto t_start_replanning = chrono::system_clock::now();
     
     initializeReplanning(); 
+    int num_expansions = 0;
 
     while (!state_open_list_.empty())
     {
@@ -118,7 +122,7 @@ bool MplpPlanner::replanMPLP()
         // Return solution if goal state is expanded
         if (isGoalState(state_ptr))
         {
-            if (VERBOSE) cout << "Goal Reached, Number of states expanded: " << planner_stats_.num_state_expansions_ << endl;
+            if (VERBOSE) cout << "Goal Reached, Number of states expanded: " << num_expansions << endl;
     
             goal_state_ptr_ = state_ptr;
             
@@ -146,7 +150,7 @@ bool MplpPlanner::replanMPLP()
             cout << "State with min h_val in Open list: " << h_val_min_ << endl;            
         }
 
-        planner_stats_.num_state_expansions_++;
+        num_expansions++;
         // auto t_end = chrono::system_clock::now();
         // double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
         // if ((timeout_>0) && (1e-9*t_elapsed > timeout_))
@@ -171,13 +175,12 @@ void MplpPlanner::expandState(StatePtrType state_ptr)
     for (auto& action_ptr: actions_ptrs_)
     {
 
-        StatePtrType successor_state_ptr = NULL;
-        double cost; 
-
-        auto edge_ptr_temp = new Edge(state_ptr, action_ptr);
-        auto edge_key = getEdgeKey(edge_ptr_temp);
-        delete edge_ptr_temp;
-        
+        EdgePtrType edge_ptr = NULL;
+        edge_ptr = new Edge(state_ptr, action_ptr);
+        auto edge_key = getEdgeKey(edge_ptr);
+        // cout << "Edge key: " << edge_key << endl;
+        delete edge_ptr;
+        edge_ptr = NULL;        
         // Don't need a lock since no other thread is adding to edge_map_ except this. Which means
         // that when this line is being executed, no thread is modifying (writing) edge_map_.
         auto it_edge = edge_map_.find(edge_key); 
@@ -186,32 +189,30 @@ void MplpPlanner::expandState(StatePtrType state_ptr)
 
         if (it_edge == edge_map_.end())
         {
+            if (VERBOSE) cout << "Expand: Edge not generated " << endl;
             edge_generated = false;
         }
         else if (it_edge->second->is_closed_)
         {
             // Edge in Eclosed
-            // cout << "Expand: Edge in closed " << endl;
-            successor_state_ptr = it_edge->second->child_state_ptr_;
-            cost = it_edge->second->GetCost();
+            if (VERBOSE) cout << "Expand: Edge in closed " << endl;
+            edge_ptr = it_edge->second;
         }
         else if (edges_open_.contains(it_edge->second))
         {
             // Edge in Eopen
-            // cout << "Expand: Edge in open " << endl;
-            successor_state_ptr = it_edge->second->child_state_ptr_;
-            cost = it_edge->second->GetCost();
+            if (VERBOSE) cout << "Expand: Edge in open " << endl;
+            edge_ptr = it_edge->second;
         }
         else if (it_edge->second->is_eval_)
         {
             // Edge in Eeval
-            // cout << "Expand: Edge in eval " << endl;
-            successor_state_ptr = it_edge->second->child_state_ptr_;
-            cost = it_edge->second->GetCost();
+            if (VERBOSE) cout << "Expand: Edge in eval " << endl;
+            edge_ptr = it_edge->second;
         }
         else if (it_edge->second->is_invalid_)
         {
-            // cout << "Invalid edge" << endl;
+            if (VERBOSE) cout << "Invalid edge" << endl;
             continue;
         }            
 
@@ -224,14 +225,14 @@ void MplpPlanner::expandState(StatePtrType state_ptr)
             auto t_end = chrono::system_clock::now();
             //********************
 
-            planner_stats_.num_evaluated_edges_++; // Only the edges controllers that satisfied pre-conditions and args are in the open list
+            // Only the actions that satisfied pre-conditions and args are in the open list
 
             if (action_successor.success_)
             {
                 auto successor_state_ptr = constructState(action_successor.successor_state_vars_costs_.back().first);
-                cost = roundOff(action_successor.successor_state_vars_costs_.back().second);                
+                double cost = roundOff(action_successor.successor_state_vars_costs_.back().second);                
                             
-                auto edge_ptr = new Edge(state_ptr, successor_state_ptr, action_ptr);
+                edge_ptr = new Edge(state_ptr, successor_state_ptr, action_ptr);
                 edge_ptr->SetCost(cost);
                 assignEdgePriority(edge_ptr);
 
@@ -241,12 +242,12 @@ void MplpPlanner::expandState(StatePtrType state_ptr)
                 lock_.unlock();
             
             }
-
         }
 
-        if (successor_state_ptr && (!successor_state_ptr->IsVisited()))
+        if (edge_ptr && edge_ptr->child_state_ptr_ && (!edge_ptr->child_state_ptr_->IsVisited()))
         {
-            double new_g_val = state_ptr->GetGValue() + cost;
+            auto successor_state_ptr = edge_ptr->child_state_ptr_;
+            double new_g_val = state_ptr->GetGValue() + edge_ptr->GetCost();
             
             if (successor_state_ptr->GetGValue() > new_g_val)
             {
@@ -263,12 +264,7 @@ void MplpPlanner::expandState(StatePtrType state_ptr)
                 {
                     h_val_min_ = h_val < h_val_min_ ? h_val : h_val_min_;
                     successor_state_ptr->SetGValue(new_g_val);
-                    successor_state_ptr->SetFValue(new_g_val + heuristic_w_*h_val);
-                    
-                    auto edge_ptr = new Edge(state_ptr, successor_state_ptr, action_ptr);
-                    edge_ptr->SetCost(cost);
-                    edge_map_.insert(make_pair(getEdgeKey(edge_ptr), edge_ptr));
-                    
+                    successor_state_ptr->SetFValue(new_g_val + heuristic_w_*h_val);                    
                     successor_state_ptr->SetIncomingEdgePtr(edge_ptr);
                     
                     if (state_open_list_.contains(successor_state_ptr))
@@ -283,7 +279,7 @@ void MplpPlanner::expandState(StatePtrType state_ptr)
         else
         {
             // Insert into Einvalid if no valid successor is generated
-            auto edge_ptr = new Edge(state_ptr, successor_state_ptr, action_ptr);
+            edge_ptr = new Edge(state_ptr, action_ptr);
             edge_ptr->SetCost(DINF);
             edge_ptr->is_invalid_ = true;
 
@@ -344,8 +340,9 @@ void MplpPlanner::delegateEdges()
 
                 if (thread_id-3 >= edge_evaluation_futures_.size())
                 {
-                    // cout << "Spawning edge evaluation thread " << thread_id << endl;
+                    if (VERBOSE) cout << "Spawning edge evaluation thread " << thread_id << endl;
                     edge_evaluation_futures_.emplace_back(async(launch::async, &MplpPlanner::evaluateEdgeLoop, this, thread_id));
+                    planner_stats_.num_threads_spawned_+=1;
                 }
 
                 if (VERBOSE) edge_ptr->Print("Delegating");
@@ -365,6 +362,10 @@ void MplpPlanner::delegateEdges()
 
 void MplpPlanner::evaluateEdge(EdgePtrType edge_ptr, int thread_id)
 {
+    lock_.lock();
+    planner_stats_.num_evaluated_edges_++;  
+    lock_.unlock();
+
     auto action = edge_ptr->action_ptr_;
     auto parent_state_ptr = edge_ptr->parent_state_ptr_;
     auto child_state_ptr = edge_ptr->child_state_ptr_;
@@ -512,7 +513,8 @@ void MplpPlanner::monitorPaths()
                 double cost = 0;
                 for (auto& edge_ptr: lazy_plan)
                 {                       
-                    plan_.emplace_back(PlanElement(edge_ptr->parent_state_ptr_->GetStateVars(), edge_ptr->parent_state_ptr_->GetIncomingEdgePtr()->action_ptr_, edge_ptr->parent_state_ptr_->GetIncomingEdgePtr()->GetCost()));        
+                    if (edge_ptr->parent_state_ptr_)
+                        plan.emplace_back(PlanElement(edge_ptr->parent_state_ptr_->GetStateVars(), edge_ptr->action_ptr_, edge_ptr->GetCost()));        
                     cost = cost + edge_ptr->GetCost();
                 }
 
@@ -537,6 +539,7 @@ void MplpPlanner::monitorPaths()
                     {
                         plan_ = plan;
                         successful_plan_idx_ = plan_idx;
+                        planner_stats_.path_cost_ = cost;
                         plan_found_ = true;                    
                     }
 
@@ -570,7 +573,6 @@ void MplpPlanner::updateEdgePriority(vector<EdgePtrType>& edge_ptrs, double fact
 
 void MplpPlanner::updateEdgePriority(EdgePtrType& edge_ptr, double factor)
 {
-
     bool edge_found = false;
 
     if (edges_open_.contains(edge_ptr))
@@ -582,15 +584,7 @@ void MplpPlanner::updateEdgePriority(EdgePtrType& edge_ptr, double factor)
             edges_open_.decrease(edge_ptr);
         else
             edges_open_.increase(edge_ptr);
-
     }
-
-    if (!edge_found)
-    {
-        edge_ptr->Print();
-        cout << "Edge not found in Eopen during priority inflation!" << endl;        
-    }
-
 }
 
 void MplpPlanner::exit()
@@ -611,6 +605,19 @@ void MplpPlanner::exit()
             }
         }
     }
+
+    // Clear open list
+    while (!state_open_list_.empty())
+        state_open_list_.pop();
+
+    // Clear Eopen
+    while (!edges_open_.empty())
+        edges_open_.pop();
+
+    lazy_plans_.clear();
+    plan_evaluation_outcomes_.clear();
+    edge_evaluation_vec_.clear();
+    edge_evaluation_status_.clear();
 
     Planner::exit();
 }

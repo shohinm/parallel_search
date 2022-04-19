@@ -11,6 +11,7 @@
 #include <planners/WastarPlanner.hpp>
 #include <planners/PasePlanner.hpp>
 #include <planners/EpasePlanner.hpp>
+#include <planners/MplpPlanner.hpp>
 
 using namespace std;
 using namespace ps;
@@ -208,7 +209,7 @@ void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vec
     else if (planner_name == "epase")
         planner_ptr = make_shared<EpasePlanner>(planner_params); 
     else if (planner_name == "mplp")
-        planner_ptr = make_shared<EpasePlanner>(planner_params); 
+        planner_ptr = make_shared<MplpPlanner>(planner_params); 
     else
         throw runtime_error("Planner type not identified!");      
 
@@ -260,12 +261,14 @@ int main(int argc, char* argv[])
     {
         if (argc != 3) throw runtime_error("Format: run_robot_nav_2d [planner_name] [num_threads]");
         if (atoi(argv[2]) < 4) throw runtime_error("mplp requires a minimum of 4 threads");
+        num_threads = atoi(argv[2]);
     }
     else
     {
         if (argc != 3) throw runtime_error("Format: run_robot_nav_2d [planner_name] [num_threads]");
         num_threads = atoi(argv[2]);
     }
+    
 
     // Experiment parameters
     int num_runs = 20;
@@ -275,7 +278,6 @@ int main(int argc, char* argv[])
 
     // Define planner parameters
     ParamsType planner_params;
-    // string planner_name = "pase";
     string planner_name = argv[1];
     planner_params["num_threads"] = num_threads;
     planner_params["heuristic_weight"] = 50;

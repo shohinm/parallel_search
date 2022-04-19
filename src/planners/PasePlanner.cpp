@@ -279,7 +279,8 @@ void PasePlanner::exit()
     state_expansion_futures_.clear();
 
     // Clear open list
-    state_open_list_ = StateQueueMinType();
-
+    while (!state_open_list_.empty())
+        state_open_list_.pop();
+    
     Planner::exit();
 }

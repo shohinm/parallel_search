@@ -2,8 +2,6 @@
 #include <algorithm>
 #include <planners/EpasePlanner.hpp>
 
-#define VERBOSE 0
-
 using namespace std;
 using namespace ps;
 
@@ -193,9 +191,6 @@ bool EpasePlanner::Plan()
     lock_.unlock();
     exit();
     return false;
-
-
-
 }
 
 void EpasePlanner::initialize()
@@ -413,7 +408,9 @@ void EpasePlanner::exit()
     }
     edge_expansion_futures_.clear();
 
-    edge_open_list_ = EdgeQueueMinType();
+    while (!edge_open_list_.empty())
+        edge_open_list_.pop();
+    
 
     Planner::exit();
 }

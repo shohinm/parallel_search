@@ -142,7 +142,8 @@ void WastarPlanner::expandState(StatePtrType state_ptr)
 void WastarPlanner::exit()
 {
     // Clear open list
-    state_open_list_ = StateQueueMinType();
-
+    while (!state_open_list_.empty())
+        state_open_list_.pop();
+    
     Planner::exit();
 }
