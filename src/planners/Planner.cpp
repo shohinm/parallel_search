@@ -66,10 +66,7 @@ void Planner::initialize()
     plan_.clear();
 
     // Initialize planner stats
-    planner_stats_.num_evaluated_edges_ = 0;
-    planner_stats_.num_state_expansions_ = 0;   
-    planner_stats_.total_time_ = 0;
-    planner_stats_.path_cost_ = 0;
+    planner_stats_ = PlannerStats();
 
     // Initialize start state
     start_state_ptr_->SetGValue(0);

@@ -51,7 +51,7 @@ class Edge : public smpl::heap_element
     private:
         double cost_;
         mutable std::mutex lock_; 
-
+        double roundOff(double value, int prec=3);
 };
 
 class IsLesserEdge

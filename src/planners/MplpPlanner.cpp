@@ -229,11 +229,9 @@ void MplpPlanner::expandState(StatePtrType state_ptr)
 
             if (action_successor.success_)
             {
-                auto successor_state_ptr = constructState(action_successor.successor_state_vars_costs_.back().first);
-                double cost = roundOff(action_successor.successor_state_vars_costs_.back().second);                
-                            
+                auto successor_state_ptr = constructState(action_successor.successor_state_vars_costs_.back().first);                            
                 edge_ptr = new Edge(state_ptr, successor_state_ptr, action_ptr);
-                edge_ptr->SetCost(cost);
+                edge_ptr->SetCost(action_successor.successor_state_vars_costs_.back().second);
                 assignEdgePriority(edge_ptr);
 
                 lock_.lock();

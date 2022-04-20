@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cmath>
 #include <common/Edge.hpp>
 
 using namespace std;
@@ -9,7 +10,7 @@ size_t Edge::id_counter_ = 0;
 void Edge::SetCost(double cost)
 {
     lock_.lock();
-    cost_ = cost;
+    cost_ = roundOff(cost);
     lock_.unlock();
 }
 
@@ -73,6 +74,12 @@ void Edge::Print(std::string str)
     std::cout << "_______________________________" << std::endl;
 }
 
+double Edge::roundOff(double value, int prec)
+{
+    double pow_10 = pow(10.0, prec);
+    return round(value * pow_10) / pow_10;
+}
+
 bool IsLesserEdge::operator() (const Edge& lhs, const Edge& rhs)
 {
     // Default fifo ordering
@@ -90,3 +97,4 @@ bool IsGreaterEdge::operator() (const Edge& lhs, const Edge& rhs)
     else
         return lhs.evaluation_priority_ > rhs.evaluation_priority_;
 }
+
