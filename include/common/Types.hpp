@@ -25,6 +25,7 @@ namespace ps
     
     struct ActionSuccessor
     {
+        ActionSuccessor(){};
         ActionSuccessor(bool success, std::vector<std::pair<StateVarsType, double>> successor_state_vars_costs): 
         success_(success), successor_state_vars_costs_(successor_state_vars_costs){};
         bool success_;

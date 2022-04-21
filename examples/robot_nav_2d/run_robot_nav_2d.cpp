@@ -9,6 +9,7 @@
 #include <boost/functional/hash.hpp>
 #include "RobotNav2dActions.hpp"
 #include <planners/WastarPlanner.hpp>
+#include <planners/PwastarPlanner.hpp>
 #include <planners/PasePlanner.hpp>
 #include <planners/EpasePlanner.hpp>
 #include <planners/MplpPlanner.hpp>
@@ -204,6 +205,8 @@ void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vec
 {
     if (planner_name == "wastar")
         planner_ptr = make_shared<WastarPlanner>(planner_params);
+    else if (planner_name == "pwastar")
+        planner_ptr = make_shared<PwastarPlanner>(planner_params);
     else if (planner_name == "pase")
         planner_ptr = make_shared<PasePlanner>(planner_params);
     else if (planner_name == "epase")
@@ -352,6 +355,8 @@ int main(int argc, char* argv[])
             threads_used_vec.emplace_back(planner_stats.num_threads_spawned_);
             cout << " | Time (s): " << planner_stats.total_time_ 
             << " | Cost: " << planner_stats.path_cost_ 
+            << " | Length: " << planner_stats.path_length_
+            << " | State expansions: " << planner_stats.num_state_expansions_
             << " | Threads used: " << planner_stats.num_threads_spawned_ << "/" << planner_params["num_threads"] << endl;
         }
         else
@@ -375,7 +380,6 @@ int main(int argc, char* argv[])
             cv::imshow("Plan", img2);
             cv::waitKey(500);
 
-            // img2 = cv::Mat(img2.rows, img2.cols, CV_8UC3);
             img2.setTo(cv::Scalar(0,0,0));
             cv::imshow("Plan", img2);
 

@@ -154,6 +154,7 @@ void Planner::constructPlan(StatePtrType& state_ptr)
         planner_stats_.path_cost_ += state_ptr->GetIncomingEdgePtr()->GetCost();
         state_ptr = state_ptr->GetIncomingEdgePtr()->parent_state_ptr_;     
     }
+    planner_stats_.path_length_ += plan_.size();
 }
 
 double Planner::roundOff(double value, int prec)

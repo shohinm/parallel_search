@@ -17,8 +17,10 @@ class WastarPlanner : public Planner
     protected:
         void initialize();
         void expandState(StatePtrType state_ptr);
+        void updateState(StatePtrType& state_ptr, ActionPtrType& action_ptr, ActionSuccessor& action_successor);
         void exit();
 
+        int num_threads_;
         StateQueueMinType state_open_list_;
 
 };

@@ -538,6 +538,7 @@ void MplpPlanner::monitorPaths()
                         plan_ = plan;
                         successful_plan_idx_ = plan_idx;
                         planner_stats_.path_cost_ = cost;
+                        planner_stats_.path_length_ += plan_.size();
                         plan_found_ = true;                    
                     }
 

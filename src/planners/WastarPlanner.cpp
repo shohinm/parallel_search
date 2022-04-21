@@ -82,61 +82,61 @@ void WastarPlanner::expandState(StatePtrType state_ptr)
         if (action_ptr->CheckPreconditions(state_ptr->GetStateVars()))
         {
             // Evaluate the edge
-            auto t_start = chrono::system_clock::now();
+            // auto t_start = chrono::system_clock::now();
             auto action_successor = action_ptr->GetSuccessor(state_ptr->GetStateVars());
-            auto t_end = chrono::system_clock::now();
-            //********************
-
+            // auto t_end = chrono::system_clock::now();
             planner_stats_.num_evaluated_edges_++; // Only the edges controllers that satisfied pre-conditions and args are in the open list
-
-            if (action_successor.success_)
-            {
-                auto successor_state_ptr = constructState(action_successor.successor_state_vars_costs_.back().first);
-                double cost = action_successor.successor_state_vars_costs_.back().second;                
-
-                if (!successor_state_ptr->IsVisited())
-                {
-                    double new_g_val = state_ptr->GetGValue() + cost;
-                    
-                    if (successor_state_ptr->GetGValue() > new_g_val)
-                    {
-
-                        double h_val = successor_state_ptr->GetHValue();
-                        
-                        if (h_val == -1)
-                        {
-                            h_val = computeHeuristic(successor_state_ptr);
-                            successor_state_ptr->SetHValue(h_val);        
-                        }
-
-                        if (h_val != DINF)
-                        {
-                            h_val_min_ = h_val < h_val_min_ ? h_val : h_val_min_;
-                            successor_state_ptr->SetGValue(new_g_val);
-                            successor_state_ptr->SetFValue(new_g_val + heuristic_w_*h_val);
-                            
-                            auto edge_ptr = new Edge(state_ptr, successor_state_ptr, action_ptr);
-                            edge_ptr->SetCost(cost);
-                            edge_map_.insert(make_pair(getEdgeKey(edge_ptr), edge_ptr));
-                            
-                            successor_state_ptr->SetIncomingEdgePtr(edge_ptr);
-                            
-                            if (state_open_list_.contains(successor_state_ptr))
-                                state_open_list_.decrease(successor_state_ptr);
-                            else
-                                state_open_list_.push(successor_state_ptr);
-
-                        }
-
-                    }       
-                }
-            }
-            // else
-                // if (VERBOSE)
-                //     edge_ptr->Print("No successors for");
-
+            //********************
+            
+            updateState(state_ptr, action_ptr, action_successor);
         }
     }
+}
+
+void WastarPlanner::updateState(StatePtrType& state_ptr, ActionPtrType& action_ptr, ActionSuccessor& action_successor)
+{
+    if (action_successor.success_)
+    {
+        auto successor_state_ptr = constructState(action_successor.successor_state_vars_costs_.back().first);
+        double cost = action_successor.successor_state_vars_costs_.back().second;                
+
+
+        if (!successor_state_ptr->IsVisited())
+        {
+            double new_g_val = state_ptr->GetGValue() + cost;
+            
+            if (successor_state_ptr->GetGValue() > new_g_val)
+            {
+
+                double h_val = successor_state_ptr->GetHValue();
+                if (h_val == -1)
+                {
+                    h_val = computeHeuristic(successor_state_ptr);
+                    successor_state_ptr->SetHValue(h_val);        
+                }
+
+                if (h_val != DINF)
+                {
+                    h_val_min_ = h_val < h_val_min_ ? h_val : h_val_min_;
+                    successor_state_ptr->SetGValue(new_g_val);
+                    successor_state_ptr->SetFValue(new_g_val + heuristic_w_*h_val);
+                    
+                    auto edge_ptr = new Edge(state_ptr, successor_state_ptr, action_ptr);
+                    edge_ptr->SetCost(cost);
+                    edge_map_.insert(make_pair(getEdgeKey(edge_ptr), edge_ptr));
+                    
+                    successor_state_ptr->SetIncomingEdgePtr(edge_ptr);
+                    
+                    if (state_open_list_.contains(successor_state_ptr))
+                        state_open_list_.decrease(successor_state_ptr);
+                    else
+                        state_open_list_.push(successor_state_ptr);
+
+                }
+
+            }       
+        }
+    } 
 }
 
 void WastarPlanner::exit()
