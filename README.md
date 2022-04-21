@@ -3,6 +3,7 @@
 
 This repository maintains open-source implementations of several parallel search-based planning algorithms. Currently, the following algorithms are available:
 * [wA*: Weighted A*](https://www.sciencedirect.com/science/article/pii/000437027090007X) [Pohl 1970]
+* PwA*: Parallel Weighted A* (As explained in the [ePA\*SE](https://arxiv.org/pdf/2203.01369.pdf) and [MPLP](https://ieeexplore.ieee.org/abstract/document/9730025) papers)
 * [PA\*SE: Parallel A* For Slow Evaluations](https://www.aaai.org/ocs/index.php/ICAPS/ICAPS14/paper/view/7952/8029) [Phillips et al. 2014]
 * [ePA\*SE: Edge-based Parallel A* For Slow Evaluations](https://arxiv.org/pdf/2203.01369.pdf) [Mukherjee et al. 2022]
 * [MPLP: Massively Parallelized Lazy Planning](https://ieeexplore.ieee.org/abstract/document/9730025) [Mukherjee et al. 2022]
@@ -50,6 +51,10 @@ Run the following commands from within the build directory:
 * wA*
     ```
     ./run_robot_nav_2d wastar
+    ```
+* PwA* with 5 threads
+    ```
+    ./run_robot_nav_2d pwastar 5
     ```
 * PA*SE with 5 threads
     ```
