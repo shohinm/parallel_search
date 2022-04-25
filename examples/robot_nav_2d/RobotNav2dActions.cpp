@@ -30,13 +30,7 @@ ActionSuccessor RobotNav2dAction::GetSuccessor(StateVarsType state_vars, int thr
 
         bool is_collision =  false;
 
-        // auto t_start = chrono::system_clock::now();
         auto footprint = getFootPrintRectangular(next_state_vars[0], next_state_vars[1], params_["footprint_size"]);
-        // auto t_end = chrono::system_clock::now();
-        // double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
-        // cout << "footprint calculation time: " << 1e-6*t_elapsed  << " ms " << endl;
-        // cout << "New position: " << next_state_vars[0] << ", " << next_state_vars[1] << endl;
-        // displayMap({footprint}, 100);
 
         for (auto& cell : footprint)
         {
@@ -112,7 +106,7 @@ vector<pair<int, int>> RobotNav2dAction::getFootPrintRectangular(int x, int y, i
     {
 
         lock_.lock();
-        auto footprint =  footprint_;
+        footprint =  footprint_;
         lock_.unlock();
 
 
