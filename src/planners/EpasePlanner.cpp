@@ -22,7 +22,7 @@ bool EpasePlanner::Plan()
 {
     
     initialize();    
-    auto t_start = chrono::system_clock::now();
+    auto t_start = chrono::steady_clock::now();
     
     vector<EdgePtrType> popped_edges;
 
@@ -37,7 +37,7 @@ bool EpasePlanner::Plan()
             if (edge_open_list_.empty() && being_expanded_states_.empty())
             {
                 terminate_ = true;
-                auto t_end = chrono::system_clock::now();
+                auto t_end = chrono::steady_clock::now();
                 double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
                 planner_stats_.total_time_ = 1e-9*t_elapsed;
                 cout << "Goal Not Reached" << endl;   
@@ -111,7 +111,7 @@ bool EpasePlanner::Plan()
             // if (isGoalState(curr_edge_ptr) && !terminate_)
             if (isGoalState(curr_edge_ptr->parent_state_ptr_) && (!terminate_))
             {
-                auto t_end = chrono::system_clock::now();
+                auto t_end = chrono::steady_clock::now();
                 double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
                 planner_stats_.total_time_ = 1e-9*t_elapsed;
 
@@ -184,7 +184,7 @@ bool EpasePlanner::Plan()
     }
 
     terminate_ = true;
-    auto t_end = chrono::system_clock::now();
+    auto t_end = chrono::steady_clock::now();
     double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
     planner_stats_.total_time_ = 1e-9*t_elapsed;
     // cout << "Goal Not Reached, Number of states expanded: " << planner_stats_.num_state_expansions_ << endl;   
@@ -288,9 +288,9 @@ void EpasePlanner::expandEdge(EdgePtrType edge_ptr, int thread_id)
 
         lock_.unlock();
         // Evaluate the edge
-        auto t_start = chrono::system_clock::now();
+        auto t_start = chrono::steady_clock::now();
         auto action_successor = action_ptr->GetSuccessor(state_ptr->GetStateVars(), thread_id);
-        auto t_end = chrono::system_clock::now();
+        auto t_end = chrono::steady_clock::now();
         //********************
         lock_.lock();
         planner_stats_.num_evaluated_edges_++; // Only the edges controllers that satisfied pre-conditions and args are in the open list

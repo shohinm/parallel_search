@@ -21,7 +21,7 @@ MplpPlanner::~MplpPlanner()
 bool MplpPlanner::Plan()
 {    
     initialize();    
-    auto t_start = chrono::system_clock::now();
+    auto t_start = chrono::steady_clock::now();
 
     delegate_edges_process_ = shared_ptr<thread>(new thread(&MplpPlanner::delegateEdges, this));
     monitor_paths_process_ = shared_ptr<thread>(new thread(&MplpPlanner::monitorPaths, this));    
@@ -39,7 +39,7 @@ bool MplpPlanner::Plan()
 
         path_exists = replanMPLP();
 
-        auto t_end = chrono::system_clock::now();
+        auto t_end = chrono::steady_clock::now();
         double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
         plan_idx++;
 
@@ -53,7 +53,7 @@ bool MplpPlanner::Plan()
 
     terminate_ = true;
 
-    auto t_end = chrono::system_clock::now();
+    auto t_end = chrono::steady_clock::now();
     double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
     planner_stats_.total_time_ = 1e-9*t_elapsed;
 
@@ -97,7 +97,7 @@ bool MplpPlanner::replanMPLP()
 {
     if (VERBOSE) cout << "------------ Replanning MPLP ------------" << endl;
 
-    auto t_start_replanning = chrono::system_clock::now();
+    auto t_start_replanning = chrono::steady_clock::now();
     
     initializeReplanning(); 
     int num_expansions = 0;
@@ -107,7 +107,7 @@ bool MplpPlanner::replanMPLP()
 
         if (plan_found_)
         {
-            // auto t_end_replanning = chrono::system_clock::now();
+            // auto t_end_replanning = chrono::steady_clock::now();
             // double t_elapsed_replanning = chrono::duration_cast<chrono::nanoseconds>(t_end_replanning-t_start_replanning).count();
             // replanning_times_.emplace_back(1e-9*t_elapsed_replanning);
             return true;
@@ -130,7 +130,7 @@ bool MplpPlanner::replanMPLP()
             cost_bound_ = max(cost_bound_, goal_state_ptr_->GetGValue());
             lock_2_.unlock();
 
-            // auto t_end_replanning = chrono::system_clock::now();
+            // auto t_end_replanning = chrono::steady_clock::now();
             // double t_elapsed_replanning = chrono::duration_cast<chrono::nanoseconds>(t_end_replanning-t_start_replanning).count();
             // replanning_times_.emplace_back(1e-9*t_elapsed_replanning);
 
@@ -151,14 +151,14 @@ bool MplpPlanner::replanMPLP()
         }
 
         num_expansions++;
-        // auto t_end = chrono::system_clock::now();
+        // auto t_end = chrono::steady_clock::now();
         // double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
         // if ((timeout_>0) && (1e-9*t_elapsed > timeout_))
         //     return false;
     }
 
     // cout << "Goal not reached Number of states expanded: " << num_expansions << endl;
-    // auto t_end_replanning = chrono::system_clock::now();
+    // auto t_end_replanning = chrono::steady_clock::now();
     // double t_elapsed_replanning = chrono::duration_cast<chrono::nanoseconds>(t_end_replanning-t_start_replanning).count();
     // replanning_times_.emplace_back(1e-9*t_elapsed_replanning);
     return false;
@@ -220,9 +220,9 @@ void MplpPlanner::expandState(StatePtrType state_ptr)
         {
 
             // Evaluate the edge
-            auto t_start = chrono::system_clock::now();
+            auto t_start = chrono::steady_clock::now();
             auto action_successor = action_ptr->GetSuccessorLazy(state_ptr->GetStateVars());
-            auto t_end = chrono::system_clock::now();
+            auto t_end = chrono::steady_clock::now();
             //********************
 
             // Only the actions that satisfied pre-conditions and args are in the open list
@@ -368,9 +368,9 @@ void MplpPlanner::evaluateEdge(EdgePtrType edge_ptr, int thread_id)
     auto parent_state_ptr = edge_ptr->parent_state_ptr_;
     auto child_state_ptr = edge_ptr->child_state_ptr_;
 
-    // auto t_start = chrono::system_clock::now();
+    // auto t_start = chrono::steady_clock::now();
     auto action_successor = action->Evaluate(parent_state_ptr->GetStateVars(), child_state_ptr->GetStateVars(), thread_id);
-    // auto t_end = chrono::system_clock::now();
+    // auto t_end = chrono::steady_clock::now();
     // double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
     // edge_ptr->real_eval_time_ = 1e-9*t_elapsed;
 

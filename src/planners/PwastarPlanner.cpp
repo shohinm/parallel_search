@@ -20,7 +20,7 @@ PwastarPlanner::~PwastarPlanner()
 bool PwastarPlanner::Plan()
 {
     initialize();
-    auto t_start = chrono::system_clock::now();
+    auto t_start = chrono::steady_clock::now();
 
     while (!state_open_list_.empty())
     {
@@ -30,7 +30,7 @@ bool PwastarPlanner::Plan()
         // Return solution if goal state is expanded
         if (isGoalState(state_ptr))
         {
-            auto t_end = chrono::system_clock::now();
+            auto t_end = chrono::steady_clock::now();
             double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();            
             goal_state_ptr_ = state_ptr;
             
@@ -44,7 +44,7 @@ bool PwastarPlanner::Plan()
 
         expandState(state_ptr);        
 
-        // auto t_end = chrono::system_clock::now();
+        // auto t_end = chrono::steady_clock::now();
         // double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
         // if ((timeout_>0) && (1e-9*t_elapsed > timeout_))
         // {
@@ -54,7 +54,7 @@ bool PwastarPlanner::Plan()
         // }
     }
 
-    auto t_end = chrono::system_clock::now();
+    auto t_end = chrono::steady_clock::now();
     double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
     planner_stats_.total_time_ = 1e-9*t_elapsed;
     cout << "Goal not reached Number of states expanded: " << planner_stats_.num_state_expansions_ << endl;

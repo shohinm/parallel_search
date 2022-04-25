@@ -22,7 +22,7 @@ bool PasePlanner::Plan()
 {
     initialize();
     
-    auto t_start = chrono::system_clock::now();
+    auto t_start = chrono::steady_clock::now();
     planner_stats_.num_threads_spawned_ = 1;
 
     if (num_threads_ == 1)
@@ -41,7 +41,7 @@ bool PasePlanner::Plan()
     while(!terminate_)
     {}
 
-    auto t_end = chrono::system_clock::now();
+    auto t_end = chrono::steady_clock::now();
     double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
     planner_stats_.total_time_ = 1e-9*t_elapsed;
     exit();
@@ -196,9 +196,9 @@ void PasePlanner::expandState(StatePtrType state_ptr, int thread_id)
 
             lock_.unlock();
             // Evaluate the edge
-            auto t_start = chrono::system_clock::now();
+            auto t_start = chrono::steady_clock::now();
             auto action_successor = action_ptr->GetSuccessor(state_ptr->GetStateVars(), thread_id);
-            auto t_end = chrono::system_clock::now();
+            auto t_end = chrono::steady_clock::now();
             //********************
             lock_.lock();
             planner_stats_.num_evaluated_edges_++; // Only the edges controllers that satisfied pre-conditions and args are in the open list
