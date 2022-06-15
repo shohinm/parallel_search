@@ -52,21 +52,21 @@ bool EpasePlanner::Plan()
                 edge_open_list_.pop();
                 popped_edges.emplace_back(curr_edge_ptr);
 
-                // state_to_expand_found = true;
 
                 if (curr_edge_ptr->parent_state_ptr_->IsBeingExpanded())
-                    continue;
+                    break;
 
                 // Independence check of curr_edge with edges in OPEN that are in front of curr_edge
                 for (auto& popped_edge_ptr : popped_edges)
                 {
-                    auto h_diff = computeHeuristic(popped_edge_ptr->parent_state_ptr_, curr_edge_ptr->parent_state_ptr_);
-                    // if (curr_edge_ptr->GetGValue() > popped_edge_ptr->GetGValue() + heuristic_w_*(popped_edge_ptr->GetHValue() -  curr_edge_ptr->GetHValue()))
-                    if (curr_edge_ptr->parent_state_ptr_->GetGValue() > popped_edge_ptr->parent_state_ptr_->GetGValue() + heuristic_w_*h_diff)
+                    if (popped_edge_ptr->parent_state_ptr_ != curr_edge_ptr->parent_state_ptr_)
                     {
-                        // state_to_expand_found = false;
-                        curr_edge_ptr = NULL;
-                        break;
+                        auto h_diff = computeHeuristic(popped_edge_ptr->parent_state_ptr_, curr_edge_ptr->parent_state_ptr_);
+                        if (curr_edge_ptr->parent_state_ptr_->GetGValue() > popped_edge_ptr->parent_state_ptr_->GetGValue() + heuristic_w_*h_diff)
+                        {
+                            curr_edge_ptr = NULL;
+                            break;
+                        }                        
                     }
                 }
      
@@ -75,12 +75,14 @@ bool EpasePlanner::Plan()
                     // Independence check of curr_edge with edges in BE
                     for (auto& being_expanded_state : being_expanded_states_)
                     {
-                        auto h_diff = computeHeuristic(being_expanded_state, curr_edge_ptr->parent_state_ptr_);
-                        if (curr_edge_ptr->parent_state_ptr_->GetGValue() > being_expanded_state->GetGValue() + heuristic_w_*h_diff)
+                        if (being_expanded_state != curr_edge_ptr->parent_state_ptr_)
                         {
-                            // state_to_expand_found = false;
-                            curr_edge_ptr = NULL;
-                            break;
+                            auto h_diff = computeHeuristic(being_expanded_state, curr_edge_ptr->parent_state_ptr_);
+                            if (curr_edge_ptr->parent_state_ptr_->GetGValue() > being_expanded_state->GetGValue() + heuristic_w_*h_diff)
+                            {
+                                curr_edge_ptr = NULL;
+                                break;
+                            }
                         }
                     }
                 }
@@ -104,11 +106,9 @@ bool EpasePlanner::Plan()
                 continue;
             }
 
-            // if (!terminate_)
             recheck_flag_ = false;
             
             // Return solution if goal state is expanded
-            // if (isGoalState(curr_edge_ptr) && !terminate_)
             if (isGoalState(curr_edge_ptr->parent_state_ptr_) && (!terminate_))
             {
                 auto t_end = chrono::steady_clock::now();
@@ -179,8 +179,6 @@ bool EpasePlanner::Plan()
         }
 
         lock_.lock();
-
-
     }
 
     terminate_ = true;
@@ -206,7 +204,7 @@ void EpasePlanner::initialize()
     edge_expansion_status_.resize(num_threads_-1, 0);
 
     edge_expansion_futures_.clear();
-     being_expanded_states_.clear();
+    being_expanded_states_.clear();
 
     // Insert proxy edge with start state
     // dummy_action_ptr_ = make_shared<Action>("dummy");
