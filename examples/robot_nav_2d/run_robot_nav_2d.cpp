@@ -51,7 +51,8 @@ vector<vector<int>> loadMap(const char *fname, cv::Mat& img, int &width, int &he
                         fscanf(f, "%c", &c);
                     } while (isspace(c));
 
-                    map[x][y] = (c == '.' || c == 'G' || c == 'S' || c == 'T') ? 0 : 100;
+                    // map[x][y] = (c == '.' || c == 'G' || c == 'S' || c == 'T') ? 0 : 100;
+                    map[x][y] = 0;
                 }
             }            
         }
@@ -274,7 +275,7 @@ int main(int argc, char* argv[])
     
 
     // Experiment parameters
-    int num_runs = 20;
+    int num_runs = 5;
     int scale = 5;
     bool visualize_plan = true;
     bool load_starts_goals_from_file = true;
@@ -315,6 +316,7 @@ int main(int argc, char* argv[])
     int start_goal_idx = 0;
     vector<double> time_vec, cost_vec;
     vector<int> num_edges_vec, threads_used_vec;
+    vector<int> jobs_per_thread(planner_params["num_threads"], 0);
 
     cout << "Map size: (" << map.size() << ", " << map[0].size() << ") | " 
     << " | Planner: " << planner_name   
@@ -326,6 +328,7 @@ int main(int argc, char* argv[])
 
     if (visualize_plan) cv::namedWindow("Plan", cv::WINDOW_AUTOSIZE );// Create a window for display.
     
+    int num_success = 0;
     for (int exp_idx = 0; exp_idx < num_runs; ++exp_idx )
     {
         cout << "Experiment: " << exp_idx;
@@ -358,6 +361,13 @@ int main(int argc, char* argv[])
             << " | Length: " << planner_stats.path_length_
             << " | State expansions: " << planner_stats.num_state_expansions_
             << " | Threads used: " << planner_stats.num_threads_spawned_ << "/" << planner_params["num_threads"] << endl;
+            cout << endl << "------------- Jobs per thread -------------" << endl;
+            for (int tidx = 0; tidx < planner_params["num_threads"]; ++tidx)
+                cout << "thread: " << tidx << " jobs: " << planner_stats.num_jobs_per_thread[tidx] << endl;
+            for (int tidx = 0; tidx < planner_params["num_threads"]; ++tidx)
+                jobs_per_thread[tidx] += planner_stats.num_jobs_per_thread[tidx];        
+            
+            num_success++;
         }
         else
             cout << " | Plan not found!" << endl;
@@ -390,9 +400,13 @@ int main(int argc, char* argv[])
     cout << "Number of runs: " << num_runs << endl;
     cout << "Mean time: " << accumulate(time_vec.begin(), time_vec.end(), 0.0)/time_vec.size() << endl;
     cout << "Mean cost: " << accumulate(cost_vec.begin(), cost_vec.end(), 0.0)/cost_vec.size() << endl;    
-    cout <<  "Mean threads used: " << accumulate(threads_used_vec.begin(), threads_used_vec.end(), 0.0)/threads_used_vec.size() << "/" << planner_params["num_threads"] << endl;
+    cout << "Mean threads used: " << accumulate(threads_used_vec.begin(), threads_used_vec.end(), 0.0)/threads_used_vec.size() << "/" << planner_params["num_threads"] << endl;
     cout << "Mean evaluated edges: " << roundOff(accumulate(num_edges_vec.begin(), num_edges_vec.end(), 0.0)/double(num_edges_vec.size()), 2) << endl;
+    cout << endl << "------------- Mean jobs per thread -------------" << endl;
+    for (int tidx = 0; tidx < planner_params["num_threads"]; ++tidx)
+        cout << "thread: " << tidx << " jobs: " << jobs_per_thread[tidx]/num_success << endl;
     cout << "************************" << endl;
+
 
 
 
