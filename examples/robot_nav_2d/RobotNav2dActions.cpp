@@ -1,5 +1,7 @@
 #include <iostream>
 #include <cmath>
+#include <thread>
+#include <chrono>
 #include <sbpl/utils/utils.h>
 #include "RobotNav2dActions.hpp"
 
@@ -14,6 +16,7 @@ bool RobotNav2dAction::CheckPreconditions(StateVarsType state)
 
 ActionSuccessor RobotNav2dAction::GetSuccessor(StateVarsType state_vars, int thread_id)
 {
+    this_thread::sleep_for(50ms);
     vector<double> next_state_vars(3, 0);
     for (int i = 0; i < params_["length"]; ++i)
     {
