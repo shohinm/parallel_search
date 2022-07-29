@@ -174,7 +174,7 @@ void constructActions(vector<shared_ptr<Action>>& action_ptrs, ParamsType& actio
     // Define action parameters
     action_params["length"] = 25;
     action_params["footprint_size"] = 16;
-    action_params["cache_footprint"] = 0;
+    action_params["cache_footprint"] = 1;
     
     auto move_up_controller_ptr = make_shared<MoveUpAction>("MoveUp", action_params, map);
     action_ptrs.emplace_back(move_up_controller_ptr);
@@ -277,7 +277,7 @@ int main(int argc, char* argv[])
     // Experiment parameters
     int num_runs = 5;
     int scale = 5;
-    bool visualize_plan = true;
+    bool visualize_plan = false;
     bool load_starts_goals_from_file = true;
 
     // Define planner parameters
@@ -351,6 +351,7 @@ int main(int argc, char* argv[])
         
         if (plan_found)
         {
+            num_success++;
             auto planner_stats = planner_ptr->GetStats();
             time_vec.emplace_back(planner_stats.total_time_);
             cost_vec.emplace_back(planner_stats.path_cost_);
@@ -365,9 +366,13 @@ int main(int argc, char* argv[])
             for (int tidx = 0; tidx < planner_params["num_threads"]; ++tidx)
                 cout << "thread: " << tidx << " jobs: " << planner_stats.num_jobs_per_thread[tidx] << endl;
             for (int tidx = 0; tidx < planner_params["num_threads"]; ++tidx)
-                jobs_per_thread[tidx] += planner_stats.num_jobs_per_thread[tidx];        
-            
-            num_success++;
+                jobs_per_thread[tidx] += planner_stats.num_jobs_per_thread[tidx];    
+
+            // cout << endl << "------------- Mean jobs per thread -------------" << endl;
+            // for (int tidx = 0; tidx < planner_params["num_threads"]; ++tidx)
+            //     cout << "thread: " << tidx << " jobs: " << jobs_per_thread[tidx] << endl;
+            // cout << "************************" << endl;    
+                    
         }
         else
             cout << " | Plan not found!" << endl;
@@ -393,7 +398,8 @@ int main(int argc, char* argv[])
             img2.setTo(cv::Scalar(0,0,0));
             cv::imshow("Plan", img2);
 
-        }  
+        } 
+        // getchar(); 
     }
 
     cout << endl << "************************" << endl;
