@@ -194,6 +194,8 @@ bool EpasePlanner::Plan()
 void EpasePlanner::initialize()
 {
     Planner::initialize();
+    planner_stats_.num_jobs_per_thread.resize(num_threads_);
+
     terminate_ = false;
     recheck_flag_ = true;
 
@@ -252,6 +254,8 @@ void EpasePlanner::expandEdge(EdgePtrType edge_ptr, int thread_id)
     lock_.lock();
 
     if (VERBOSE) edge_ptr->Print("Expanding");
+
+    planner_stats_.num_jobs_per_thread[thread_id] +=1;
 
     auto state_ptr = edge_ptr->parent_state_ptr_;
     

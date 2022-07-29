@@ -49,6 +49,8 @@ namespace ps
         int num_state_expansions_ = 0;
         int num_evaluated_edges_ = 0;
         int num_threads_spawned_ = 0;
+        std::vector<int> num_jobs_per_thread;
+
     };
 }
 
