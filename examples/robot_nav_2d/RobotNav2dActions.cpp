@@ -16,7 +16,7 @@ bool RobotNav2dAction::CheckPreconditions(StateVarsType state)
 
 ActionSuccessor RobotNav2dAction::GetSuccessor(StateVarsType state_vars, int thread_id)
 {
-    this_thread::sleep_for(50ms);
+    this_thread::sleep_for(0ms);
     vector<double> next_state_vars(3, 0);
     for (int i = 0; i < params_["length"]; ++i)
     {

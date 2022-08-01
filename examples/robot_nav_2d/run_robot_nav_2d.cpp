@@ -1,5 +1,6 @@
 #include <cmath>
 #include <cstdlib>
+#include <sstream>
 #include <iostream>
 #include <fstream>
 #include <numeric>
@@ -33,7 +34,7 @@ double roundOff(double value, unsigned char prec)
 vector<vector<int>> loadMap(const char *fname, cv::Mat& img, int &width, int &height, int scale=1)
 {
     vector<vector<int>> map;
-    FILE *f;
+    FILE *f;    
     f = fopen(fname, "r");
     
     if (f)
@@ -51,14 +52,66 @@ vector<vector<int>> loadMap(const char *fname, cv::Mat& img, int &width, int &he
                         fscanf(f, "%c", &c);
                     } while (isspace(c));
 
-                    // map[x][y] = (c == '.' || c == 'G' || c == 'S' || c == 'T') ? 0 : 100;
-                    map[x][y] = 0;
+                    map[x][y] = (c == '.' || c == 'G' || c == 'S' || c == 'T') ? 0 : 100;
+                    // map[x][y] = 0;
                 }
             }            
         }
 
         fclose(f);
     }
+
+
+    vector<vector<int>> scaled_map;
+    int scaled_height = scale*height;
+    int scaled_width = scale*width;
+    scaled_map.resize(scaled_width, vector<int>(scaled_height));
+
+    for (int y = 0; y < scaled_height; y++)
+    {
+        for (int x = 0; x < scaled_width; x++)
+        {
+            scaled_map[x][y] = map[x/scale][y/scale];
+        }
+    }
+
+    img = cv::Mat(scaled_height, scaled_width, CV_8UC3);
+
+    for (int y = 0; y < scaled_height; y++)
+    {
+        for (int x = 0; x < scaled_width; x++)
+        {
+            img.at<cv::Vec3b>(y,x) = (scaled_map[x][y] == 0) ? cv::Vec3b(0,0,0) : cv::Vec3b(255,255,255);
+        }
+    }
+
+
+    return scaled_map;
+
+}
+
+vector<vector<int>> loadBinaryMap(const char *fname, cv::Mat& img, int &width, int &height, int scale=1)
+{
+    vector<vector<int>> map;
+    ifstream fin(fname);
+    height = 300, width = 300;
+
+    for (int y = 0; y < height; y++)
+    {
+        std::string line;
+        std::getline(fin, line);
+        // cout << line  << endl;
+        istringstream iss(line);
+        int val;
+        vector<int> row;
+        for (int x = 0; x < width; x++)
+        {
+            iss >> val;
+            row.emplace_back(val);
+        }
+        map.emplace_back(row);
+    }
+
 
     vector<vector<int>> scaled_map;
     int scaled_height = scale*height;
@@ -83,9 +136,15 @@ vector<vector<int>> loadMap(const char *fname, cv::Mat& img, int &width, int &he
         }
     }
 
+    // cv::imshow("Map", img);
+    // cv::waitKey();
+
+
     return scaled_map;
 
 }
+
+
 double computeHeuristic(const StatePtrType& state_ptr)
 {
     auto state_vars = state_ptr->GetStateVars();
@@ -275,10 +334,10 @@ int main(int argc, char* argv[])
     
 
     // Experiment parameters
-    int num_runs = 5;
+    int num_runs = 1;
     int scale = 5;
     bool visualize_plan = false;
-    bool load_starts_goals_from_file = true;
+    bool load_starts_goals_from_file = false;
 
     // Define planner parameters
     ParamsType planner_params;
@@ -290,7 +349,8 @@ int main(int argc, char* argv[])
     vector<vector<int>> map;
     int width, height;
     cv::Mat img;
-    map = loadMap("../examples/robot_nav_2d/resources/hrt201n.map", img, width, height, scale);
+    // map = loadMap("../examples/robot_nav_2d/resources/hrt201n.map", img, width, height, scale);
+    map = loadBinaryMap("../examples/robot_nav_2d/resources/binary_map.txt", img, width, height, scale);
 
     // Read starts and goals from text file
     vector<vector<double>> starts, goals;
@@ -299,8 +359,8 @@ int main(int argc, char* argv[])
         loadStartsGoalsFromFile(starts, goals, scale, num_runs);
     else
     {
-        starts = vector<vector<double>> (num_runs, {scale*10.0, scale*61.0});
-        goals = vector<vector<double>> (num_runs, {scale*200.0, scale*170.0});
+        starts = vector<vector<double>> (num_runs, {scale*5.0, scale*150.0});
+        goals = vector<vector<double>> (num_runs, {scale*295.0, scale*150.0});
     }
 
     // Construct actions
@@ -387,7 +447,7 @@ int main(int argc, char* argv[])
 
             cv::resize(img2, img2, cv::Size(4*img.cols/scale, 4*img.rows/scale));
             cv::imshow("Plan", img2);
-            cv::waitKey(500);
+            cv::waitKey(0);
 
             img2.setTo(cv::Scalar(0,0,0));
             cv::imshow("Plan", img2);
