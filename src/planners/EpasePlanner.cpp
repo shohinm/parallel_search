@@ -165,6 +165,7 @@ bool EpasePlanner::Plan()
                     {
                         if (VERBOSE) cout << "Spawining edge expansion thread " << thread_id << endl;
                         edge_expansion_futures_.emplace_back(async(launch::async, &EpasePlanner::expandEdgeLoop, this, thread_id));
+                        fout_ << curr_edge_ptr->parent_state_ptr_->GetStateVars()[0] << " " << curr_edge_ptr->parent_state_ptr_->GetStateVars()[1] << endl;
                     }
                     lock_vec_[thread_id].lock();
                     edge_expansion_vec_[thread_id] = curr_edge_ptr;
@@ -216,6 +217,8 @@ void EpasePlanner::initialize()
 
     edge_map_.insert(make_pair(getEdgeKey(edge_ptr), edge_ptr));
     edge_open_list_.push(edge_ptr);   
+
+    fout_.open("edge_spawn_coords.txt");
 }
 
 void EpasePlanner::expandEdgeLoop(int thread_id)
@@ -413,6 +416,6 @@ void EpasePlanner::exit()
     while (!edge_open_list_.empty())
         edge_open_list_.pop();
     
-
+    fout_.close();
     Planner::exit();
 }

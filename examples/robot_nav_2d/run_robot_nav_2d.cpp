@@ -450,6 +450,7 @@ int main(int argc, char* argv[])
 
             cv::resize(img2, img2, cv::Size(4*img.cols/scale, 4*img.rows/scale));
             cv::imshow("Plan", img2);
+            // cv::imwrite("/home/shohinm/Dropbox/work_phd/Meeting_data/meeting_2021-08-03/map_large.png", img2); 
             cv::waitKey(0);
 
             img2.setTo(cv::Scalar(0,0,0));

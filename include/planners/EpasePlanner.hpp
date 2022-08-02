@@ -2,6 +2,7 @@
 #define EPASE_PLANNER_HPP
 
 #include <future>
+#include <fstream>
 #include <planners/Planner.hpp>
 
 namespace ps
@@ -35,6 +36,9 @@ class EpasePlanner : public Planner
         std::atomic<bool> recheck_flag_;
         std::atomic<bool> terminate_;
         ActionPtrType dummy_action_ptr_;
+
+        std::ofstream fout_;
+
 };
 
 }
