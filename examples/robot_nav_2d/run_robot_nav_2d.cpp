@@ -354,6 +354,7 @@ int main(int argc, char* argv[])
     map = loadBinaryMap("../examples/robot_nav_2d/resources/binary_map_small.txt", img, width, height, scale);
     // map = loadBinaryMap("../examples/robot_nav_2d/resources/binary_map_medium.txt", img, width, height, scale);
     // map = loadBinaryMap("../examples/robot_nav_2d/resources/binary_map_large.txt", img, width, height, scale);
+    // map = loadBinaryMap("../examples/robot_nav_2d/resources/binary_map_extra_large.txt", img, width, height, scale);
 
     // Read starts and goals from text file
     vector<vector<double>> starts, goals;
