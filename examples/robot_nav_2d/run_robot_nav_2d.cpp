@@ -123,6 +123,7 @@ vector<vector<int>> loadBinaryMap(const char *fname, cv::Mat& img, int &width, i
         for (int x = 0; x < scaled_width; x++)
         {
             scaled_map[x][y] = map[x/scale][y/scale];
+            //scaled_map[x][y] = 0;
         }
     }
 
@@ -350,7 +351,9 @@ int main(int argc, char* argv[])
     int width, height;
     cv::Mat img;
     // map = loadMap("../examples/robot_nav_2d/resources/hrt201n.map", img, width, height, scale);
-    map = loadBinaryMap("../examples/robot_nav_2d/resources/binary_map.txt", img, width, height, scale);
+    map = loadBinaryMap("../examples/robot_nav_2d/resources/binary_map_small.txt", img, width, height, scale);
+    // map = loadBinaryMap("../examples/robot_nav_2d/resources/binary_map_medium.txt", img, width, height, scale);
+    // map = loadBinaryMap("../examples/robot_nav_2d/resources/binary_map_large.txt", img, width, height, scale);
 
     // Read starts and goals from text file
     vector<vector<double>> starts, goals;
