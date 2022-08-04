@@ -61,6 +61,7 @@ bool WastarPlanner::Plan()
 void WastarPlanner::initialize()
 {
     Planner::initialize();
+    planner_stats_.num_jobs_per_thread_.resize(1, 0);
 
     // Initialize open list
     start_state_ptr_->SetFValue(start_state_ptr_->GetGValue() + heuristic_w_*start_state_ptr_->GetHValue());
