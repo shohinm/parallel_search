@@ -425,12 +425,18 @@ int main(int argc, char* argv[])
             << " | Cost: " << planner_stats.path_cost_ 
             << " | Length: " << planner_stats.path_length_
             << " | State expansions: " << planner_stats.num_state_expansions_
-            << " | Threads used: " << planner_stats.num_threads_spawned_ << "/" << planner_params["num_threads"] << endl;
-            cout << endl << "------------- Jobs per thread -------------" << endl;
+            << " | Threads used: " << planner_stats.num_threads_spawned_ << "/" << planner_params["num_threads"]
+            << " | Lock time: " <<  planner_stats.lock_time_
+            << " | Expand time: " << planner_stats.cumulative_expansions_time_
+            << " | Threads: " << planner_stats.num_threads_spawned_ << "/" << planner_params["num_threads"] << endl;
+           
+            // cout << endl << "------------- Jobs per thread -------------" << endl;
             // for (int tidx = 0; tidx < planner_params["num_threads"]; ++tidx)
-            //     cout << "thread: " << tidx << " jobs: " << planner_stats.num_jobs_per_thread[tidx] << endl;
+                // cout << "thread: " << tidx << " jobs: " << planner_stats.num_jobs_per_thread_[tidx] << endl;
             for (int tidx = 0; tidx < planner_params["num_threads"]; ++tidx)
-                jobs_per_thread[tidx] += planner_stats.num_jobs_per_thread[tidx];                        
+                jobs_per_thread[tidx] += planner_stats.num_jobs_per_thread_[tidx];        
+            
+            num_success++;
         }
         else
             cout << " | Plan not found!" << endl;
