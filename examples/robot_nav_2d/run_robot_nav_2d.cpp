@@ -336,7 +336,7 @@ int main(int argc, char* argv[])
 
     // Experiment parameters
     int num_runs = 1;
-    int scale = 20;
+    int scale = 30;
     bool visualize_plan = false;
     bool load_starts_goals_from_file = false;
 
