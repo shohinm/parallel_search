@@ -10,17 +10,21 @@ This repository maintains open-source implementations of several parallel search
 
 If you use ePA*SE, please use the following citation:
 ```
-@article{mukherjee2022epa,
-  title={ePA* SE: Edge-based Parallel A* for Slow Evaluations},
-  author={Mukherjee, Shohin and Aine, Sandip and Likhachev, Maxim},
-  journal={arXiv preprint arXiv:2203.01369},
+@inproceedings{mukherjee2022epase,
+  author    = {Mukherjee, Shohin and Aine, Sandip and Likhachev, Maxim},
+  title     = {{ePA*SE}: Edge-Based Parallel {A*} for Slow Evaluations},
+  booktitle = {International Symposium on Combinatorial Search},
+  volume={15},
+  number={1},
+  pages={136--144},
+  publisher={{AAAI} Press},
   year={2022}
 }
 ```
 If you use MPLP, please use the following citation:
 ```
 @article{mukherjee2022mplp,
-  title={MPLP: Massively Parallelized Lazy Planning},
+  title={{MPLP}: Massively Parallelized Lazy Planning},
   author={Mukherjee, Shohin and Aine, Sandip and Likhachev, Maxim},
   journal={IEEE Robotics and Automation Letters},
   year={2022},
