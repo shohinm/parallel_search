@@ -56,33 +56,33 @@ bool EpasePlanner::Plan()
                 if (curr_edge_ptr->parent_state_ptr_->IsBeingExpanded())
                     break;
 
-                // Independence check of curr_edge with edges in OPEN that are in front of curr_edge
-                for (auto& popped_edge_ptr : popped_edges)
+                // Independence check of curr_edge with edges in BE
+                for (auto& being_expanded_state : being_expanded_states_)
                 {
-                    if (popped_edge_ptr->parent_state_ptr_ != curr_edge_ptr->parent_state_ptr_)
+                    if (being_expanded_state != curr_edge_ptr->parent_state_ptr_)
                     {
-                        auto h_diff = computeHeuristic(popped_edge_ptr->parent_state_ptr_, curr_edge_ptr->parent_state_ptr_);
-                        if (curr_edge_ptr->parent_state_ptr_->GetGValue() > popped_edge_ptr->parent_state_ptr_->GetGValue() + heuristic_w_*h_diff)
+                        auto h_diff = computeHeuristic(being_expanded_state, curr_edge_ptr->parent_state_ptr_);
+                        if (curr_edge_ptr->parent_state_ptr_->GetGValue() > being_expanded_state->GetGValue() + heuristic_w_*h_diff)
                         {
                             curr_edge_ptr = NULL;
                             break;
-                        }                        
+                        }
                     }
                 }
      
                 if (curr_edge_ptr)
                 {
-                    // Independence check of curr_edge with edges in BE
-                    for (auto& being_expanded_state : being_expanded_states_)
+                    // Independence check of curr_edge with edges in OPEN that are in front of curr_edge
+                    for (auto& popped_edge_ptr : popped_edges)
                     {
-                        if (being_expanded_state != curr_edge_ptr->parent_state_ptr_)
+                        if (popped_edge_ptr->parent_state_ptr_ != curr_edge_ptr->parent_state_ptr_)
                         {
-                            auto h_diff = computeHeuristic(being_expanded_state, curr_edge_ptr->parent_state_ptr_);
-                            if (curr_edge_ptr->parent_state_ptr_->GetGValue() > being_expanded_state->GetGValue() + heuristic_w_*h_diff)
+                            auto h_diff = computeHeuristic(popped_edge_ptr->parent_state_ptr_, curr_edge_ptr->parent_state_ptr_);
+                            if (curr_edge_ptr->parent_state_ptr_->GetGValue() > popped_edge_ptr->parent_state_ptr_->GetGValue() + heuristic_w_*h_diff)
                             {
                                 curr_edge_ptr = NULL;
                                 break;
-                            }
+                            }                        
                         }
                     }
                 }
@@ -103,10 +103,10 @@ bool EpasePlanner::Plan()
                 // Wait for recheck_flag_ to be set true;
                 while(!recheck_flag_ && !terminate_){}
                 lock_.lock();    
+                recheck_flag_ = false;
                 continue;
             }
 
-            recheck_flag_ = false;
             
             // Return solution if goal state is expanded
             if (isGoalState(curr_edge_ptr->parent_state_ptr_) && (!terminate_))
