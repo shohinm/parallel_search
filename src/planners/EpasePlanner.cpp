@@ -101,9 +101,11 @@ bool EpasePlanner::Plan()
             {
                 lock_.unlock();
                 // Wait for recheck_flag_ to be set true;
-                while(!recheck_flag_ && !terminate_){}
-                lock_.lock();    
+                unique_lock<mutex> locker(lock_);
+                cv_.wait(locker, [this](){return (recheck_flag_ == true);});
                 recheck_flag_ = false;
+                locker.unlock();
+                lock_.lock();
                 continue;
             }
 
@@ -154,9 +156,10 @@ bool EpasePlanner::Plan()
         {
             while (!edge_expansion_assigned)
             {
-                lock_vec_[thread_id].lock();
+                unique_lock<mutex> locker(lock_vec_[thread_id]);
                 bool status = edge_expansion_status_[thread_id];
-                lock_vec_[thread_id].unlock();
+                locker.unlock();
+                cv_vec_[thread_id].notify_one();
 
                 if (!status)
                 {
@@ -166,11 +169,11 @@ bool EpasePlanner::Plan()
                         if (VERBOSE) cout << "Spawining edge expansion thread " << thread_id << endl;
                         edge_expansion_futures_.emplace_back(async(launch::async, &EpasePlanner::expandEdgeLoop, this, thread_id));
                     }
-                    lock_vec_[thread_id].lock();
+                    locker.lock();
                     edge_expansion_vec_[thread_id] = curr_edge_ptr;
                     edge_expansion_status_[thread_id] = 1;
                     edge_expansion_assigned = true;       
-                    lock_vec_[thread_id].unlock();
+                    locker.unlock();
                 }
                 else
                     thread_id = thread_id == num_threads_-2 ? 0 : thread_id+1;
@@ -205,6 +208,9 @@ void EpasePlanner::initialize()
     edge_expansion_status_.clear();
     edge_expansion_status_.resize(num_threads_-1, 0);
 
+    vector<condition_variable> cv_vec(num_threads_-1);
+    cv_vec_.swap(cv_vec);
+
     edge_expansion_futures_.clear();
     being_expanded_states_.clear();
 
@@ -222,29 +228,19 @@ void EpasePlanner::expandEdgeLoop(int thread_id)
 {
     while (!terminate_)
     {
-
-        lock_vec_[thread_id].lock();
-        bool status = edge_expansion_status_[thread_id];
-        lock_vec_[thread_id].unlock();
-
-        while ((!status) && (!terminate_))
-        {
-            lock_vec_[thread_id].lock();
-            status = edge_expansion_status_[thread_id];
-            lock_vec_[thread_id].unlock();
-            // cout << "Expansion thread " << thread_id << " waiting! " << edge_expansion_status_[thread_id] << endl;
-        }
+        unique_lock<mutex> locker(lock_vec_[thread_id]);
+        cv_vec_[thread_id].wait(locker, [this, thread_id](){return (edge_expansion_status_[thread_id] == 1);});
+        locker.unlock();
 
         if (terminate_)
             break;
 
-
         expandEdge(edge_expansion_vec_[thread_id], thread_id);
 
-        lock_vec_[thread_id].lock();
+        locker.lock();
         edge_expansion_vec_[thread_id] = NULL;
         edge_expansion_status_[thread_id] = 0;
-        lock_vec_[thread_id].unlock();
+        locker.unlock();
 
     }    
 }
@@ -401,10 +397,19 @@ void EpasePlanner::expandEdge(EdgePtrType edge_ptr, int thread_id)
 
     lock_.unlock();
 
+    cv_.notify_one();
 }
 
 void EpasePlanner::exit()
 {
+    for (int thread_id = 0; thread_id < num_threads_-1; ++thread_id)
+    {
+        unique_lock<mutex> locker(lock_vec_[thread_id]);
+        edge_expansion_status_[thread_id] = 1;
+        locker.unlock();
+        cv_vec_[thread_id].notify_one();
+    }
+
     planner_stats_.num_threads_spawned_ = edge_expansion_futures_.size()+1;
     bool all_expansion_threads_terminated = false;
     while (!all_expansion_threads_terminated)

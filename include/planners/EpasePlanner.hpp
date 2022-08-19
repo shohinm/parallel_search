@@ -2,6 +2,7 @@
 #define EPASE_PLANNER_HPP
 
 #include <future>
+#include <condition_variable>
 #include <planners/Planner.hpp>
 
 namespace ps
@@ -30,6 +31,8 @@ class EpasePlanner : public Planner
         std::vector<std::future<void>> edge_expansion_futures_;
         std::vector<EdgePtrType> edge_expansion_vec_;
         std::vector<int> edge_expansion_status_;
+        std::vector<std::condition_variable> cv_vec_;
+        std::condition_variable cv_;
 
         // Control variables
         std::atomic<bool> recheck_flag_;
