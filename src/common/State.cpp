@@ -39,6 +39,7 @@ void State::Print(string str)
     << " | h: " << GetHValue() 
     << " | f: "<< GetFValue() 
     << " | is_closed: " << IsVisited()
+    << " | being_expanded_: " << IsBeingExpanded()
     << " | num_successors: " << num_successors_ 
     << " | num_expanded_successors: " << num_expanded_successors_ 
     << endl;

@@ -52,10 +52,6 @@ bool EpasePlanner::Plan()
                 edge_open_list_.pop();
                 popped_edges.emplace_back(curr_edge_ptr);
 
-
-                if (curr_edge_ptr->parent_state_ptr_->IsBeingExpanded())
-                    break;
-
                 // Independence check of curr_edge with edges in BE
                 for (auto& being_expanded_state : being_expanded_states_)
                 {
