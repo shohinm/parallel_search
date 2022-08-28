@@ -159,7 +159,6 @@ bool EpasePlanner::Plan()
                 unique_lock<mutex> locker(lock_vec_[thread_id]);
                 bool status = edge_expansion_status_[thread_id];
                 locker.unlock();
-                cv_vec_[thread_id].notify_one();
 
                 if (!status)
                 {
@@ -174,6 +173,7 @@ bool EpasePlanner::Plan()
                     edge_expansion_status_[thread_id] = 1;
                     edge_expansion_assigned = true;       
                     locker.unlock();
+                    cv_vec_[thread_id].notify_one();
                 }
                 else
                     thread_id = thread_id == num_threads_-2 ? 0 : thread_id+1;
