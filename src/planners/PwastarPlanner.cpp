@@ -1,4 +1,5 @@
 #include <iostream>
+#include <algorithm>
 #include <planners/PwastarPlanner.hpp>
 
 using namespace std;
@@ -180,6 +181,7 @@ void PwastarPlanner::evaluateEdgeThread(int thread_id)
         all_successors_[thread_id].emplace_back(make_pair(action_ptr, action_successor));
         delete edge_evaluation_vec_[thread_id];
         edge_evaluation_status_[thread_id] = 0;
+        planner_stats_.num_jobs_per_thread_[thread_id] +=1;
         lock_vec_[thread_id].unlock();
     }    
 }

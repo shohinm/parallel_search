@@ -65,6 +65,8 @@ bool MplpPlanner::Plan()
 void MplpPlanner::initialize()
 {
     Planner::initialize();
+    planner_stats_.num_jobs_per_thread_.resize(num_threads_, 0);
+
     terminate_ = false;
     plan_found_ = false;
 
@@ -362,6 +364,7 @@ void MplpPlanner::evaluateEdge(EdgePtrType edge_ptr, int thread_id)
 {
     lock_.lock();
     planner_stats_.num_evaluated_edges_++;  
+    planner_stats_.num_jobs_per_thread_[thread_id] +=1;
     lock_.unlock();
 
     auto action = edge_ptr->action_ptr_;

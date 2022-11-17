@@ -52,6 +52,8 @@ bool PasePlanner::Plan()
 void PasePlanner::initialize()
 {
     Planner::initialize();
+    planner_stats_.num_jobs_per_thread_.resize(num_threads_, 0);
+
     terminate_ = false;
     recheck_flag_ = true;
     plan_found_ = false;
@@ -187,6 +189,7 @@ void PasePlanner::expandState(StatePtrType state_ptr, int thread_id)
     
     if (VERBOSE) state_ptr->Print("Expanding");
     
+    planner_stats_.num_jobs_per_thread_[thread_id] +=1;
     planner_stats_.num_state_expansions_++;
    
     for (auto& action_ptr: actions_ptrs_)
