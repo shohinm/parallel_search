@@ -5,7 +5,7 @@ This repository maintains open-source implementations of several parallel search
 * [wA*: Weighted A*](https://www.sciencedirect.com/science/article/pii/000437027090007X) [Pohl 1970]
 * PwA*: Parallel Weighted A* (As explained in the [ePA\*SE](https://arxiv.org/pdf/2203.01369.pdf) and [MPLP](https://ieeexplore.ieee.org/abstract/document/9730025) papers)
 * [PA\*SE: Parallel A* For Slow Expansions](https://www.aaai.org/ocs/index.php/ICAPS/ICAPS14/paper/view/7952/8029) [Phillips et al. 2014]
-* [ePA\*SE: Edge-based Parallel A* For Slow Evaluations](https://arxiv.org/pdf/2203.01369.pdf) [Mukherjee et al. 2022]
+* [ePA\*SE: Edge-based Parallel A* For Slow Evaluations](https://ojs.aaai.org/index.php/SOCS/article/view/21761) [Mukherjee et al. 2022]
 * [MPLP: Massively Parallelized Lazy Planning](https://ieeexplore.ieee.org/abstract/document/9730025) [Mukherjee et al. 2022]
 
 If you use ePA*SE, please use the following citation:
