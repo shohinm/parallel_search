@@ -46,11 +46,17 @@ bool MplpPlanner::Plan()
     }
 
     if (VERBOSE)
+    {
         if (plan_found_)
+        {
             cout << "Success! Valid plan found! " << endl;
+        }
         else
+        {
             cout << "Failure! Valid plan not found! " << endl;
-
+        }
+    }
+    
     terminate_ = true;
 
     auto t_end = chrono::steady_clock::now();
@@ -89,7 +95,9 @@ void MplpPlanner::initializeReplanning()
     resetStates();
 
     while (!state_open_list_.empty())
+    {
         state_open_list_.pop();
+    }
     
     start_state_ptr_->SetGValue(0);
     state_open_list_.push(start_state_ptr_);
@@ -180,7 +188,6 @@ void MplpPlanner::expandState(StatePtrType state_ptr)
         EdgePtrType edge_ptr = NULL;
         edge_ptr = new Edge(state_ptr, action_ptr);
         auto edge_key = getEdgeKey(edge_ptr);
-        // cout << "Edge key: " << edge_key << endl;
         delete edge_ptr;
         edge_ptr = NULL;        
         // Don't need a lock since no other thread is adding to edge_map_ except this. Which means
@@ -268,9 +275,13 @@ void MplpPlanner::expandState(StatePtrType state_ptr)
                     successor_state_ptr->SetIncomingEdgePtr(edge_ptr);
                     
                     if (state_open_list_.contains(successor_state_ptr))
+                    {
                         state_open_list_.decrease(successor_state_ptr);
+                    }
                     else
+                    {
                         state_open_list_.push(successor_state_ptr);
+                    }
 
                 }
 
@@ -355,7 +366,9 @@ void MplpPlanner::delegateEdges()
 
             }
             else
+            {
                 thread_id = thread_id == num_threads_-1 ? 3 : thread_id+1;
+            }
         }
     }
 }
@@ -378,9 +391,13 @@ void MplpPlanner::evaluateEdge(EdgePtrType edge_ptr, int thread_id)
     // edge_ptr->real_eval_time_ = 1e-9*t_elapsed;
 
     if (action_successor.success_)
+    {
         edge_ptr->SetCost(action_successor.successor_state_vars_costs_.back().second);
+    }
     else
+    {
         edge_ptr->SetCost(DINF);
+    }
     
     edge_ptr->is_eval_ = false;
 
@@ -515,7 +532,9 @@ void MplpPlanner::monitorPaths()
                 for (auto& edge_ptr: lazy_plan)
                 {                       
                     if (edge_ptr->parent_state_ptr_)
+                    {
                         plan.emplace_back(PlanElement(edge_ptr->parent_state_ptr_->GetStateVars(), edge_ptr->action_ptr_, edge_ptr->GetCost()));        
+                    }
                     cost = cost + edge_ptr->GetCost();
                 }
 
@@ -570,7 +589,9 @@ void MplpPlanner::assignEdgePriority(EdgePtrType& edge_ptr)
 void MplpPlanner::updateEdgePriority(vector<EdgePtrType>& edge_ptrs, double factor)
 {
     for (auto& edge_ptr : edge_ptrs)
+    {
         updateEdgePriority(edge_ptr, factor);
+    }
 }
 
 void MplpPlanner::updateEdgePriority(EdgePtrType& edge_ptr, double factor)
@@ -583,9 +604,13 @@ void MplpPlanner::updateEdgePriority(EdgePtrType& edge_ptr, double factor)
         edge_ptr->evaluation_priority_ = factor*edge_ptr->evaluation_priority_;
 
         if (factor > 1)
+        {
             edges_open_.decrease(edge_ptr);
+        }
         else
+        {
             edges_open_.increase(edge_ptr);
+        }
     }
 }
 
@@ -610,11 +635,15 @@ void MplpPlanner::exit()
 
     // Clear open list
     while (!state_open_list_.empty())
+    {
         state_open_list_.pop();
+    }
 
     // Clear Eopen
     while (!edges_open_.empty())
+    {
         edges_open_.pop();
+    }
 
     lazy_plans_.clear();
     plan_evaluation_outcomes_.clear();

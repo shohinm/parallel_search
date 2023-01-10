@@ -93,7 +93,9 @@ bool EpasePlanner::Plan()
             for (auto& popped_edge_ptr : popped_edges)
             {
                 if (popped_edge_ptr != curr_edge_ptr)
+                {
                     edge_open_list_.push(popped_edge_ptr);
+                }
             }
             popped_edges.clear();
 
@@ -165,7 +167,7 @@ bool EpasePlanner::Plan()
                     int num_threads_current = edge_expansion_futures_.size();
                     if (thread_id >= num_threads_current)
                     {
-                        if (VERBOSE) cout << "Spawining edge expansion thread " << thread_id << endl;
+                        if (VERBOSE) cout << "Spawning edge expansion thread " << thread_id << endl;
                         edge_expansion_futures_.emplace_back(async(launch::async, &EpasePlanner::expandEdgeLoop, this, thread_id));
                     }
                     locker.lock();
@@ -176,7 +178,9 @@ bool EpasePlanner::Plan()
                     cv_vec_[thread_id].notify_one();
                 }
                 else
+                {
                     thread_id = thread_id == num_threads_-2 ? 0 : thread_id+1;
+                }
 
             }
         }
@@ -271,15 +275,13 @@ void EpasePlanner::expandEdge(EdgePtrType edge_ptr, int thread_id)
                 // edge_ptr_real->exp_priority_ = state_ptr->GetGValue() + heuristic_w_*state_ptr->GetHValue();
                 edge_ptr_real->expansion_priority_ = edge_ptr->expansion_priority_;
 
-                if (VERBOSE)
-                    cout << "Pushing successor with g_val: " << state_ptr->GetGValue() << " | h_val: " << state_ptr->GetHValue() << endl;
+                if (VERBOSE) cout << "Pushing successor with g_val: " << state_ptr->GetGValue() << " | h_val: " << state_ptr->GetHValue() << endl;
                
                 state_ptr->num_successors_+=1;
                 edge_open_list_.push(edge_ptr_real);
             }
         }
        
-        // num_proxy_expansions_++;
         recheck_flag_ = true;
     }
     else // Real edge, evaluate and add proxy edges for child 
@@ -365,8 +367,9 @@ void EpasePlanner::expandEdge(EdgePtrType edge_ptr, int thread_id)
             }
         }
         else
-            if (VERBOSE)
-                edge_ptr->Print("No successors for");
+        {
+            if (VERBOSE) edge_ptr->Print("No successors for");
+        }
 
         
 
@@ -377,7 +380,9 @@ void EpasePlanner::expandEdge(EdgePtrType edge_ptr, int thread_id)
             edge_ptr->parent_state_ptr_->UnsetBeingExpanded();
             auto it_state_be = find(being_expanded_states_.begin(), being_expanded_states_.end(), edge_ptr->parent_state_ptr_);
             if (it_state_be != being_expanded_states_.end())
+            {
                 being_expanded_states_.erase(it_state_be);
+            }
         }
 
         if (edge_ptr->parent_state_ptr_->num_expanded_successors_ > edge_ptr->parent_state_ptr_->num_successors_)
@@ -389,8 +394,7 @@ void EpasePlanner::expandEdge(EdgePtrType edge_ptr, int thread_id)
 
         recheck_flag_ = true;
 
-    } // if (!edge_ptr->gac_.controller_)
-    
+    }
 
     auto t_end = chrono::steady_clock::now();
     planner_stats_.cumulative_expansions_time_ += 1e-9*chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
@@ -427,8 +431,9 @@ void EpasePlanner::exit()
     edge_expansion_futures_.clear();
 
     while (!edge_open_list_.empty())
+    {
         edge_open_list_.pop();
-    
+    }
 
     Planner::exit();
 }

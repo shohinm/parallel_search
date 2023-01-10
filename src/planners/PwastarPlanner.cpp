@@ -45,20 +45,11 @@ bool PwastarPlanner::Plan()
 
         expandState(state_ptr);        
 
-        // auto t_end = chrono::steady_clock::now();
-        // double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
-        // if ((timeout_>0) && (1e-9*t_elapsed > timeout_))
-        // {
-        //     cout << "Planner took greater than timeout (" << timeout_ << "): " << 1e-9*t_elapsed << " | Exiting!" << endl;
-        //     PrintWAstarStats(t_elapsed, exp_idx, false);
-        //     return false;
-        // }
     }
 
     auto t_end = chrono::steady_clock::now();
     double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
     planner_stats_.total_time_ = 1e-9*t_elapsed;
-    cout << "Goal not reached Number of states expanded: " << planner_stats_.num_state_expansions_ << endl;
     return false;
 }
 
@@ -93,8 +84,12 @@ void PwastarPlanner::expandState(StatePtrType state_ptr)
        
         vector<shared_ptr<Action>> valid_action_ptrs;
         for (auto& action_ptr: actions_ptrs_)
+        {
             if (action_ptr->CheckPreconditions(state_ptr->GetStateVars()))
+            {
                 valid_action_ptrs.emplace_back(action_ptr);
+            }
+        }
 
         random_shuffle(valid_action_ptrs.begin(), valid_action_ptrs.end());
 
@@ -147,8 +142,12 @@ void PwastarPlanner::expandState(StatePtrType state_ptr)
         }
 
         for (auto& all_successors_thread : all_successors_)
+        {
             for (auto& action_successor_tup : all_successors_thread)
+            {
                 updateState(state_ptr, action_successor_tup.first, action_successor_tup.second);
+            }
+        }
 
         all_successors_.clear();
         all_successors_.resize(max(1, num_threads_-1));

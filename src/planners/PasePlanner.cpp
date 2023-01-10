@@ -26,7 +26,9 @@ bool PasePlanner::Plan()
     planner_stats_.num_threads_spawned_ = 1;
 
     if (num_threads_ == 1)
+    {
         paseThread(0);
+    }
     else
     {
         for (int thread_id = 0; thread_id < num_threads_-1; ++thread_id)
@@ -38,8 +40,8 @@ bool PasePlanner::Plan()
         planner_stats_.num_threads_spawned_ += state_expansion_futures_.size();
     }
 
-    while(!terminate_)
-    {}
+    // Spin till termination, should be replaced by conditional variable
+    while(!terminate_){}
 
     auto t_end = chrono::steady_clock::now();
     double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
@@ -89,14 +91,12 @@ void PasePlanner::paseThread(int thread_id)
                 return;
             }
 
-            // while(!state_to_expand_found && !state_open_list_.empty())
             while(!state_ptr && !state_open_list_.empty())
             {
                 state_ptr = state_open_list_.min();
                 state_open_list_.pop();
                 popped_state_ptrs.emplace_back(state_ptr);
 
-                // state_to_expand_found = true;
 
                 if (state_ptr->IsBeingExpanded())
                     continue;
@@ -133,7 +133,9 @@ void PasePlanner::paseThread(int thread_id)
             for (auto& popped_state_ptr : popped_state_ptrs)
             {
                 if (popped_state_ptr != state_ptr)
+                {
                     state_open_list_.push(popped_state_ptr);
+                }
             }
             popped_state_ptrs.clear();
 
@@ -151,10 +153,7 @@ void PasePlanner::paseThread(int thread_id)
             // Return solution if goal state is expanded
             if (isGoalState(state_ptr) && (!terminate_))
             {
-                // Reconstruct and return path
-                // cout << "--------------------------------------------------------" << endl;            
-                // cout << "Goal Reached" << endl;
-                // cout << "--------------------------------------------------------" << endl;            
+                // Reconstruct path and return
                 goal_state_ptr_ = state_ptr;
                 constructPlan(goal_state_ptr_);   
                 plan_found_ = true;
@@ -206,7 +205,6 @@ void PasePlanner::expandState(StatePtrType state_ptr, int thread_id)
             lock_.lock();
             planner_stats_.num_evaluated_edges_++; // Only the edges controllers that satisfied pre-conditions and args are in the open list
 
-
             if (action_successor.success_)
             {
                 auto successor_state_ptr = constructState(action_successor.successor_state_vars_costs_.back().first);
@@ -240,26 +238,28 @@ void PasePlanner::expandState(StatePtrType state_ptr, int thread_id)
                             successor_state_ptr->SetIncomingEdgePtr(edge_ptr);
                             
                             if (state_open_list_.contains(successor_state_ptr))
+                            {
                                 state_open_list_.decrease(successor_state_ptr);
+                            }
                             else
+                            {
                                 state_open_list_.push(successor_state_ptr);
+                            }
 
                         }
 
                     }       
                 }
             }
-            // else
-                // if (VERBOSE)
-                //     edge_ptr->Print("No successors for");
-
         }
     }
 
     state_ptr->UnsetBeingExpanded();
     auto it_state_be = find(being_expanded_states_.begin(), being_expanded_states_.end(), state_ptr);
     if (it_state_be != being_expanded_states_.end())
+    {
         being_expanded_states_.erase(it_state_be);
+    }
 
     recheck_flag_ = true;
 }
@@ -283,7 +283,9 @@ void PasePlanner::exit()
 
     // Clear open list
     while (!state_open_list_.empty())
+    {
         state_open_list_.pop();
+    }
     
     Planner::exit();
 }

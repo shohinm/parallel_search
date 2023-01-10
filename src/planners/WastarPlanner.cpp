@@ -41,20 +41,11 @@ bool WastarPlanner::Plan()
 
         expandState(state_ptr);        
         
-        // auto t_end = chrono::steady_clock::now();
-        // double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
-        // if ((timeout_>0) && (1e-9*t_elapsed > timeout_))
-        // {
-        //     cout << "Planner took greater than timeout (" << timeout_ << "): " << 1e-9*t_elapsed << " | Exiting!" << endl;
-        //     PrintWAstarStats(t_elapsed, exp_idx, false);
-        //     return false;
-        // }
     }
 
     auto t_end = chrono::steady_clock::now();
     double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
     planner_stats_.total_time_ = 1e-9*t_elapsed;
-    // cout << "Goal not reached Number of states expanded: " << total_num_expansions_ << endl;
     return false;
 }
 
@@ -83,9 +74,7 @@ void WastarPlanner::expandState(StatePtrType state_ptr)
         if (action_ptr->CheckPreconditions(state_ptr->GetStateVars()))
         {
             // Evaluate the edge
-            // auto t_start = chrono::steady_clock::now();
             auto action_successor = action_ptr->GetSuccessor(state_ptr->GetStateVars());
-            // auto t_end = chrono::steady_clock::now();
             planner_stats_.num_evaluated_edges_++; // Only the edges controllers that satisfied pre-conditions and args are in the open list
             //********************
             
@@ -100,7 +89,6 @@ void WastarPlanner::updateState(StatePtrType& state_ptr, ActionPtrType& action_p
     {
         auto successor_state_ptr = constructState(action_successor.successor_state_vars_costs_.back().first);
         double cost = action_successor.successor_state_vars_costs_.back().second;                
-
 
         if (!successor_state_ptr->IsVisited())
         {
@@ -129,9 +117,13 @@ void WastarPlanner::updateState(StatePtrType& state_ptr, ActionPtrType& action_p
                     successor_state_ptr->SetIncomingEdgePtr(edge_ptr);
                     
                     if (state_open_list_.contains(successor_state_ptr))
+                    {
                         state_open_list_.decrease(successor_state_ptr);
+                    }
                     else
+                    {
                         state_open_list_.push(successor_state_ptr);
+                    }
 
                 }
 
@@ -144,7 +136,9 @@ void WastarPlanner::exit()
 {
     // Clear open list
     while (!state_open_list_.empty())
+    {
         state_open_list_.pop();
+    }
     
     Planner::exit();
 }
