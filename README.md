@@ -24,11 +24,14 @@ If you use ePA*SE, please use the following citation:
 If you use MPLP, please use the following citation:
 ```
 @article{mukherjee2022mplp,
-  title={{MPLP}: Massively Parallelized Lazy Planning},
-  author={Mukherjee, Shohin and Aine, Sandip and Likhachev, Maxim},
-  journal={IEEE Robotics and Automation Letters},
-  year={2022},
-  publisher={IEEE}
+	title        = {{MPLP}: Massively Parallelized Lazy Planning},
+	author       = {Mukherjee, Shohin and Aine, Sandip and Likhachev, Maxim},
+	year         = 2022,
+	journal      = {IEEE Robotics and Automation Letters},
+	publisher    = {IEEE},
+	volume       = 7,
+	number       = 3,
+	pages        = {6067--6074}
 }
 ```
 
