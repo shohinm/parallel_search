@@ -12,6 +12,7 @@
 #include <planners/PwastarPlanner.hpp>
 #include <planners/PasePlanner.hpp>
 #include <planners/EpasePlanner.hpp>
+#include <planners/GepasePlanner.hpp>
 #include <planners/MplpPlanner.hpp>
 
 using namespace std;
@@ -175,28 +176,28 @@ void constructActions(vector<shared_ptr<Action>>& action_ptrs, ParamsType& actio
     action_params["footprint_size"] = 16;
     action_params["cache_footprint"] = 0;
     
-    auto move_up_controller_ptr = make_shared<MoveUpAction>("MoveUp", action_params, map);
+    auto move_up_controller_ptr = make_shared<MoveUpAction>("MoveUp", action_params, map, 0);
     action_ptrs.emplace_back(move_up_controller_ptr);
 
-    auto move_up_right_controller_ptr = make_shared<MoveUpRightAction>("MoveUpRight", action_params, map);
+    auto move_up_right_controller_ptr = make_shared<MoveUpRightAction>("MoveUpRight", action_params, map, 0);
     action_ptrs.emplace_back(move_up_right_controller_ptr);
 
-    auto move_right_controller_ptr = make_shared<MoveRightAction>("MoveRight", action_params, map);
+    auto move_right_controller_ptr = make_shared<MoveRightAction>("MoveRight", action_params, map, 0);
     action_ptrs.emplace_back(move_right_controller_ptr);
 
-    auto move_right_down_controller_ptr = make_shared<MoveRightDownAction>("MoveRightDown", action_params, map);
+    auto move_right_down_controller_ptr = make_shared<MoveRightDownAction>("MoveRightDown", action_params, map, 0);
     action_ptrs.emplace_back(move_right_down_controller_ptr);
 
-    auto move_down_controller_ptr = make_shared<MoveDownAction>("MoveDown", action_params, map);
+    auto move_down_controller_ptr = make_shared<MoveDownAction>("MoveDown", action_params, map, 0);
     action_ptrs.emplace_back(move_down_controller_ptr);
 
-    auto move_down_left_controller_ptr = make_shared<MoveDownLeftAction>("MoveDownLeft", action_params, map);
+    auto move_down_left_controller_ptr = make_shared<MoveDownLeftAction>("MoveDownLeft", action_params, map, 0);
     action_ptrs.emplace_back(move_down_left_controller_ptr);
 
-    auto move_left_controller_ptr = make_shared<MoveLeftAction>("MoveLeft", action_params, map);
+    auto move_left_controller_ptr = make_shared<MoveLeftAction>("MoveLeft", action_params, map, 0);
     action_ptrs.emplace_back(move_left_controller_ptr);
 
-    auto move_left_up_controller_ptr = make_shared<MoveLeftUpAction>("MoveLeftUp", action_params, map);
+    auto move_left_up_controller_ptr = make_shared<MoveLeftUpAction>("MoveLeftUp", action_params, map, 0);
     action_ptrs.emplace_back(move_left_up_controller_ptr);
 
 }
@@ -211,6 +212,8 @@ void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vec
         planner_ptr = make_shared<PasePlanner>(planner_params);
     else if (planner_name == "epase")
         planner_ptr = make_shared<EpasePlanner>(planner_params); 
+    else if (planner_name == "gepase")
+        planner_ptr = make_shared<GepasePlanner>(planner_params); 
     else if (planner_name == "mplp")
         planner_ptr = make_shared<MplpPlanner>(planner_params); 
     else

@@ -10,7 +10,8 @@ class RobotNav2dAction : public Action
 {
 
 public:
-    RobotNav2dAction(const std::string& type, ParamsType params, std::vector<std::vector<int>> map): Action(type, params), map_(map) {};
+    RobotNav2dAction(const std::string& type, ParamsType params, std::vector<std::vector<int>> map, bool is_expensive = true)
+    : Action(type, params, is_expensive), map_(map) {};
     bool CheckPreconditions(StateVarsType state); 
     ActionSuccessor GetSuccessor(StateVarsType state_vars, int thread_id); 
     ActionSuccessor GetSuccessorLazy(StateVarsType state_vars, int thread_id); 
@@ -30,7 +31,8 @@ class MoveUpAction : public RobotNav2dAction
 {
 
 public:
-    MoveUpAction(const std::string& type, ParamsType params, std::vector<std::vector<int>> map): RobotNav2dAction(type, params, map)
+    MoveUpAction(const std::string& type, ParamsType params, std::vector<std::vector<int>> map, bool is_expensive = true):
+    RobotNav2dAction(type, params, map, is_expensive)
     {
         move_dir_ = {0, 1};
     };
@@ -40,7 +42,8 @@ class MoveUpRightAction : public RobotNav2dAction
 {
 
 public:
-    MoveUpRightAction(const std::string& type, ParamsType params, std::vector<std::vector<int>> map): RobotNav2dAction(type, params, map)
+    MoveUpRightAction(const std::string& type, ParamsType params, std::vector<std::vector<int>> map, bool is_expensive = true):
+    RobotNav2dAction(type, params, map, is_expensive)
     {
         move_dir_ = {1, 1};
     };
@@ -50,7 +53,8 @@ class MoveRightAction : public RobotNav2dAction
 {
 
 public:
-    MoveRightAction(const std::string& type, ParamsType params, std::vector<std::vector<int>> map): RobotNav2dAction(type, params, map)
+    MoveRightAction(const std::string& type, ParamsType params, std::vector<std::vector<int>> map, bool is_expensive = true):
+    RobotNav2dAction(type, params, map, is_expensive)
     {
         move_dir_ = {1, 0};
     };
@@ -60,7 +64,8 @@ class MoveRightDownAction : public RobotNav2dAction
 {
 
 public:
-    MoveRightDownAction(const std::string& type, ParamsType params, std::vector<std::vector<int>> map): RobotNav2dAction(type, params, map)
+    MoveRightDownAction(const std::string& type, ParamsType params, std::vector<std::vector<int>> map, bool is_expensive = true):
+    RobotNav2dAction(type, params, map, is_expensive)
     {
         move_dir_ = {1, -1};
     };
@@ -71,7 +76,8 @@ class MoveDownAction : public RobotNav2dAction
 {
 
 public:
-    MoveDownAction(const std::string& type, ParamsType params, std::vector<std::vector<int>> map): RobotNav2dAction(type, params, map)
+    MoveDownAction(const std::string& type, ParamsType params, std::vector<std::vector<int>> map, bool is_expensive = true):
+    RobotNav2dAction(type, params, map, is_expensive)
     {
         move_dir_ = {0, -1};
     };
@@ -81,7 +87,8 @@ class MoveDownLeftAction : public RobotNav2dAction
 {
 
 public:
-    MoveDownLeftAction(const std::string& type, ParamsType params, std::vector<std::vector<int>> map): RobotNav2dAction(type, params, map)
+    MoveDownLeftAction(const std::string& type, ParamsType params, std::vector<std::vector<int>> map, bool is_expensive = true):
+    RobotNav2dAction(type, params, map, is_expensive)
     {
         move_dir_ = {-1, -1};
     };
@@ -92,7 +99,8 @@ class MoveLeftAction : public RobotNav2dAction
 {
 
 public:
-    MoveLeftAction(const std::string& type, ParamsType params, std::vector<std::vector<int>> map): RobotNav2dAction(type, params, map)
+    MoveLeftAction(const std::string& type, ParamsType params, std::vector<std::vector<int>> map, bool is_expensive = true):
+    RobotNav2dAction(type, params, map, is_expensive)
     {
         move_dir_ = {-1, 0};
     };
@@ -103,7 +111,8 @@ class MoveLeftUpAction : public RobotNav2dAction
 {
 
 public:
-    MoveLeftUpAction(const std::string& type, ParamsType params, std::vector<std::vector<int>> map): RobotNav2dAction(type, params, map)
+    MoveLeftUpAction(const std::string& type, ParamsType params, std::vector<std::vector<int>> map, bool is_expensive = true):
+    RobotNav2dAction(type, params, map, is_expensive)
     {
         move_dir_ = {-1, 1};
     };

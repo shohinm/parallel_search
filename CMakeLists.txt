@@ -29,6 +29,7 @@ set(SOURCES
     src/planners/PwastarPlanner.cpp
     src/planners/PasePlanner.cpp
     src/planners/EpasePlanner.cpp
+    src/planners/GepasePlanner.cpp
     src/planners/MplpPlanner.cpp
 )
 
