@@ -43,6 +43,7 @@ class Planner
 
 
     protected:
+        
         virtual void initialize();
         void resetStates();
         StatePtrType constructState(const StateVarsType& state);

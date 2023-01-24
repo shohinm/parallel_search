@@ -14,7 +14,7 @@ class GepasePlanner : public Planner
         typedef smpl::intrusive_heap<State, IsLesserState> BEType;
         GepasePlanner(ParamsType planner_params);
         ~GepasePlanner();
-        bool Plan();
+        virtual bool Plan();
 
     protected:
         void initialize();

@@ -6,11 +6,9 @@ using namespace std;
 using namespace ps;
 
 EpasePlanner::EpasePlanner(ParamsType planner_params):
-Planner(planner_params)
+GepasePlanner(planner_params)
 {    
-    num_threads_  = planner_params["num_threads"];
-    vector<LockType> lock_vec(num_threads_-1);
-    lock_vec_.swap(lock_vec);
+
 }
 
 EpasePlanner::~EpasePlanner()
@@ -198,35 +196,6 @@ bool EpasePlanner::Plan()
     return false;
 }
 
-void EpasePlanner::initialize()
-{
-    Planner::initialize();
-    planner_stats_.num_jobs_per_thread_.resize(num_threads_, 0);
-
-    terminate_ = false;
-    recheck_flag_ = true;
-
-    edge_expansion_vec_.clear();
-    edge_expansion_vec_.resize(num_threads_-1, NULL);
-    
-    edge_expansion_status_.clear();
-    edge_expansion_status_.resize(num_threads_-1, 0);
-
-    vector<condition_variable> cv_vec(num_threads_-1);
-    cv_vec_.swap(cv_vec);
-
-    edge_expansion_futures_.clear();
-
-    // Insert proxy edge with start state
-    // dummy_action_ptr_ = make_shared<Action>("dummy");
-    dummy_action_ptr_ = NULL;
-    auto edge_ptr = new Edge(start_state_ptr_, dummy_action_ptr_);
-    edge_ptr->expansion_priority_ = heuristic_w_*computeHeuristic(start_state_ptr_);
-
-    edge_map_.insert(make_pair(getEdgeKey(edge_ptr), edge_ptr));
-    edge_open_list_.push(edge_ptr);   
-}
-
 void EpasePlanner::expandEdgeLoop(int thread_id)
 {
     while (!terminate_)
@@ -278,10 +247,9 @@ void EpasePlanner::expandEdge(EdgePtrType edge_ptr, int thread_id)
                
                 state_ptr->num_successors_+=1;
                 edge_open_list_.push(edge_ptr_real);
+                notifyMainThread();
             }
         }
-       
-        recheck_flag_ = true;
     }
     else // Real edge, evaluate and add proxy edges for child 
     {        
@@ -360,6 +328,7 @@ void EpasePlanner::expandEdge(EdgePtrType edge_ptr, int thread_id)
                             edge_open_list_.push(proxy_edge_ptr);
                         }
 
+                        notifyMainThread();
                     }
 
                 }       
@@ -370,8 +339,6 @@ void EpasePlanner::expandEdge(EdgePtrType edge_ptr, int thread_id)
             if (VERBOSE) edge_ptr->Print("No successors for");
         }
 
-        
-
         edge_ptr->parent_state_ptr_->num_expanded_successors_ += 1;
 
         if (edge_ptr->parent_state_ptr_->num_expanded_successors_ == edge_ptr->parent_state_ptr_->num_successors_)
@@ -381,6 +348,7 @@ void EpasePlanner::expandEdge(EdgePtrType edge_ptr, int thread_id)
             if (it_state_be != being_expanded_states_.end())
             {
                 being_expanded_states_.erase(it_state_be);
+                notifyMainThread();
             }
         }
 
@@ -390,51 +358,17 @@ void EpasePlanner::expandEdge(EdgePtrType edge_ptr, int thread_id)
             throw runtime_error("Number of expanded edges cannot be greater than number of successors");
         }
 
-
-        recheck_flag_ = true;
-
     }
 
     auto t_end = chrono::steady_clock::now();
     planner_stats_.cumulative_expansions_time_ += 1e-9*chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
 
     lock_.unlock();
-
-    cv_.notify_one();
 }
+
 
 void EpasePlanner::exit()
 {
-    for (int thread_id = 0; thread_id < num_threads_-1; ++thread_id)
-    {
-        unique_lock<mutex> locker(lock_vec_[thread_id]);
-        edge_expansion_status_[thread_id] = 1;
-        locker.unlock();
-        cv_vec_[thread_id].notify_one();
-    }
-
-    planner_stats_.num_threads_spawned_ = edge_expansion_futures_.size()+1;
-    bool all_expansion_threads_terminated = false;
-    while (!all_expansion_threads_terminated)
-    {
-        all_expansion_threads_terminated = true;
-        for (auto& fut : edge_expansion_futures_)
-        {
-            if (!isFutureReady(fut))
-            {
-                all_expansion_threads_terminated = false;
-                break;
-            }
-        }
-    }
-    edge_expansion_futures_.clear();
-
-    while (!edge_open_list_.empty())
-    {
-        edge_open_list_.pop();
-    }
-
     being_expanded_states_.clear();
-
-    Planner::exit();
+    GepasePlanner::exit();
 }
