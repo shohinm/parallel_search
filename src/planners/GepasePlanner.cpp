@@ -152,7 +152,7 @@ bool GepasePlanner::Plan()
 
         if (num_threads_ == 1)
         {
-            expandEdge(curr_edge_ptr, 0);
+            expand(curr_edge_ptr, 0);
         }
         else
         {
