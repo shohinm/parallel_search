@@ -411,6 +411,8 @@ void GepasePlanner::expandEdge(EdgePtrType edge_ptr, int thread_id)
         if (VERBOSE) edge_ptr->Print("No successors for");
     }
 
+    edge_ptr->parent_state_ptr_->num_expanded_successors_ += 1;
+
 }
 
 void GepasePlanner::exit()
