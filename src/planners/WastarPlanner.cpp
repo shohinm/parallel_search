@@ -66,8 +66,10 @@ void WastarPlanner::expandState(StatePtrType state_ptr)
     
     if (VERBOSE) state_ptr->Print("Expanding");
 
-    state_ptr->SetVisited();
+    planner_stats_.num_jobs_per_thread_[0] +=1;
     planner_stats_.num_state_expansions_++;
+
+    state_ptr->SetVisited();
    
     for (auto& action_ptr: actions_ptrs_)
     {
