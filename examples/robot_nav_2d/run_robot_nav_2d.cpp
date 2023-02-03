@@ -243,8 +243,8 @@ void loadStartsGoalsFromFile(vector<vector<double>>& starts, vector<vector<doubl
         {
             starts_fin >> val_start;
             goals_fin >> val_goal;                
-            start.push_back((scale/5.0)*val_start);
-            goal.push_back((scale/5.0)*val_goal);
+            start.push_back(scale*val_start);
+            goal.push_back(scale*val_goal);
         }
         start[2] = to_degrees(start[2]);
         goal[2] = to_degrees(goal[2]);
@@ -281,7 +281,7 @@ int main(int argc, char* argv[])
 
     // Experiment parameters
     int num_runs = 50;
-    int scale = 5;
+    vector<int> scale_vec = {5, 5, 5, 10, 5};
     bool visualize_plan = true;
     bool load_starts_goals_from_file = true;
 
@@ -298,14 +298,24 @@ int main(int argc, char* argv[])
     vector<vector<vector<int>>> map_vec;
     vector<cv::Mat> img_vec;
 
-    map_vec.emplace_back(loadMap("../examples/robot_nav_2d/resources/hrt201n/hrt201n.map", img, width, height, scale));
+    map_vec.emplace_back(loadMap("../examples/robot_nav_2d/resources/hrt201n/hrt201n.map", img, width, height, scale_vec[0]));
     img_vec.emplace_back(img.clone());
-    map_vec.emplace_back(loadMap("../examples/robot_nav_2d/resources/den501d/den501d.map", img, width, height, scale));
+    map_vec.emplace_back(loadMap("../examples/robot_nav_2d/resources/den501d/den501d.map", img, width, height, scale_vec[1]));
     img_vec.emplace_back(img.clone());
-    map_vec.emplace_back(loadMap("../examples/robot_nav_2d/resources/den520d/den520d.map", img, width, height, scale));
+    map_vec.emplace_back(loadMap("../examples/robot_nav_2d/resources/den520d/den520d.map", img, width, height, scale_vec[2]));
+    img_vec.emplace_back(img.clone());
+    map_vec.emplace_back(loadMap("../examples/robot_nav_2d/resources/ht_chantry/ht_chantry.map", img, width, height, scale_vec[3]));
+    img_vec.emplace_back(img.clone());
+    map_vec.emplace_back(loadMap("../examples/robot_nav_2d/resources/brc203d/brc203d.map", img, width, height, scale_vec[4]));
     img_vec.emplace_back(img.clone());
 
-    vector<string> starts_goals_path = {"../examples/robot_nav_2d/resources/hrt201n/", "../examples/robot_nav_2d/resources/den501d/", "../examples/robot_nav_2d/resources/den520d/"};
+
+    vector<string> starts_goals_path = {"../examples/robot_nav_2d/resources/hrt201n/", 
+    "../examples/robot_nav_2d/resources/den501d/", 
+    "../examples/robot_nav_2d/resources/den520d/",
+    "../examples/robot_nav_2d/resources/ht_chantry/",
+    "../examples/robot_nav_2d/resources/brc203d/",
+    };
 
     vector<double> all_maps_time_vec, all_maps_cost_vec;
     vector<int> all_maps_num_edges_vec;
@@ -314,6 +324,7 @@ int main(int argc, char* argv[])
     {
         auto map = map_vec[m_idx];
         auto img = img_vec[m_idx];
+        auto scale = scale_vec[m_idx];
 
         // Construct actions
         ParamsType action_params;
