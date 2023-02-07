@@ -31,6 +31,7 @@ set(SOURCES
     src/planners/EpasePlanner.cpp
     src/planners/GepasePlanner.cpp
     src/planners/MplpPlanner.cpp
+    src/planners/insat/InsatPlanner.cpp
 )
 
 add_executable(run_robot_nav_2d
