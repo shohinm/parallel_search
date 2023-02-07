@@ -30,7 +30,7 @@ class Planner
         
         virtual bool Plan() = 0;
         std::vector<PlanElement> GetPlan() const;
-        virtual PlannerStats GetStats() const;
+        PlannerStats GetStats() const;
 
         void SetActions(std::vector<std::shared_ptr<Action>> actions_ptrs);
         void SetStartState(const StateVarsType& state_vars);
