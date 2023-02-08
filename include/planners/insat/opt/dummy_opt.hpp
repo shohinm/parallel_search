@@ -9,7 +9,8 @@ namespace ps
     template<typename EnvType>
     class DummyOpt
     {
-        typedef MatDf TrajType;
+        typedef typename EnvType::Ptr EnvPtrType;
+        typedef typename EnvType::TrajType TrajType;
 
         enum InterpMode
         {
@@ -44,7 +45,7 @@ namespace ps
             if (intp_ == InterpMode::LINEAR)
             {
                 TrajType soln_traj = linInterp(s1, s2, N);
-                if (env_.isFeasible(soln_traj))
+                if (env_->isFeasible(soln_traj))
                 {
                     return soln_traj;
                 }
@@ -58,30 +59,21 @@ namespace ps
 
         virtual TrajType warmOptimize(TrajType& traj1, TrajType & traj2)
         {
-            TrajType soln_traj;
-            double len1 = (traj1.rightCols(1)-traj1.leftCols(1)).norm();
-            double len2 = (traj2.rightCols(1)-traj2.leftCols(1)).norm();
+            int N = traj1.cols()+traj2.cols();
+            TrajType init_traj(traj1.rows(), N);
+            TrajType opt_traj(traj1.rows(), N);
+            TrajType soln_traj(traj1.rows(), N);
 
-            double alpha = len1/(len1+len2);
+            init_traj << traj1, traj2;
+            opt_traj = linInterp(traj1.leftCols(1), traj2.rightCols(1));
 
-            VecDf opt_point = alpha*traj1.leftCols(1) + (1-alpha)*traj2.rightCols(1);
-
-            int N = ceil((opt_point - traj1.rightCols(1)).norm()/conv_delta_);
-            for (double i=0.0; i<=1.0; i+=1.0/N)
+            for (double i=0.0; i<=1.0; i+=1.0/conv_delta_)
             {
-                VecDf next_point = (1-i)*traj1.rightCols(1) + i*opt_point;
-                TrajType new_traj1 = optimize(traj1.leftCols(1), next_point);
-                TrajType new_traj2 = optimize(next_point, traj2.rightCols(1));
-
-                if (env_.isFeasible(new_traj1) && env_.isFeasible(new_traj2))
-                {
-                    soln_traj.resize(new_traj1.rows(), new_traj1.cols()+new_traj2.cols());
-                    soln_traj << new_traj1, new_traj2;
-                }
-                else
-                {
-                    break;
-                }
+              soln_traj = (1-i)*init_traj + i*opt_traj;
+              if (!env_.isFeasible(soln_traj))
+              {
+                break;
+              }
             }
             return soln_traj;
         }
@@ -111,7 +103,7 @@ namespace ps
             return traj;
         }
 
-        EnvType env_;
+        EnvPtrType env_;
 
         InterpMode intp_;
 
