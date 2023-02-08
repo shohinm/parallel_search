@@ -5,6 +5,7 @@ add_compile_options(-std=c++17)
 
 find_package(OpenCV REQUIRED)
 find_package(SBPL REQUIRED)
+find_package(Eigen3 REQUIRED)
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
@@ -17,7 +18,8 @@ SET(CMAKE_CXX_FLAGS_RELEASE "-O3")
 SET(CMAKE_C_FLAGS_RELEASE "-O3")
 
 include_directories(include
-                    ${SBPL_INCLUDE_DIRS})
+                    ${SBPL_INCLUDE_DIRS}
+                    ${EIGEN3_INCLUDE_DIR})
 
 link_directories(${SBPL_LIBRARY_DIRS})
 
@@ -31,7 +33,9 @@ set(SOURCES
     src/planners/EpasePlanner.cpp
     src/planners/GepasePlanner.cpp
     src/planners/MplpPlanner.cpp
-    src/planners/insat/InsatPlanner.cpp
+
+    # INSAT
+    src/planners/insat/opt/dummy_opt.cpp
 )
 
 add_executable(run_robot_nav_2d
