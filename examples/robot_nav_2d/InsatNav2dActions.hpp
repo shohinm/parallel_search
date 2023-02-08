@@ -9,27 +9,26 @@
 namespace ps
 {
 
-    class InsatNav2dAction : public RobotNav2dAction
+    class Nav2D
     {
 
     public:
 
-      typedef std::shared_ptr<InsatNav2dAction> Ptr;
+      typedef std::shared_ptr<Nav2D> Ptr;
       typedef MatDf TrajType;
+      typedef DummyOpt<Nav2D> OptType;
 
-      InsatNav2dAction(const std::string& type, ParamsType params, std::vector<std::vector<int>> map, bool is_expensive = true)
-                : RobotNav2dAction(type, params, map, is_expensive){};
+      Nav2D(ParamsType params,
+            std::vector<std::vector<int>> map);
       bool isFeasible(TrajType& traj);
-      TrajType optimize(StateVarsType& s1, StateVarsType& s2);
-      TrajType warmOptimize(TrajType& t1, TrajType& t2);
-      double getCost(TrajType& traj);
+      TrajType optimize(const StateVarsType& s1, const StateVarsType& s2);
+      TrajType warmOptimize(const TrajType& t1, const TrajType& t2);
+      double getCost(const TrajType& traj);
 
+        OptType opt_;
 
     protected:
-
-      TrajType traj_;
-      DummyOpt<InsatNav2dAction> opt_;
-
+        RobotNav2dAction nav2d_map_;
     };
 
 

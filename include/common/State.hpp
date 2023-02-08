@@ -52,7 +52,7 @@ public:
     void ResetIncomingEdgePtr() {incoming_edge_ptr_ = NULL;};
 
     void SetInsatEdge(TrajType& insat_edge) {insat_edge_ = insat_edge;};
-    TrajType GetInsatEdge(TrajType& insat_edge) {return insat_edge_;};
+    TrajType GetInsatEdge() {return insat_edge_;};
 
     void Print(std::string str="");
 

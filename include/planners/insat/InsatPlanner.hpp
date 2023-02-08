@@ -2,26 +2,32 @@
 #define INSAT_PLANNER_HPP
 
 #include <future>
+#include <utility>
 #include "planners/Planner.hpp"
 
 namespace ps
 {
 
-    template<typename EnvType, typename OptType>
-    class InsatstarPlanner : public Planner
+    template<typename EnvType>
+    class InsatPlanner : public Planner
     {
     public:
 
         typedef typename EnvType::Ptr EnvPtrType;
         typedef typename EnvType::TrajType TrajType;
 
-        InsatstarPlanner(ParamsType planner_params):
+        InsatPlanner(ParamsType planner_params):
                 Planner(planner_params)
         {
 
         };
 
-        ~InsatstarPlanner() {};
+        ~InsatPlanner() {};
+
+        void setEnv(EnvPtrType& env)
+        {
+            env_ = env;
+        }
 
         bool Plan()
         {
@@ -133,7 +139,7 @@ namespace ps
                     }
                 }
 
-                double cost = env_->calculateCost(traj);
+                double cost = env_->getCost(traj);
 
                 if (!successor_state_ptr->IsVisited())
                 {
@@ -157,7 +163,7 @@ namespace ps
 
                             auto edge_ptr = new Edge(state_ptr, successor_state_ptr, action_ptr);
                             edge_ptr->SetCost(cost);
-                            edge_map_.insert(make_pair(getEdgeKey(edge_ptr), edge_ptr));
+                            edge_map_.insert(std::make_pair(getEdgeKey(edge_ptr), edge_ptr));
 
                             successor_state_ptr->SetIncomingEdgePtr(edge_ptr);
                             successor_state_ptr->SetInsatEdge(traj);
@@ -195,8 +201,6 @@ namespace ps
         StateQueueMinType state_open_list_;
 
         EnvPtrType  env_;
-        OptType opt_;
-
     };
 
 }

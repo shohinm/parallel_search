@@ -16,11 +16,11 @@ public:
     ActionSuccessor GetSuccessor(StateVarsType state_vars, int thread_id); 
     ActionSuccessor GetSuccessorLazy(StateVarsType state_vars, int thread_id); 
     ActionSuccessor Evaluate(StateVarsType parent_state_vars, StateVarsType child_state_vars, int thread_id=0);
-     
-protected:
     bool isValidCell(int x, int y);
     bool inRange(int x, int y);
     std::vector<std::pair<int, int>> getFootPrintRectangular(int x, int y, int footprint_size);
+
+protected:
     std::vector<double> move_dir_;
     std::vector<std::vector<int>> map_;
     std::vector<std::pair<int, int>> footprint_;

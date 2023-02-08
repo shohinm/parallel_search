@@ -33,9 +33,6 @@ set(SOURCES
     src/planners/EpasePlanner.cpp
     src/planners/GepasePlanner.cpp
     src/planners/MplpPlanner.cpp
-
-    # INSAT
-    src/planners/insat/opt/dummy_opt.cpp
 )
 
 add_executable(run_robot_nav_2d
@@ -44,6 +41,17 @@ add_executable(run_robot_nav_2d
         ${SOURCES})
 
 target_link_libraries(run_robot_nav_2d
+        ${OpenCV_LIBRARIES}
+        ${SBPL_LIBRARIES}
+        pthread)
+
+add_executable(run_insat_nav_2d
+        examples/robot_nav_2d/run_insat_nav_2d.cpp
+        examples/robot_nav_2d/RobotNav2dActions.cpp
+        examples/robot_nav_2d/InsatNav2dActions.cpp
+        ${SOURCES})
+
+target_link_libraries(run_insat_nav_2d
         ${OpenCV_LIBRARIES}
         ${SBPL_LIBRARIES}
         pthread)
