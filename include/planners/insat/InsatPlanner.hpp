@@ -7,18 +7,21 @@
 namespace ps
 {
 
-    template<typename OptType>
+    template<typename EnvType, typename OptType>
     class InsatstarPlanner : public Planner
     {
     public:
+
+        typedef typename EnvType::Ptr EnvPtrType;
+        typedef typename EnvType::TrajType TrajType;
+
         InsatstarPlanner(ParamsType planner_params):
                 Planner(planner_params)
         {
 
-        }
+        };
 
-
-        ~InsatstarPlanner() {}
+        ~InsatstarPlanner() {};
 
         bool Plan()
         {
@@ -110,18 +113,31 @@ namespace ps
             {
                 auto successor_state_ptr = constructState(action_successor.successor_state_vars_costs_.back().first);
 
+                TrajType traj;
+                bool root=true;
                 for (auto& anc: ancestors)
                 {
-
+                    TrajType inc_traj = env_->optimize(anc->GetStateVars(), successor_state_ptr->GetStateVars());
+                    if (root && inc_traj.size() == 0)
+                    {
+                      root = false;
+                      continue;
+                    }
+                    else if (inc_traj.size() == 0)
+                    {
+                      continue;
+                    }
+                    else
+                    {
+                      traj = env_->warmOptimize(anc->GetInsatEdge(), inc_traj);
+                    }
                 }
 
-
-
-                double cost = action_successor.successor_state_vars_costs_.back().second;
+                double cost = env_->calculateCost(traj);
 
                 if (!successor_state_ptr->IsVisited())
                 {
-                    double new_g_val = state_ptr->GetGValue() + cost;
+                    double new_g_val = cost;
 
                     if (successor_state_ptr->GetGValue() > new_g_val)
                     {
@@ -144,6 +160,7 @@ namespace ps
                             edge_map_.insert(make_pair(getEdgeKey(edge_ptr), edge_ptr));
 
                             successor_state_ptr->SetIncomingEdgePtr(edge_ptr);
+                            successor_state_ptr->SetInsatEdge(traj);
 
                             if (state_open_list_.contains(successor_state_ptr))
                             {
@@ -177,6 +194,7 @@ namespace ps
         int num_threads_;
         StateQueueMinType state_open_list_;
 
+        EnvPtrType  env_;
         OptType opt_;
 
     };
