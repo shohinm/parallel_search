@@ -6,6 +6,7 @@
 #include <atomic>
 #include <climits>
 #include <common/Types.hpp>
+#include <common/typedefs.h>
 
 namespace ps
 {
@@ -14,6 +15,8 @@ class State : public smpl::heap_element
 {
 
 public:
+
+  typedef MatDf TrajType;
 
 	State(const StateVarsType& vars=StateVarsType());
 	~State() {};
@@ -48,6 +51,9 @@ public:
     EdgePtrType GetIncomingEdgePtr() {return incoming_edge_ptr_;};
     void ResetIncomingEdgePtr() {incoming_edge_ptr_ = NULL;};
 
+    void SetInsatEdge(TrajType& insat_edge) {insat_edge_ = insat_edge;};
+    TrajType GetInsatEdge(TrajType& insat_edge) {return insat_edge_;};
+
     void Print(std::string str="");
 
     std::atomic<int> num_successors_;
@@ -66,6 +72,9 @@ private:
 	std::atomic<bool> is_visited_;
     std::atomic<bool> being_expanded_;
     EdgePtrType incoming_edge_ptr_;
+
+    // INSAT edge
+    TrajType insat_edge_;
 };
 
 class IsLesserState
