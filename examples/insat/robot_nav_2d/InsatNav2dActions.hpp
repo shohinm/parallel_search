@@ -1,10 +1,10 @@
 #ifndef INSAT_NAV2D_ACTION_HPP
 #define INSAT_NAV2D_ACTION_HPP
 
-#include <common/Action.hpp>
-#include <common/typedefs.h>
-#include <planners/insat/opt/dummy_opt.hpp>
-#include "../RobotNav2dActions.hpp"
+#include "common/Action.hpp"
+#include <common/Types.hpp>
+#include "planners/insat/opt/dummy_opt.hpp"
+#include "../../robot_nav_2d/RobotNav2dActions.hpp"
 
 namespace ps
 {

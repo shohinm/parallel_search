@@ -7,16 +7,16 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <boost/functional/hash.hpp>
-#include "../RobotNav2dActions.hpp"
+#include "../../robot_nav_2d/RobotNav2dActions.hpp"
 #include "InsatNav2dActions.hpp"
-#include <planners/WastarPlanner.hpp>
-#include <planners/PwastarPlanner.hpp>
-#include <planners/PasePlanner.hpp>
-#include <planners/EpasePlanner.hpp>
-#include <planners/GepasePlanner.hpp>
-#include <planners/MplpPlanner.hpp>
-#include <planners/insat/opt/dummy_opt.hpp>
-#include <planners/insat/InsatPlanner.hpp>
+#include "planners/WastarPlanner.hpp"
+#include "planners/PwastarPlanner.hpp"
+#include "planners/PasePlanner.hpp"
+#include "planners/EpasePlanner.hpp"
+#include "planners/GepasePlanner.hpp"
+#include "planners/MplpPlanner.hpp"
+#include "planners/insat/opt/dummy_opt.hpp"
+#include "planners/insat/InsatPlanner.hpp"
 
 using namespace std;
 using namespace ps;
