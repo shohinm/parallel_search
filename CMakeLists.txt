@@ -46,9 +46,9 @@ target_link_libraries(run_robot_nav_2d
         pthread)
 
 add_executable(run_insat_nav_2d
-        examples/robot_nav_2d/run_insat_nav_2d.cpp
+        examples/robot_nav_2d/insat/run_insat_nav_2d.cpp
         examples/robot_nav_2d/RobotNav2dActions.cpp
-        examples/robot_nav_2d/InsatNav2dActions.cpp
+        examples/robot_nav_2d/insat/InsatNav2dActions.cpp
         ${SOURCES})
 
 target_link_libraries(run_insat_nav_2d

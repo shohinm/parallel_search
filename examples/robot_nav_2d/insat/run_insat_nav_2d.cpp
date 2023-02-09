@@ -7,7 +7,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <boost/functional/hash.hpp>
-#include "RobotNav2dActions.hpp"
+#include "../RobotNav2dActions.hpp"
 #include "InsatNav2dActions.hpp"
 #include <planners/WastarPlanner.hpp>
 #include <planners/PwastarPlanner.hpp>

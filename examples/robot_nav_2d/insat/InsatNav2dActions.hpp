@@ -4,7 +4,7 @@
 #include <common/Action.hpp>
 #include <common/typedefs.h>
 #include <planners/insat/opt/dummy_opt.hpp>
-#include "RobotNav2dActions.hpp"
+#include "../RobotNav2dActions.hpp"
 
 namespace ps
 {
