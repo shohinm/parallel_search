@@ -17,6 +17,7 @@ class Planner
 
         // Typedefs
         typedef std::unordered_map<size_t, StatePtrType> StatePtrMapType; 
+        typedef std::unordered_map<size_t, InsatStatePtrType> InsatStatePtrMapType;
         // Lower priority states will be in the front
         typedef smpl::intrusive_heap<State, IsLesserState> StateQueueMinType;
         typedef std::unordered_map<size_t, EdgePtrType> EdgePtrMapType;
@@ -47,6 +48,7 @@ class Planner
         virtual void initialize();
         void resetStates();
         StatePtrType constructState(const StateVarsType& state);
+        InsatStatePtrType constructInsatState(const StateVarsType& state);
         size_t getEdgeKey(const EdgePtrType& edge_ptr);
         double computeHeuristic(const StatePtrType& state_ptr);
         double computeHeuristic(const StatePtrType& state_ptr_1, const StatePtrType& state_ptr_2);

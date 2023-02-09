@@ -127,6 +127,26 @@ StatePtrType Planner::constructState(const StateVarsType& state)
     return state_ptr;
 }
 
+InsatStatePtrType Planner::constructInsatState(const StateVarsType& state)
+{
+  size_t key = state_key_generator_(state);
+  InsatStatePtrMapType::iterator it = state_map_.find(key);
+  InsatStatePtrType state_ptr;
+
+  // Check if state exists in the search state map
+  if (it == state_map_.end())
+  {
+    state_ptr = new InsatState(state);
+    state_map_.insert(pair<size_t, InsatStatePtrType>(key, state_ptr));
+  }
+  else
+  {
+    state_ptr = it->second;
+  }
+
+  return state_ptr;
+}
+
 double Planner::computeHeuristic(const StatePtrType& state_ptr)
 {
     return roundOff(unary_heuristic_generator_(state_ptr));

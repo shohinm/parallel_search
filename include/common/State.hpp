@@ -16,8 +16,6 @@ class State : public smpl::heap_element
 
 public:
 
-  typedef MatDf TrajType;
-
 	State(const StateVarsType& vars=StateVarsType());
 	~State() {};
 
@@ -51,9 +49,6 @@ public:
     EdgePtrType GetIncomingEdgePtr() {return incoming_edge_ptr_;};
     void ResetIncomingEdgePtr() {incoming_edge_ptr_ = NULL;};
 
-    void SetInsatEdge(TrajType& insat_edge) {insat_edge_ = insat_edge;};
-    TrajType GetInsatEdge() {return insat_edge_;};
-
     void Print(std::string str="");
 
     std::atomic<int> num_successors_;
@@ -61,7 +56,7 @@ public:
 
 protected:
 
-private:
+//private:
 	static std::size_t id_counter_;
 
 	std::size_t state_id_;
@@ -73,8 +68,6 @@ private:
     std::atomic<bool> being_expanded_;
     EdgePtrType incoming_edge_ptr_;
 
-    // INSAT edge
-    TrajType insat_edge_;
 };
 
 class IsLesserState

@@ -11,6 +11,7 @@
 namespace ps
 {
     class State;
+    class InsatState;
     class Edge;
     class Action;
 
@@ -18,6 +19,7 @@ namespace ps
 
     typedef std::vector<double> StateVarsType;
     typedef State* StatePtrType;
+    typedef InsatState* InsatStatePtrType;
     typedef std::shared_ptr<Action> ActionPtrType;
     typedef Edge* EdgePtrType;
     typedef std::mutex LockType;

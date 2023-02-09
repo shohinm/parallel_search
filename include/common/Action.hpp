@@ -2,6 +2,7 @@
 #define ACTION_HPP
 
 #include <common/State.hpp>
+#include <common/insat/InsatState.hpp>
 
 namespace ps
 {
