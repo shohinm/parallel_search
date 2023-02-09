@@ -1,7 +1,6 @@
 #ifndef DUMMY_OPT_HPP
 #define DUMMY_OPT_HPP
 
-#include <common/typedefs.h>
 
 namespace ps
 {

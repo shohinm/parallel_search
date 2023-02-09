@@ -6,7 +6,6 @@
 #include <atomic>
 #include <climits>
 #include <common/Types.hpp>
-#include <common/typedefs.h>
 
 namespace ps
 {
