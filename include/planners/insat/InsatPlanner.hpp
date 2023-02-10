@@ -4,17 +4,19 @@
 #include <future>
 #include <utility>
 #include "planners/Planner.hpp"
+#include <common/insat/InsatState.hpp>
+#include <common/insat/InsatEdge.hpp>
 
 namespace ps
 {
 
-    template<typename EnvType>
     class InsatPlanner : public Planner
     {
     public:
 
-        typedef typename EnvType::Ptr EnvPtrType;
-        typedef typename EnvType::TrajType TrajType;
+        // Typedefs
+        typedef std::unordered_map<size_t, InsatStatePtrType> InsatStatePtrMapType;
+        typedef smpl::intrusive_heap<InsatState, IsLesserState> InsatStateQueueMinType;
 
         InsatPlanner(ParamsType planner_params):
                 Planner(planner_params)
@@ -24,9 +26,9 @@ namespace ps
 
         ~InsatPlanner() {};
 
-        void setEnv(EnvPtrType& env)
+        void SetStartState(const StateVarsType& state_vars)
         {
-            env_ = env;
+            start_state_ptr_ = constructInsatState(state_vars);
         }
 
         bool Plan()
@@ -34,10 +36,10 @@ namespace ps
             initialize();
             auto t_start = std::chrono::steady_clock::now();
 
-            while (!state_open_list_.empty())
+            while (!insat_state_open_list_.empty())
             {
-                auto state_ptr = state_open_list_.min();
-                state_open_list_.pop();
+                auto state_ptr = insat_state_open_list_.min();
+                insat_state_open_list_.pop();
 
                 // Return solution if goal state is expanded
                 if (isGoalState(state_ptr))
@@ -66,17 +68,35 @@ namespace ps
     protected:
         void initialize()
         {
-            Planner::initialize();
+
+            plan_.clear();
+
+            // Initialize planner stats
+            planner_stats_ = PlannerStats();
+
+            // Initialize start state
+            start_state_ptr_->SetGValue(0);
+            start_state_ptr_->SetHValue(computeHeuristic(start_state_ptr_));
+
+            // Reset goal state
+            goal_state_ptr_ = NULL;
+
+            // Reset state
+            planner_stats_ = PlannerStats();
+
+            // Reset h_min
+            h_val_min_ = DINF;
+
             planner_stats_.num_jobs_per_thread_.resize(1, 0);
 
             // Initialize open list
             start_state_ptr_->SetFValue(start_state_ptr_->GetGValue() + heuristic_w_*start_state_ptr_->GetHValue());
-            state_open_list_.push(start_state_ptr_);
+            insat_state_open_list_.push(start_state_ptr_);
 
             planner_stats_.num_threads_spawned_ = 1;
         }
 
-        void expandState(StatePtrType state_ptr)
+        void expandState(InsatStatePtrType state_ptr)
         {
 
             if (VERBOSE) state_ptr->Print("Expanding");
@@ -87,12 +107,13 @@ namespace ps
             state_ptr->SetVisited();
 
             // Get ancestors
-            std::vector<StatePtrType> ancestors;
-            StatePtrType bp = state_ptr;
+            std::vector<InsatStatePtrType> ancestors;
+            ancestors.push_back(state_ptr);
+            auto bp = state_ptr->GetIncomingEdgePtr();
             while (bp)
             {
-                ancestors.push_back(bp);
-                bp = state_ptr->GetIncomingEdgePtr()->parent_state_ptr_;
+                ancestors.push_back(bp->parent_state_ptr_);
+                bp = bp->parent_state_ptr_->GetIncomingEdgePtr();
             }
             std::reverse(ancestors.begin(), ancestors.end());
 
@@ -110,39 +131,49 @@ namespace ps
             }
         }
 
-        void updateState(StatePtrType& state_ptr,
-                         std::vector<StatePtrType>& ancestors,
+        void updateState(InsatStatePtrType& state_ptr,
+                         std::vector<InsatStatePtrType>& ancestors,
                          ActionPtrType& action_ptr,
                          ActionSuccessor& action_successor)
         {
             if (action_successor.success_)
             {
-                auto successor_state_ptr = constructState(action_successor.successor_state_vars_costs_.back().first);
-
-                TrajType traj;
-                bool root=true;
-                for (auto& anc: ancestors)
-                {
-                    TrajType inc_traj = env_->optimize(anc->GetStateVars(), successor_state_ptr->GetStateVars());
-                    if (root && inc_traj.size() == 0)
-                    {
-                      root = false;
-                      continue;
-                    }
-                    else if (inc_traj.size() == 0)
-                    {
-                      continue;
-                    }
-                    else
-                    {
-                      traj = env_->warmOptimize(anc->GetInsatEdge(), inc_traj);
-                    }
-                }
-
-                double cost = env_->getCost(traj);
+                auto successor_state_ptr = constructInsatState(action_successor.successor_state_vars_costs_.back().first);
 
                 if (!successor_state_ptr->IsVisited())
                 {
+                    InsatStatePtrType best_anc;
+                    TrajType traj;
+                    double cost = 0;
+                    bool root=true;
+                    for (auto& anc: ancestors)
+                    {
+                        TrajType inc_traj = action_ptr->optimize(anc->GetStateVars(), successor_state_ptr->GetStateVars());
+                        if (root && inc_traj.size() > 0)
+                        {
+                            root = false;
+                            traj = inc_traj;
+                            best_anc = anc;
+                            break;
+                        }
+                        else if (root && inc_traj.size() == 0)
+                        {
+                            root = false;
+                            continue;
+                        }
+                        else if (inc_traj.size() == 0)
+                        {
+                            continue;
+                        }
+                        else
+                        {
+                            traj = action_ptr->warmOptimize(anc->GetIncomingEdgePtr()->traj_, inc_traj);
+                            best_anc = anc;
+                            break;
+                        }
+                    }
+
+                    cost = action_ptr->getCost(traj);
                     double new_g_val = cost;
 
                     if (successor_state_ptr->GetGValue() > new_g_val)
@@ -161,20 +192,24 @@ namespace ps
                             successor_state_ptr->SetGValue(new_g_val);
                             successor_state_ptr->SetFValue(new_g_val + heuristic_w_*h_val);
 
-                            auto edge_ptr = new Edge(state_ptr, successor_state_ptr, action_ptr);
+                            auto edge_ptr = new InsatEdge(state_ptr, successor_state_ptr, action_ptr);
                             edge_ptr->SetCost(cost);
                             edge_map_.insert(std::make_pair(getEdgeKey(edge_ptr), edge_ptr));
 
-                            successor_state_ptr->SetIncomingEdgePtr(edge_ptr);
-                            successor_state_ptr->SetInsatEdge(traj);
-
-                            if (state_open_list_.contains(successor_state_ptr))
+                            if (successor_state_ptr->GetIncomingEdgePtr())
                             {
-                                state_open_list_.decrease(successor_state_ptr);
+                                successor_state_ptr->GetIncomingEdgePtr()->parent_state_ptr_ = best_anc;
+                            }
+                            successor_state_ptr->SetIncomingEdgePtr(edge_ptr);
+                            successor_state_ptr->GetIncomingEdgePtr()->SetTraj(traj);
+
+                            if (insat_state_open_list_.contains(successor_state_ptr))
+                            {
+                                insat_state_open_list_.decrease(successor_state_ptr);
                             }
                             else
                             {
-                                state_open_list_.push(successor_state_ptr);
+                                insat_state_open_list_.push(successor_state_ptr);
                             }
 
                         }
@@ -184,13 +219,92 @@ namespace ps
             }
         }
 
+        InsatStatePtrType constructInsatState(const StateVarsType& state)
+        {
+            size_t key = state_key_generator_(state);
+            auto it = insat_state_map_.find(key);
+            InsatStatePtrType insat_state_ptr;
+
+            // Check if state exists in the search state map
+            if (it == insat_state_map_.end())
+            {
+                insat_state_ptr = new InsatState(state);
+                insat_state_map_.insert(std::pair<size_t, InsatStatePtrType>(key, insat_state_ptr));
+            }
+            else
+            {
+                insat_state_ptr = it->second;
+            }
+
+            return insat_state_ptr;
+        }
+
+        void cleanUp()
+        {
+            for (auto& state_it : insat_state_map_)
+            {
+                if (state_it.second)
+                {
+                    delete state_it.second;
+                    state_it.second = NULL;
+                }
+            }
+            insat_state_map_.clear();
+
+            for (auto& edge_it : edge_map_)
+            {
+                if (edge_it.second)
+                {
+                    delete edge_it.second;
+                    edge_it.second = NULL;
+                }
+            }
+            edge_map_.clear();
+
+            State::ResetStateIDCounter();
+            Edge::ResetStateIDCounter();
+        }
+
+        void resetStates()
+        {
+            for (auto it = insat_state_map_.begin(); it != insat_state_map_.end(); ++it)
+            {
+                it->second->ResetGValue();
+                it->second->ResetFValue();
+                // it->second->ResetVValue();
+                it->second->ResetIncomingEdgePtr();
+                it->second->UnsetVisited();
+                it->second->UnsetBeingExpanded();
+                it->second->num_successors_ = 0;
+                it->second->num_expanded_successors_ = 0;
+            }
+        }
+
+        void constructPlan(InsatStatePtrType& state_ptr)
+        {
+            if (state_ptr->GetIncomingEdgePtr())
+            {
+                planner_stats_.path_cost_ = state_ptr->GetIncomingEdgePtr()->GetCost();
+                soln_traj_ = state_ptr->GetIncomingEdgePtr()->traj_;
+            }
+            while(state_ptr->GetIncomingEdgePtr())
+            {
+                if (state_ptr->GetIncomingEdgePtr()) // For start state_ptr, there is no incoming edge
+                    plan_.insert(plan_.begin(), PlanElement(state_ptr->GetStateVars(), state_ptr->GetIncomingEdgePtr()->action_ptr_, state_ptr->GetIncomingEdgePtr()->GetCost()));
+                else
+                    plan_.insert(plan_.begin(), PlanElement(state_ptr->GetStateVars(), NULL, 0));
+
+                state_ptr = state_ptr->GetIncomingEdgePtr()->parent_state_ptr_;
+            }
+            planner_stats_.path_length_ += plan_.size();
+        }
 
         void exit()
         {
             // Clear open list
-            while (!state_open_list_.empty())
+            while (!insat_state_open_list_.empty())
             {
-                state_open_list_.pop();
+                insat_state_open_list_.pop();
             }
 
             Planner::exit();
@@ -198,9 +312,12 @@ namespace ps
 
 
         int num_threads_;
-        StateQueueMinType state_open_list_;
+        InsatStatePtrType start_state_ptr_;
+        InsatStatePtrType goal_state_ptr_;
+        InsatStateQueueMinType insat_state_open_list_;
+        InsatStatePtrMapType insat_state_map_;
+        TrajType soln_traj_;
 
-        EnvPtrType  env_;
     };
 
 }

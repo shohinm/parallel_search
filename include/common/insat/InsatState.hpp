@@ -9,17 +9,15 @@ namespace ps
   {
   public:
 
-    typedef MatDf TrajType;
-
-    InsatState(const StateVarsType& vars=StateVarsType()) : State(vars) {}
+    InsatState(const StateVarsType& vars=StateVarsType()) : State(vars), incoming_edge_ptr_(nullptr) {}
     ~InsatState() {};
 
-    void SetInsatEdge(TrajType& insat_edge) {insat_edge_ = insat_edge;};
-    TrajType GetInsatEdge() {return insat_edge_;};
+    void SetIncomingEdgePtr(InsatEdgePtrType& incoming_edge_ptr) {incoming_edge_ptr_ = incoming_edge_ptr;};
+    InsatEdgePtrType GetIncomingEdgePtr() {return incoming_edge_ptr_;};
+    void ResetIncomingEdgePtr() {incoming_edge_ptr_ = NULL;};
 
-
-    // INSAT edge
-    TrajType insat_edge_;
+  protected:
+    InsatEdgePtrType incoming_edge_ptr_;
 
   };
 }

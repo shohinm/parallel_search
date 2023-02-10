@@ -7,7 +7,6 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <boost/functional/hash.hpp>
-#include "../../robot_nav_2d/RobotNav2dActions.hpp"
 #include "InsatNav2dActions.hpp"
 #include "planners/WastarPlanner.hpp"
 #include "planners/PwastarPlanner.hpp"
@@ -172,7 +171,10 @@ size_t EdgeKeyGenerator(const EdgePtrType& edge_ptr)
     return seed;
 }
 
-void constructActions(vector<shared_ptr<Action>>& action_ptrs, ParamsType& action_params, vector<vector<int>>& map)
+void constructActions(vector<shared_ptr<Action>>& action_ptrs,
+                      ParamsType& action_params,
+                      std::vector<DummyOpt::Ptr>& opt,
+                      vector<vector<int>>& map)
 {
     // Define action parameters
     action_params["length"] = 25;
@@ -182,29 +184,29 @@ void constructActions(vector<shared_ptr<Action>>& action_ptrs, ParamsType& actio
     ParamsType expensive_action_params = action_params;
     expensive_action_params["cache_footprint"] = 0;
 
-    auto move_up_controller_ptr = make_shared<MoveUpAction>("MoveUp", action_params, map, 0);
+    auto move_up_controller_ptr = make_shared<IMoveUpAction>("MoveUp", action_params, map, opt, 0);
     action_ptrs.emplace_back(move_up_controller_ptr);
 
-    auto move_up_right_controller_ptr = make_shared<MoveUpRightAction>("MoveUpRight", expensive_action_params, map);
-    action_ptrs.emplace_back(move_up_right_controller_ptr);
+//    auto move_up_right_controller_ptr = make_shared<IMoveUpRightAction>("MoveUpRight", expensive_action_params, map, opt);
+//    action_ptrs.emplace_back(move_up_right_controller_ptr);
 
-    auto move_right_controller_ptr = make_shared<MoveRightAction>("MoveRight", action_params, map, 0);
+    auto move_right_controller_ptr = make_shared<IMoveRightAction>("MoveRight", action_params, map, opt, 0);
     action_ptrs.emplace_back(move_right_controller_ptr);
 
-    auto move_right_down_controller_ptr = make_shared<MoveRightDownAction>("MoveRightDown", expensive_action_params, map);
-    action_ptrs.emplace_back(move_right_down_controller_ptr);
+//    auto move_right_down_controller_ptr = make_shared<IMoveRightDownAction>("MoveRightDown", expensive_action_params, map, opt);
+//    action_ptrs.emplace_back(move_right_down_controller_ptr);
 
-    auto move_down_controller_ptr = make_shared<MoveDownAction>("MoveDown", action_params, map, 0);
+    auto move_down_controller_ptr = make_shared<IMoveDownAction>("MoveDown", action_params, map, opt, 0);
     action_ptrs.emplace_back(move_down_controller_ptr);
 
-    auto move_down_left_controller_ptr = make_shared<MoveDownLeftAction>("MoveDownLeft", expensive_action_params, map);
-    action_ptrs.emplace_back(move_down_left_controller_ptr);
+//    auto move_down_left_controller_ptr = make_shared<IMoveDownLeftAction>("MoveDownLeft", expensive_action_params, map, opt);
+//    action_ptrs.emplace_back(move_down_left_controller_ptr);
 
-    auto move_left_controller_ptr = make_shared<MoveLeftAction>("MoveLeft", action_params, map, 0);
+    auto move_left_controller_ptr = make_shared<IMoveLeftAction>("MoveLeft", action_params, map, opt, 0);
     action_ptrs.emplace_back(move_left_controller_ptr);
 
-    auto move_left_up_controller_ptr = make_shared<MoveLeftUpAction>("MoveLeftUp", expensive_action_params, map);
-    action_ptrs.emplace_back(move_left_up_controller_ptr);
+//    auto move_left_up_controller_ptr = make_shared<IMoveLeftUpAction>("MoveLeftUp", expensive_action_params, map, opt);
+//    action_ptrs.emplace_back(move_left_up_controller_ptr);
 
 }
 
@@ -223,7 +225,7 @@ void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vec
     else if (planner_name == "mplp")
         planner_ptr = make_shared<MplpPlanner>(planner_params);
     else if (planner_name == "insat")
-        planner_ptr = std::make_shared<InsatPlanner<Nav2D>>(planner_params);
+        planner_ptr = std::make_shared<InsatPlanner>(planner_params);
     else
         throw runtime_error("Planner type not identified!");
 
@@ -266,22 +268,22 @@ int main(int argc, char* argv[])
 {
     int num_threads;
 
-    if (!strcmp(argv[1], "insat"))
-    {
-        if (argc != 2) throw runtime_error("Format: run_robot_nav_2d insat");
-        num_threads = 1;
-    }
-    else if (!strcmp(argv[1], "mplp"))
-    {
-        if (argc != 3) throw runtime_error("Format: run_robot_nav_2d [planner_name] [num_threads]");
-        if (atoi(argv[2]) < 4) throw runtime_error("mplp requires a minimum of 4 threads");
-        num_threads = atoi(argv[2]);
-    }
-    else
-    {
-        if (argc != 3) throw runtime_error("Format: run_robot_nav_2d [planner_name] [num_threads]");
-        num_threads = atoi(argv[2]);
-    }
+//    if (!strcmp(argv[1], "insat"))
+//    {
+//        if (argc != 2) throw runtime_error("Format: run_insat_nav_2d insat");
+//        num_threads = 1;
+//    }
+//    else if (!strcmp(argv[1], "mplp"))
+//    {
+//        if (argc != 3) throw runtime_error("Format: run_robot_nav_2d [planner_name] [num_threads]");
+//        if (atoi(argv[2]) < 4) throw runtime_error("mplp requires a minimum of 4 threads");
+//        num_threads = atoi(argv[2]);
+//    }
+//    else
+//    {
+//        if (argc != 3) throw runtime_error("Format: run_robot_nav_2d [planner_name] [num_threads]");
+//        num_threads = atoi(argv[2]);
+//    }
 
 
     // Experiment parameters
@@ -292,7 +294,9 @@ int main(int argc, char* argv[])
 
     // Define planner parameters
     ParamsType planner_params;
-    string planner_name = argv[1];
+//    string planner_name = argv[1];
+    num_threads = 1;
+    string planner_name = "insat";
     planner_params["num_threads"] = num_threads;
     planner_params["heuristic_weight"] = 50;
 
@@ -313,18 +317,24 @@ int main(int argc, char* argv[])
         goals = vector<vector<double>> (num_runs, {scale*200.0, scale*170.0});
     }
 
+    // create opt
+    auto opt = std::make_shared<DummyOpt>(DummyOpt::InterpMode::LINEAR, 5e-1, 1e-1);
+    std::vector<DummyOpt::Ptr> opt_vec{opt};
+
     // Construct actions
     ParamsType action_params;
     vector<shared_ptr<Action>> action_ptrs;
-    constructActions(action_ptrs, action_params, map);
+    constructActions(action_ptrs, action_params, opt_vec, map);
 
     // Construct planner
     shared_ptr<Planner> planner_ptr;
     constructPlanner(planner_name, planner_ptr, action_ptrs, planner_params, action_params);
 
-    std::shared_ptr<Nav2D> env = std::make_shared<Nav2D>(action_params, map);
-    env->opt_.setEnv(env);
-    planner_ptr->setEnv(env);
+    // Give access to Action (env) to opt
+    for (auto& o: opt_vec)
+    {
+        o->setEnv(action_ptrs);
+    }
 
     // Run experiments
     int start_goal_idx = 0;

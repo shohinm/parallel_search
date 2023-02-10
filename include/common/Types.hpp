@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <mutex>
 #include <unordered_map>
+#include <common/EigenTypes.h>
 #include "intrusive_heap.h"
 
 namespace ps
@@ -13,6 +14,7 @@ namespace ps
     class State;
     class InsatState;
     class Edge;
+    class InsatEdge;
     class Action;
 
     #define DINF std::numeric_limits<double>::infinity()
@@ -22,9 +24,11 @@ namespace ps
     typedef InsatState* InsatStatePtrType;
     typedef std::shared_ptr<Action> ActionPtrType;
     typedef Edge* EdgePtrType;
+    typedef InsatEdge* InsatEdgePtrType;
     typedef std::mutex LockType;
     typedef std::unordered_map<std::string, double> ParamsType;
-    
+    typedef MatDf TrajType;
+
     struct ActionSuccessor
     {
         ActionSuccessor(){};
