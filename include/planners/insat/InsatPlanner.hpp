@@ -10,7 +10,7 @@
 namespace ps
 {
 
-    class InsatPlanner : public Planner
+    class InsatPlanner : virtual public Planner
     {
     public:
 
@@ -21,6 +21,7 @@ namespace ps
         InsatPlanner(ParamsType planner_params):
                 Planner(planner_params)
         {
+
         };
 
         ~InsatPlanner() {};
@@ -69,31 +70,25 @@ namespace ps
         void initialize()
         {
 
-            plan_.clear();
-
-            // Initialize planner stats
-            planner_stats_ = PlannerStats();
-
-            // Initialize start state
-            start_state_ptr_->SetGValue(0);
-            start_state_ptr_->SetHValue(computeHeuristic(start_state_ptr_));
-
-            // Reset goal state
-            goal_state_ptr_ = NULL;
-
-            // Reset state
-            planner_stats_ = PlannerStats();
-
-            // Reset h_min
-            h_val_min_ = DINF;
-
-            planner_stats_.num_jobs_per_thread_.resize(1, 0);
+            Planner::initialize();
 
             // Initialize open list
             start_state_ptr_->SetFValue(start_state_ptr_->GetGValue() + heuristic_w_*start_state_ptr_->GetHValue());
             insat_state_open_list_.push(start_state_ptr_);
+        }
 
-            planner_stats_.num_threads_spawned_ = 1;
+        std::vector<InsatStatePtrType> getStateAncestors(const InsatStatePtrType state_ptr) const
+        {
+            // Get ancestors
+            std::vector<InsatStatePtrType> ancestors;
+            ancestors.push_back(state_ptr);
+            auto bp = state_ptr->GetIncomingEdgePtr();
+            while (bp)
+            {
+                ancestors.push_back(bp->lowD_parent_state_ptr_);
+                bp = bp->lowD_parent_state_ptr_->GetIncomingEdgePtr();
+            }
+            std::reverse(ancestors.begin(), ancestors.end());            return ancestors;
         }
 
         void expandState(InsatStatePtrType state_ptr)
@@ -106,16 +101,7 @@ namespace ps
 
             state_ptr->SetVisited();
 
-            // Get ancestors
-            std::vector<InsatStatePtrType> ancestors;
-            ancestors.push_back(state_ptr);
-            auto bp = state_ptr->GetIncomingEdgePtr();
-            while (bp)
-            {
-                ancestors.push_back(bp->lowD_parent_state_ptr_);
-                bp = bp->lowD_parent_state_ptr_->GetIncomingEdgePtr();
-            }
-            std::reverse(ancestors.begin(), ancestors.end());
+            auto ancestors = getStateAncestors(state_ptr);
 
             for (auto& action_ptr: insat_actions_ptrs_)
             {

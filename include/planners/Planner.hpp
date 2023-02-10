@@ -25,6 +25,7 @@ class Planner
         // Lower priority edge will be in the front
         typedef smpl::intrusive_heap<Edge, IsLesserEdge> EdgeQueueMinType;
 
+        Planner()=delete;
         Planner(ParamsType planner_params);
         virtual ~Planner();
         
