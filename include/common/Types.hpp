@@ -55,6 +55,8 @@ namespace ps
         
 	    double lock_time_ = 0;
         double cumulative_expansions_time_ = 0;
+
+        std::unordered_map<std::string, std::vector<double>> action_eval_times_;
     };
 }
 

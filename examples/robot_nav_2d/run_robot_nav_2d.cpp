@@ -319,6 +319,7 @@ int main(int argc, char* argv[])
 
     vector<double> all_maps_time_vec, all_maps_cost_vec;
     vector<int> all_maps_num_edges_vec;
+    unordered_map<string, vector<double>> all_action_eval_times;
 
     for (int m_idx = 0; m_idx < map_vec.size(); ++m_idx)
     {
@@ -351,6 +352,7 @@ int main(int argc, char* argv[])
         vector<double> time_vec, cost_vec;
         vector<int> num_edges_vec, threads_used_vec;
         vector<int> jobs_per_thread(planner_params["num_threads"], 0);
+        unordered_map<string, vector<double>> action_eval_times;
 
         cout << "Map size: (" << map.size() << ", " << map[0].size() << ") | " 
         << " | Planner: " << planner_name   
@@ -393,6 +395,12 @@ int main(int argc, char* argv[])
                 all_maps_cost_vec.emplace_back(planner_stats.path_cost_);
                 num_edges_vec.emplace_back(planner_stats.num_evaluated_edges_);
                 all_maps_num_edges_vec.emplace_back(planner_stats.num_evaluated_edges_);
+
+                for (auto& [action, times] : planner_stats.action_eval_times_)
+                { 
+                    action_eval_times[action].insert(action_eval_times[action].end(), times.begin(), times.end());
+                    all_action_eval_times[action].insert(all_action_eval_times[action].end(), times.begin(), times.end());
+                }
 
                 threads_used_vec.emplace_back(planner_stats.num_threads_spawned_);
                 cout << " | Time (s): " << planner_stats.total_time_ 
@@ -450,9 +458,17 @@ int main(int argc, char* argv[])
         cout << "Mean evaluated edges: " << roundOff(accumulate(num_edges_vec.begin(), num_edges_vec.end(), 0.0)/double(num_edges_vec.size()), 2) << endl;
         cout << endl << "------------- Mean jobs per thread -------------" << endl;
         for (int tidx = 0; tidx < planner_params["num_threads"]; ++tidx)
+        {
             cout << "thread: " << tidx << " jobs: " << jobs_per_thread[tidx]/num_success << endl;
+        }
         cout << "************************" << endl;
     
+        cout << endl << "------------- Mean action eval times -------------" << endl;
+        for (auto [action, times] : action_eval_times)
+        {
+            cout << action << ": " << accumulate(times.begin(), times.end(), 0.0)/times.size() << endl; 
+        }
+        cout << "************************" << endl;
     }
 
     cout << endl << "************ Global Stats ************" << endl;
@@ -460,6 +476,14 @@ int main(int argc, char* argv[])
     cout << "Mean cost: " << accumulate(all_maps_cost_vec.begin(), all_maps_cost_vec.end(), 0.0)/all_maps_cost_vec.size() << endl;    
     cout << "Mean evaluated edges: " << roundOff(accumulate(all_maps_num_edges_vec.begin(), all_maps_num_edges_vec.end(), 0.0)/double(all_maps_num_edges_vec.size()), 2) << endl;
     cout << endl << "************************" << endl;
+
+    cout << endl << "------------- Mean action eval times -------------" << endl;
+    for (auto [action, times] : all_action_eval_times)
+    {
+        cout << action << ": " << accumulate(times.begin(), times.end(), 0.0)/times.size() << endl; 
+    }
+    cout << "************************" << endl;
+
 
 
 }

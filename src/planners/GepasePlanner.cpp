@@ -337,7 +337,9 @@ void GepasePlanner::expandEdge(EdgePtrType edge_ptr, int thread_id)
     auto t_lock_s = chrono::steady_clock::now();
     lock_.lock();
     auto t_lock_e = chrono::steady_clock::now();
+
     planner_stats_.lock_time_ += 1e-9*chrono::duration_cast<chrono::nanoseconds>(t_lock_e-t_lock_s).count();
+    planner_stats_.action_eval_times_[action_ptr->GetType()].emplace_back(1e-9*chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count());
 
     planner_stats_.num_evaluated_edges_++; // Only the edges controllers that satisfied pre-conditions and args are in the open list
 
