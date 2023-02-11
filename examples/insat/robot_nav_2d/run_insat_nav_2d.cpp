@@ -330,7 +330,7 @@ int main(int argc, char* argv[])
     shared_ptr<Planner> planner_ptr;
     constructPlanner(planner_name, planner_ptr, action_ptrs, planner_params, action_params);
 
-    // Give access to Action (env) to opt
+    // Give access to InsatAction (env) to opt
     for (auto& o: opt_vec)
     {
         o->setEnv(action_ptrs);

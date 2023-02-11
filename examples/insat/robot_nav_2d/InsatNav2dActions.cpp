@@ -9,7 +9,7 @@ namespace ps
                                        ParamsType params,
                                        std::vector<std::vector<int>>& map,
                                        OptPtrVecType& opt,
-                                       bool is_expensive) : Action(type, params, is_expensive),
+                                       bool is_expensive) : InsatAction(type, params, is_expensive),
                                                             map_(map),
                                                             opt_(opt)
    {

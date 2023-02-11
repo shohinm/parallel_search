@@ -16,6 +16,7 @@ namespace ps
     class Edge;
     class InsatEdge;
     class Action;
+    class InsatAction;
 
     #define DINF std::numeric_limits<double>::infinity()
 
@@ -23,6 +24,7 @@ namespace ps
     typedef State* StatePtrType;
     typedef InsatState* InsatStatePtrType;
     typedef std::shared_ptr<Action> ActionPtrType;
+    typedef std::shared_ptr<InsatAction> InsatActionPtrType;
     typedef Edge* EdgePtrType;
     typedef InsatEdge* InsatEdgePtrType;
     typedef std::mutex LockType;

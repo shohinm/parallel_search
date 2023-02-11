@@ -1,14 +1,14 @@
 #ifndef INSAT_NAV2D_ACTION_HPP
 #define INSAT_NAV2D_ACTION_HPP
 
-#include "common/Action.hpp"
 #include <common/Types.hpp>
+#include <common/insat/InsatAction.hpp>
 #include "planners/insat/opt/dummy_opt.hpp"
 
 namespace ps
 {
 
-    class InsatNav2dAction : public Action
+    class InsatNav2dAction : public InsatAction
     {
 
     public:

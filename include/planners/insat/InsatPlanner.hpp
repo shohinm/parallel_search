@@ -21,7 +21,7 @@ namespace ps
         InsatPlanner(ParamsType planner_params):
                 Planner(planner_params)
         {
-
+            constructInsatActions();
         };
 
         ~InsatPlanner() {};
@@ -112,12 +112,12 @@ namespace ps
             auto bp = state_ptr->GetIncomingEdgePtr();
             while (bp)
             {
-                ancestors.push_back(bp->parent_state_ptr_);
-                bp = bp->parent_state_ptr_->GetIncomingEdgePtr();
+                ancestors.push_back(bp->lowD_parent_state_ptr_);
+                bp = bp->lowD_parent_state_ptr_->GetIncomingEdgePtr();
             }
             std::reverse(ancestors.begin(), ancestors.end());
 
-            for (auto& action_ptr: actions_ptrs_)
+            for (auto& action_ptr: insat_actions_ptrs_)
             {
                 if (action_ptr->CheckPreconditions(state_ptr->GetStateVars()))
                 {
@@ -133,7 +133,7 @@ namespace ps
 
         void updateState(InsatStatePtrType& state_ptr,
                          std::vector<InsatStatePtrType>& ancestors,
-                         ActionPtrType& action_ptr,
+                         InsatActionPtrType& action_ptr,
                          ActionSuccessor& action_successor)
         {
             if (action_successor.success_)
@@ -145,13 +145,16 @@ namespace ps
                     InsatStatePtrType best_anc;
                     TrajType traj;
                     double cost = 0;
+                    double inc_cost = 0;
                     bool root=true;
                     for (auto& anc: ancestors)
                     {
                         TrajType inc_traj = action_ptr->optimize(anc->GetStateVars(), successor_state_ptr->GetStateVars());
                         if (root && inc_traj.size() > 0)
                         {
+                            std::cout << "inc traj size: " << inc_traj.size() << std::endl;
                             root = false;
+                            inc_cost = action_ptr->getCost(inc_traj);
                             traj = inc_traj;
                             best_anc = anc;
                             break;
@@ -167,12 +170,20 @@ namespace ps
                         }
                         else
                         {
+                            std::cout << "inc traj size: " << inc_traj.size() << std::endl;
+                            inc_cost = action_ptr->getCost(inc_traj);
                             traj = action_ptr->warmOptimize(anc->GetIncomingEdgePtr()->traj_, inc_traj);
                             best_anc = anc;
                             break;
                         }
                     }
 
+                    if (traj.size()==0)
+                    {
+                        return;
+                    }
+
+                    std::cout << "traj size: " << traj.size() << std::endl;
                     cost = action_ptr->getCost(traj);
                     double new_g_val = cost;
 
@@ -192,16 +203,12 @@ namespace ps
                             successor_state_ptr->SetGValue(new_g_val);
                             successor_state_ptr->SetFValue(new_g_val + heuristic_w_*h_val);
 
-                            auto edge_ptr = new InsatEdge(state_ptr, successor_state_ptr, action_ptr);
-                            edge_ptr->SetCost(cost);
+                            auto edge_ptr = new InsatEdge(state_ptr, best_anc, successor_state_ptr, action_ptr);
+                            edge_ptr->SetTraj(traj);
+                            edge_ptr->SetTrajCost(cost);
+                            edge_ptr->SetCost(inc_cost);
                             edge_map_.insert(std::make_pair(getEdgeKey(edge_ptr), edge_ptr));
-
-                            if (successor_state_ptr->GetIncomingEdgePtr())
-                            {
-                                successor_state_ptr->GetIncomingEdgePtr()->parent_state_ptr_ = best_anc;
-                            }
                             successor_state_ptr->SetIncomingEdgePtr(edge_ptr);
-                            successor_state_ptr->GetIncomingEdgePtr()->SetTraj(traj);
 
                             if (insat_state_open_list_.contains(successor_state_ptr))
                             {
@@ -216,6 +223,14 @@ namespace ps
 
                     }
                 }
+            }
+        }
+
+        void constructInsatActions()
+        {
+            for (auto& action_ptr : actions_ptrs_)
+            {
+                insat_actions_ptrs_.emplace_back(std::dynamic_pointer_cast<InsatAction>(action_ptr));
             }
         }
 
@@ -284,7 +299,7 @@ namespace ps
         {
             if (state_ptr->GetIncomingEdgePtr())
             {
-                planner_stats_.path_cost_ = state_ptr->GetIncomingEdgePtr()->GetCost();
+                planner_stats_.path_cost_ = state_ptr->GetIncomingEdgePtr()->GetTrajCost();
                 soln_traj_ = state_ptr->GetIncomingEdgePtr()->traj_;
             }
             while(state_ptr->GetIncomingEdgePtr())
@@ -294,7 +309,7 @@ namespace ps
                 else
                     plan_.insert(plan_.begin(), PlanElement(state_ptr->GetStateVars(), NULL, 0));
 
-                state_ptr = state_ptr->GetIncomingEdgePtr()->parent_state_ptr_;
+                state_ptr = state_ptr->GetIncomingEdgePtr()->fullD_parent_state_ptr_;
             }
             planner_stats_.path_length_ += plan_.size();
         }
@@ -311,6 +326,7 @@ namespace ps
         }
 
 
+        std::vector<std::shared_ptr<InsatAction>> insat_actions_ptrs_;
         int num_threads_;
         InsatStatePtrType start_state_ptr_;
         InsatStatePtrType goal_state_ptr_;

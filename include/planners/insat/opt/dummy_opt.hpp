@@ -2,7 +2,7 @@
 #define DUMMY_OPT_HPP
 
 #include <common/Types.hpp>
-#include <common/Action.hpp>
+#include <common/insat/InsatAction.hpp>
 
 namespace ps
 {
@@ -28,7 +28,7 @@ namespace ps
 
         virtual ~DummyOpt() {}
 
-        void setEnv(std::vector<std::shared_ptr<Action>>& env)
+        void setEnv(std::vector<std::shared_ptr<InsatAction>>& env)
         {
             env_ = env;
         }
@@ -105,7 +105,7 @@ namespace ps
             return traj;
         }
 
-        std::vector<std::shared_ptr<Action>> env_;
+        std::vector<std::shared_ptr<InsatAction>> env_;
 
         InterpMode intp_;
 
