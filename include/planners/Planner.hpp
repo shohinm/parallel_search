@@ -1,7 +1,7 @@
 #ifndef PLANNER_HPP
 #define PLANNER_HPP
 
-#define VERBOSE 1
+#define VERBOSE 0
 
 #include <functional>
 #include <future>

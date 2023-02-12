@@ -21,7 +21,6 @@ namespace ps
         InsatPlanner(ParamsType planner_params):
                 Planner(planner_params)
         {
-            constructInsatActions();
         };
 
         ~InsatPlanner() {};
@@ -33,6 +32,7 @@ namespace ps
 
         bool Plan()
         {
+            constructInsatActions();
             initialize();
             auto t_start = std::chrono::steady_clock::now();
 
@@ -152,7 +152,6 @@ namespace ps
                         TrajType inc_traj = action_ptr->optimize(anc->GetStateVars(), successor_state_ptr->GetStateVars());
                         if (root && inc_traj.size() > 0)
                         {
-                            std::cout << "inc traj size: " << inc_traj.size() << std::endl;
                             root = false;
                             inc_cost = action_ptr->getCost(inc_traj);
                             traj = inc_traj;
@@ -170,7 +169,6 @@ namespace ps
                         }
                         else
                         {
-                            std::cout << "inc traj size: " << inc_traj.size() << std::endl;
                             inc_cost = action_ptr->getCost(inc_traj);
                             traj = action_ptr->warmOptimize(anc->GetIncomingEdgePtr()->traj_, inc_traj);
                             best_anc = anc;
@@ -183,7 +181,6 @@ namespace ps
                         return;
                     }
 
-                    std::cout << "traj size: " << traj.size() << std::endl;
                     cost = action_ptr->getCost(traj);
                     double new_g_val = cost;
 
@@ -218,9 +215,7 @@ namespace ps
                             {
                                 insat_state_open_list_.push(successor_state_ptr);
                             }
-
                         }
-
                     }
                 }
             }
@@ -299,7 +294,9 @@ namespace ps
         {
             if (state_ptr->GetIncomingEdgePtr())
             {
-                planner_stats_.path_cost_ = state_ptr->GetIncomingEdgePtr()->GetTrajCost();
+//                planner_stats_.path_cost_ = state_ptr->GetIncomingEdgePtr()->GetTrajCost();
+                planner_stats_.path_cost_ =
+                        insat_actions_ptrs_[0]->getCost(state_ptr->GetIncomingEdgePtr()->traj_);
                 soln_traj_ = state_ptr->GetIncomingEdgePtr()->traj_;
             }
             while(state_ptr->GetIncomingEdgePtr())

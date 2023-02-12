@@ -28,12 +28,15 @@ namespace ps
 
         virtual ~DummyOpt() {}
 
-        void setEnv(std::vector<std::shared_ptr<InsatAction>>& env)
+        void setEnv(std::vector<std::shared_ptr<Action>>& env)
         {
-            env_ = env;
+            for (auto& e : env)
+            {
+                env_.emplace_back(std::dynamic_pointer_cast<InsatAction>(e));
+            }
         }
 
-        virtual TrajType optimize(VecDf& s1, VecDf& s2)
+        virtual TrajType optimize(const VecDf& s1, const VecDf& s2)
         {
             double dist = (s2-s1).norm();
             int N = ceil(dist/wp_delta_)+1;
@@ -96,9 +99,10 @@ namespace ps
         {
             TrajType traj(p1.size(), N);
 
-            for (double i=0.0; i<=1.0; i+=1.0/N)
+            for (int i=0.0; i<N; ++i)
             {
-                traj.col(i) = p1*(1-i) + p2*i;
+                double j = i/static_cast<double>(N);
+                traj.col(i) = p1*(1-j) + p2*j;
             }
             traj.rightCols(1) = p2;
 
