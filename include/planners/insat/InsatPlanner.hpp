@@ -33,7 +33,6 @@ namespace ps
 
         bool Plan()
         {
-            constructInsatActions();
             initialize();
             auto t_start = std::chrono::steady_clock::now();
 
@@ -70,11 +69,30 @@ namespace ps
         void initialize()
         {
 
-            Planner::initialize();
+            plan_.clear();
 
+            // Initialize planner stats
+            planner_stats_ = PlannerStats();
+
+            // Initialize start state
+            start_state_ptr_->SetGValue(0);
+            start_state_ptr_->SetHValue(computeHeuristic(start_state_ptr_));
+
+            // Reset goal state
+            goal_state_ptr_ = NULL;
+
+            // Reset state
+            planner_stats_ = PlannerStats();
+
+            // Reset h_min
+            h_val_min_ = DINF;
+
+            planner_stats_.num_jobs_per_thread_.resize(1, 0);
             // Initialize open list
             start_state_ptr_->SetFValue(start_state_ptr_->GetGValue() + heuristic_w_*start_state_ptr_->GetHValue());
             insat_state_open_list_.push(start_state_ptr_);
+
+            constructInsatActions();
         }
 
         std::vector<InsatStatePtrType> getStateAncestors(const InsatStatePtrType state_ptr) const
@@ -95,9 +113,6 @@ namespace ps
         {
 
             if (VERBOSE) state_ptr->Print("Expanding");
-
-            planner_stats_.num_jobs_per_thread_[0] +=1;
-            planner_stats_.num_state_expansions_++;
 
             state_ptr->SetVisited();
 
@@ -183,15 +198,15 @@ namespace ps
                         if (h_val != DINF)
                         {
                             h_val_min_ = h_val < h_val_min_ ? h_val : h_val_min_;
-                            successor_state_ptr->SetGValue(new_g_val);
-                            successor_state_ptr->SetFValue(new_g_val + heuristic_w_*h_val);
+                            successor_state_ptr->SetGValue(new_g_val); //
+                            successor_state_ptr->SetFValue(new_g_val + heuristic_w_*h_val); //
 
-                            auto edge_ptr = new InsatEdge(state_ptr, best_anc, successor_state_ptr, action_ptr);
+                            auto edge_ptr = new InsatEdge(state_ptr, action_ptr, best_anc, successor_state_ptr);
                             edge_ptr->SetTraj(traj);
                             edge_ptr->SetTrajCost(cost);
                             edge_ptr->SetCost(inc_cost);
                             edge_map_.insert(std::make_pair(getEdgeKey(edge_ptr), edge_ptr));
-                            successor_state_ptr->SetIncomingEdgePtr(edge_ptr);
+                            successor_state_ptr->SetIncomingEdgePtr(edge_ptr); //
 
                             if (insat_state_open_list_.contains(successor_state_ptr))
                             {
@@ -287,6 +302,7 @@ namespace ps
             }
             while(state_ptr->GetIncomingEdgePtr())
             {
+                state_ptr->Print();
                 if (state_ptr->GetIncomingEdgePtr()) // For start state_ptr, there is no incoming edge
                     plan_.insert(plan_.begin(), PlanElement(state_ptr->GetStateVars(), state_ptr->GetIncomingEdgePtr()->action_ptr_, state_ptr->GetIncomingEdgePtr()->GetCost()));
                 else

@@ -200,9 +200,32 @@ bool PinsatPlanner::Plan()
 
 void PinsatPlanner::initialize()
 {
+    InsatPlanner::initialize();
 
-    GepasePlanner::initialize();
-    PinsatPlanner::initialize();
+    planner_stats_.num_jobs_per_thread_.resize(num_threads_, 0);
+
+    terminate_ = false;
+    recheck_flag_ = true;
+
+    edge_expansion_vec_.clear();
+    edge_expansion_vec_.resize(num_threads_-1, NULL);
+    
+    edge_expansion_status_.clear();
+    edge_expansion_status_.resize(num_threads_-1, 0);
+
+    vector<condition_variable> cv_vec(num_threads_-1);
+    cv_vec_.swap(cv_vec);
+
+    edge_expansion_futures_.clear();
+
+    // Insert proxy edge with start state
+    dummy_action_ptr_ = NULL;
+    auto edge_ptr = new InsatEdge(start_state_ptr_, dummy_action_ptr_);
+    edge_ptr->expansion_priority_ = heuristic_w_*computeHeuristic(start_state_ptr_);
+
+    edge_map_.insert(make_pair(getEdgeKey(edge_ptr), edge_ptr));
+    edge_open_list_.push(edge_ptr);   
+
 }
 
 void PinsatPlanner::expandEdgeLoop(int thread_id)
@@ -246,7 +269,7 @@ void PinsatPlanner::expand(InsatEdgePtrType edge_ptr, int thread_id)
         {
             if (action_ptr->CheckPreconditions(state_ptr->GetStateVars()))
             {
-                auto edge_ptr_next = new InsatEdge(state_ptr, NULL, action_ptr);
+                auto edge_ptr_next = new InsatEdge(state_ptr, action_ptr);
                 edge_map_.insert(make_pair(getEdgeKey(edge_ptr_next), edge_ptr_next));
                 edge_ptr_next->expansion_priority_ = edge_ptr->expansion_priority_;
                 state_ptr->num_successors_+=1;
@@ -300,140 +323,152 @@ void PinsatPlanner::expand(InsatEdgePtrType edge_ptr, int thread_id)
 void PinsatPlanner::expandEdge(InsatEdgePtrType edge_ptr, int thread_id)
 {
 
-    // auto action_ptr = edge_ptr->action_ptr_;
+    auto action_ptr = edge_ptr->action_ptr_;
 
-    // lock_.unlock();
-    // // Evaluate the edge
-    // auto t_start = chrono::steady_clock::now();
-    // auto action_successor = action_ptr->GetSuccessor(edge_ptr->lowD_parent_state_ptr_->GetStateVars(), thread_id);
-    // auto t_end = chrono::steady_clock::now();
-    // //********************
+    lock_.unlock();
+    // Evaluate the edge
+    auto t_start = chrono::steady_clock::now();
+    auto action_successor = action_ptr->GetSuccessor(edge_ptr->lowD_parent_state_ptr_->GetStateVars(), thread_id);
+    auto t_end = chrono::steady_clock::now();
+    //********************
     
-    // auto t_lock_s = chrono::steady_clock::now();
-    // lock_.lock();
-    // auto t_lock_e = chrono::steady_clock::now();
-    // planner_stats_.lock_time_ += 1e-9*chrono::duration_cast<chrono::nanoseconds>(t_lock_e-t_lock_s).count();
+    auto t_lock_s = chrono::steady_clock::now();
+    lock_.lock();
+    auto t_lock_e = chrono::steady_clock::now();
+    planner_stats_.lock_time_ += 1e-9*chrono::duration_cast<chrono::nanoseconds>(t_lock_e-t_lock_s).count();
 
-    // planner_stats_.num_evaluated_edges_++; // Only the edges controllers that satisfied pre-conditions and args are in the open list
+    planner_stats_.num_evaluated_edges_++; // Only the edges controllers that satisfied pre-conditions and args are in the open list
 
-    // if (action_successor.success_)
-    // {
-    //     auto successor_state_ptr = constructInsatState(action_successor.successor_state_vars_costs_.back().first);
-    //     // double cost = action_successor.successor_state_vars_costs_.back().second;                
+    if (action_successor.success_)
+    {
+        auto successor_state_ptr = constructInsatState(action_successor.successor_state_vars_costs_.back().first);
+        // double cost = action_successor.successor_state_vars_costs_.back().second;                
 
-    //     // Set successor and cost in expanded edge
-    //     edge_ptr->child_state_ptr_ = successor_state_ptr;
-    //     // edge_ptr->SetCost(cost);
+        // Set successor and cost in expanded edge
+        edge_ptr->child_state_ptr_ = successor_state_ptr;
+        // edge_ptr->SetCost(cost);
 
-    //     if (!successor_state_ptr->IsVisited())
-    //     {
+        if (!successor_state_ptr->IsVisited())
+        {
          
-    //         InsatStatePtrType best_anc;
-    //         TrajType traj;
-    //         double cost = 0;
-    //         bool root=true;
-    //         auto ancestors = edge_ptr->lowD_parent_state_ptr_->GetAncestors();
+            InsatStatePtrType best_anc;
+            TrajType traj;
+            double cost = 0, inc_cost = 0;
+            bool root=true;
+            auto ancestors = edge_ptr->lowD_parent_state_ptr_->GetAncestors();
          
-    //         lock_.unlock();
+            lock_.unlock();
             
-    //         for (auto& anc: ancestors)
-    //         {
-    //             TrajType inc_traj = action_ptr->optimize(anc->GetStateVars(), successor_state_ptr->GetStateVars());
-    //             if (root && inc_traj.size() > 0)
-    //             {
-    //                 root = false;
-    //                 traj = inc_traj;
-    //                 best_anc = anc;
-    //                 break;
-    //             }
-    //             else if (root && inc_traj.size() == 0)
-    //             {
-    //                 root = false;
-    //                 continue;
-    //             }
-    //             else if (inc_traj.size() == 0)
-    //             {
-    //                 continue;
-    //             }
-    //             else
-    //             {
-    //                 traj = action_ptr->warmOptimize(anc->GetIncomingEdgePtr()->traj_, inc_traj);
-    //                 best_anc = anc;
-    //                 break;
-    //             }
-    //         }
+            for (auto& anc: ancestors)
+            {
+                TrajType inc_traj = action_ptr->optimize(anc->GetStateVars(), successor_state_ptr->GetStateVars());
+                if (root && inc_traj.size() > 0)
+                {
+                    root = false;
+                    inc_cost = action_ptr->getCost(inc_traj);
+                    traj = inc_traj;
+                    best_anc = anc;
+                    break;
+                }
+                else if (root && inc_traj.size() == 0)
+                {
+                    root = false;
+                    continue;
+                }
+                else if (inc_traj.size() == 0)
+                {
+                    continue;
+                }
+                else
+                {
+                    inc_cost = action_ptr->getCost(inc_traj);
+                    traj = action_ptr->warmOptimize(anc->GetIncomingEdgePtr()->traj_, inc_traj);
+                    best_anc = anc;
+                    break;
+                }
+            }
 
-    //         lock_.lock();
+            lock_.lock();
 
-    //         cost = action_ptr->getCost(traj);
-    //         double new_g_val = cost;
-    //         // double new_g_val = edge_ptr->lowD_parent_state_ptr_->GetGValue() + cost;
+            cost = action_ptr->getCost(traj);
+            double new_g_val = cost;
+            // double new_g_val = edge_ptr->lowD_parent_state_ptr_->GetGValue() + cost;
 
 
-    //         if (successor_state_ptr->GetGValue() > new_g_val)
-    //         {
+            if (successor_state_ptr->GetGValue() > new_g_val)
+            {
 
-    //             double h_val = successor_state_ptr->GetHValue();
+                double h_val = successor_state_ptr->GetHValue();
                 
-    //             if (h_val == -1)
-    //             {
-    //                 h_val = computeHeuristic(successor_state_ptr);
-    //                 successor_state_ptr->SetHValue(h_val);        
-    //             }
+                if (h_val == -1)
+                {
+                    h_val = computeHeuristic(successor_state_ptr);
+                    successor_state_ptr->SetHValue(h_val);        
+                }
 
-    //             if (h_val != DINF)
-    //             {
-    //                 h_val_min_ = h_val < h_val_min_ ? h_val : h_val_min_;
-    //                 successor_state_ptr->SetGValue(new_g_val);
-    //                 successor_state_ptr->SetFValue(new_g_val + heuristic_w_*h_val);
-    //                 successor_state_ptr->SetIncomingEdgePtr(edge_ptr);
-    //                 successor_state_ptr->GetIncomingEdgePtr()->SetTraj(traj);
+                if (h_val != DINF)
+                {
+                    h_val_min_ = h_val < h_val_min_ ? h_val : h_val_min_;
+                    successor_state_ptr->SetGValue(new_g_val);
+                    successor_state_ptr->SetFValue(new_g_val + heuristic_w_*h_val);
+                    successor_state_ptr->SetIncomingEdgePtr(edge_ptr);
 
-    //                 // Insert poxy edge
-    //                 auto edge_temp = Edge(successor_state_ptr, dummy_action_ptr_);
-    //                 auto edge_key = getEdgeKey(&edge_temp);
-    //                 auto it_edge = edge_map_.find(edge_key); 
-    //                 EdgePtrType proxy_edge_ptr;
+                    edge_ptr->SetTraj(traj);
+                    edge_ptr->SetTrajCost(cost);
+                    edge_ptr->SetCost(inc_cost);
+                    edge_ptr->fullD_parent_state_ptr_ = best_anc;
+                    // Insert poxy edge
+                    auto edge_temp = Edge(successor_state_ptr, dummy_action_ptr_);
+                    auto edge_key = getEdgeKey(&edge_temp);
+                    auto it_edge = edge_map_.find(edge_key); 
+                    InsatEdgePtrType proxy_edge_ptr;
 
-    //                 if (it_edge == edge_map_.end())
-    //                 {
-    //                     proxy_edge_ptr = new Edge(successor_state_ptr, dummy_action_ptr_);
-    //                     edge_map_.insert(make_pair(edge_key, proxy_edge_ptr));
-    //                 }
-    //                 else
-    //                 {
-    //                     proxy_edge_ptr = it_edge->second;
-    //                 }
+                    if (it_edge == edge_map_.end())
+                    {
+                        proxy_edge_ptr = new InsatEdge(successor_state_ptr, dummy_action_ptr_);
+                        edge_map_.insert(make_pair(edge_key, proxy_edge_ptr));
+                    }
+                    else
+                    {
+                        proxy_edge_ptr = dynamic_cast<InsatEdgePtrType>(it_edge->second);
+                    }
 
-    //                 proxy_edge_ptr->expansion_priority_ = new_g_val + heuristic_w_*h_val;
+                    proxy_edge_ptr->expansion_priority_ = new_g_val + heuristic_w_*h_val;
                     
-    //                 if (edge_open_list_.contains(proxy_edge_ptr))
-    //                 {
-    //                     edge_open_list_.decrease(proxy_edge_ptr);
-    //                 }
-    //                 else
-    //                 {
-    //                     edge_open_list_.push(proxy_edge_ptr);
-    //                 }
+                    if (edge_open_list_.contains(proxy_edge_ptr))
+                    {
+                        edge_open_list_.decrease(proxy_edge_ptr);
+                    }
+                    else
+                    {
+                        edge_open_list_.push(proxy_edge_ptr);
+                    }
     
-    //                 notifyMainThread();
+                    notifyMainThread();
 
-    //             }
+                }
 
-    //         }       
-    //     }
-    // }
-    // else
-    // {
-    //     if (VERBOSE) edge_ptr->Print("No successors for");
-    // }
+            }       
+        }
+    }
+    else
+    {
+        if (VERBOSE) edge_ptr->Print("No successors for");
+    }
 
-    // edge_ptr->lowD_parent_state_ptr_->num_expanded_successors_ += 1;
+    edge_ptr->lowD_parent_state_ptr_->num_expanded_successors_ += 1;
 
 }
 
 void PinsatPlanner::exit()
 {
+    // Clear open list
+    while (!edge_open_list_.empty())
+    {
+        edge_open_list_.pop();
+    }
+    
+    being_expanded_states_.clear();
+
     GepasePlanner::exit();
-    PinsatPlanner::exit();
 }

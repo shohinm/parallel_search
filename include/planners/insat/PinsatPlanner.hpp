@@ -32,6 +32,7 @@ class PinsatPlanner : virtual public GepasePlanner, virtual public InsatPlanner
         BEType being_expanded_states_;    
 
         std::vector<InsatEdgePtrType> edge_expansion_vec_;
+        InsatActionPtrType dummy_action_ptr_;
 
 
 };

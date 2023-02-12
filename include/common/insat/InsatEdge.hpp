@@ -12,17 +12,13 @@ namespace ps
 
         typedef MatDf TrajType;
 
-        InsatEdge(InsatStatePtrType lowD_parent_ptr, InsatStatePtrType fullD_parent_ptr,  InsatStatePtrType child_ptr, InsatActionPtrType action_ptr):
+        InsatEdge(InsatStatePtrType lowD_parent_ptr, InsatActionPtrType action_ptr, InsatStatePtrType fullD_parent_ptr = NULL,  InsatStatePtrType child_ptr = NULL):
                 lowD_parent_state_ptr_(lowD_parent_ptr), lowD_child_state_ptr_(child_ptr),
                 fullD_parent_state_ptr_(fullD_parent_ptr), fullD_child_state_ptr_(child_ptr),
-                Edge(lowD_parent_ptr, child_ptr, action_ptr)
+                action_ptr_(action_ptr),
+                Edge(lowD_parent_ptr, action_ptr, child_ptr)
                 {edge_id_ = id_counter_++;};
-
-        InsatEdge(InsatStatePtrType lowD_parent_ptr, InsatStatePtrType fullD_parent_ptr, InsatActionPtrType action_ptr):
-                lowD_parent_state_ptr_(lowD_parent_ptr),
-                fullD_parent_state_ptr_(fullD_parent_ptr),
-                Edge(lowD_parent_ptr, action_ptr)
-                {edge_id_ = id_counter_++;};
+                
         InsatEdge(const InsatEdge& other_edge);
         InsatEdge& operator=(const InsatEdge& other_edge);
         bool operator==(const InsatEdge& other_edge) const;
@@ -36,6 +32,7 @@ namespace ps
         InsatStatePtrType lowD_child_state_ptr_;
         InsatStatePtrType fullD_parent_state_ptr_;
         InsatStatePtrType fullD_child_state_ptr_;
+        InsatActionPtrType action_ptr_;
 
         // Dynamic trajectory
         TrajType traj_;

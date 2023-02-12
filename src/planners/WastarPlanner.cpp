@@ -112,7 +112,7 @@ void WastarPlanner::updateState(StatePtrType& state_ptr, ActionPtrType& action_p
                     successor_state_ptr->SetGValue(new_g_val);
                     successor_state_ptr->SetFValue(new_g_val + heuristic_w_*h_val);
                     
-                    auto edge_ptr = new Edge(state_ptr, successor_state_ptr, action_ptr);
+                    auto edge_ptr = new Edge(state_ptr, action_ptr, successor_state_ptr);
                     edge_ptr->SetCost(cost);
                     edge_map_.insert(make_pair(getEdgeKey(edge_ptr), edge_ptr));
                     
