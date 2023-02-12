@@ -43,14 +43,14 @@ namespace ps
             return optimize(s1, s2, N);
         }
 
-        virtual TrajType optimize(const VecDf& s1, const VecDf& s2, int N, int thread_id=0)
+        virtual TrajType optimize(const VecDf& s1, const VecDf& s2, int N)
         {
             assert(N>=2);
 
             if (intp_ == InterpMode::LINEAR)
             {
                 TrajType soln_traj = linInterp(s1, s2, N);
-                if (env_[thread_id]->isFeasible(soln_traj))
+                if (env_[0]->isFeasible(soln_traj))
                 {
                     return soln_traj;
                 }
@@ -62,7 +62,7 @@ namespace ps
             }
         }
 
-        virtual TrajType warmOptimize(const TrajType& traj1, const TrajType & traj2, int thread_id=0)
+        virtual TrajType warmOptimize(const TrajType& traj1, const TrajType & traj2)
         {
             int N = traj1.cols()+traj2.cols();
             TrajType init_traj(traj1.rows(), N);
@@ -75,7 +75,7 @@ namespace ps
             for (double i=0.0; i<=1.0; i+=1.0/conv_delta_)
             {
               soln_traj = (1-i)*init_traj + i*opt_traj;
-              if (!env_[thread_id]->isFeasible(soln_traj))
+              if (!env_[0]->isFeasible(soln_traj))
               {
                 break;
               }

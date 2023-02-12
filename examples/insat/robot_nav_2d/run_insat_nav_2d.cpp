@@ -182,31 +182,31 @@ void constructActions(vector<shared_ptr<Action>>& action_ptrs,
     action_params["cache_footprint"] = 1;
 
     ParamsType expensive_action_params = action_params;
-    expensive_action_params["cache_footprint"] = 0;
+    expensive_action_params["cache_footprint"] = 1;
 
     auto move_up_controller_ptr = make_shared<IMoveUpAction>("MoveUp", action_params, map, opt, 0);
     action_ptrs.emplace_back(move_up_controller_ptr);
 
-//    auto move_up_right_controller_ptr = make_shared<IMoveUpRightAction>("MoveUpRight", expensive_action_params, map, opt);
-//    action_ptrs.emplace_back(move_up_right_controller_ptr);
+    auto move_up_right_controller_ptr = make_shared<IMoveUpRightAction>("MoveUpRight", expensive_action_params, map, opt);
+    action_ptrs.emplace_back(move_up_right_controller_ptr);
 
     auto move_right_controller_ptr = make_shared<IMoveRightAction>("MoveRight", action_params, map, opt, 0);
     action_ptrs.emplace_back(move_right_controller_ptr);
 
-//    auto move_right_down_controller_ptr = make_shared<IMoveRightDownAction>("MoveRightDown", expensive_action_params, map, opt);
-//    action_ptrs.emplace_back(move_right_down_controller_ptr);
+    auto move_right_down_controller_ptr = make_shared<IMoveRightDownAction>("MoveRightDown", expensive_action_params, map, opt);
+    action_ptrs.emplace_back(move_right_down_controller_ptr);
 
     auto move_down_controller_ptr = make_shared<IMoveDownAction>("MoveDown", action_params, map, opt, 0);
     action_ptrs.emplace_back(move_down_controller_ptr);
 
-//    auto move_down_left_controller_ptr = make_shared<IMoveDownLeftAction>("MoveDownLeft", expensive_action_params, map, opt);
-//    action_ptrs.emplace_back(move_down_left_controller_ptr);
+    auto move_down_left_controller_ptr = make_shared<IMoveDownLeftAction>("MoveDownLeft", expensive_action_params, map, opt);
+    action_ptrs.emplace_back(move_down_left_controller_ptr);
 
     auto move_left_controller_ptr = make_shared<IMoveLeftAction>("MoveLeft", action_params, map, opt, 0);
     action_ptrs.emplace_back(move_left_controller_ptr);
 
-//    auto move_left_up_controller_ptr = make_shared<IMoveLeftUpAction>("MoveLeftUp", expensive_action_params, map, opt);
-//    action_ptrs.emplace_back(move_left_up_controller_ptr);
+    auto move_left_up_controller_ptr = make_shared<IMoveLeftUpAction>("MoveLeftUp", expensive_action_params, map, opt);
+    action_ptrs.emplace_back(move_left_up_controller_ptr);
 
 }
 
@@ -319,7 +319,7 @@ int main(int argc, char* argv[])
 
     // create opt
     auto opt = std::make_shared<DummyOpt>(DummyOpt::InterpMode::LINEAR, 5e-1, 1e-1);
-    std::vector<DummyOpt::Ptr> opt_vec{opt};
+    std::vector<DummyOpt::Ptr> opt_vec(num_threads, opt);
 
     // Construct actions
     ParamsType action_params;
