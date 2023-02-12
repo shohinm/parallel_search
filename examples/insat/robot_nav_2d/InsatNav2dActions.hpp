@@ -3,7 +3,7 @@
 
 #include <common/Types.hpp>
 #include <common/insat/InsatAction.hpp>
-#include "planners/insat/opt/dummy_opt.hpp"
+#include "planners/insat/opt/DummyOpt.hpp"
 
 namespace ps
 {
@@ -15,29 +15,31 @@ namespace ps
 
         typedef std::shared_ptr<InsatNav2dAction> Ptr;
         typedef DummyOpt OptType;
-        typedef std::shared_ptr<OptType> OptPtrType;
-        typedef std::vector<OptPtrType> OptPtrVecType;
+        typedef std::vector<OptType> OptVecType;
+        typedef std::shared_ptr<OptVecType> OptVecPtrType;
+
+        friend class DummyOpt;
 
         InsatNav2dAction(const std::string& type,
                          ParamsType params,
                          std::vector<std::vector<int>>& map,
-                         OptPtrVecType& opt,
+                         OptVecPtrType& opt,
                          bool is_expensive = true);
 
         virtual bool CheckPreconditions(StateVarsType state);
         ActionSuccessor GetSuccessor(StateVarsType state_vars, int thread_id);
         ActionSuccessor GetSuccessorLazy(StateVarsType state_vars, int thread_id);
         ActionSuccessor Evaluate(StateVarsType parent_state_vars, StateVarsType child_state_vars, int thread_id=0);
-        bool isValidCell(int x, int y);
+        bool isValidCell(int x, int y) const;
         bool inRange(int x, int y);
         std::vector<std::pair<int, int>> getFootPrintRectangular(int x, int y, int footprint_size);
 
         // INSAT
-        void setOpt(OptPtrVecType& opt);
-        bool isFeasible(TrajType& traj);
-        TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id=0);
-        TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0);
-        double getCost(const TrajType& traj, int thread_id=0);
+        void setOpt(OptVecPtrType& opt);
+        bool isFeasible(TrajType& traj) const;
+        TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id=0) const;
+        TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0) const;
+        double getCost(const TrajType& traj, int thread_id=0) const;
 
     protected:
 
@@ -45,7 +47,7 @@ namespace ps
         std::vector<std::vector<int>> map_;
         std::vector<std::pair<int, int>> footprint_;
         LockType lock_;
-        OptPtrVecType opt_;
+        OptVecPtrType opt_;
 
     };
 
@@ -53,19 +55,19 @@ namespace ps
     {
 
     public:
-        IMoveUpAction(const std::string& type, ParamsType params, std::vector<std::vector<int>> map, OptPtrVecType opt, bool is_expensive = true):
+        IMoveUpAction(const std::string& type, ParamsType params, std::vector<std::vector<int>> map, OptVecPtrType opt, bool is_expensive = true):
                 InsatNav2dAction(type, params, map, opt, is_expensive)
         {
             move_dir_ = {0, 1};
         };
 
-      void setOpt(OptPtrVecType& opt) {InsatNav2dAction::setOpt(opt);};
-      bool isFeasible(TrajType& traj) {return InsatNav2dAction::isFeasible(traj);};
-      TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id=0)
+      void setOpt(OptVecPtrType& opt) {InsatNav2dAction::setOpt(opt);};
+      bool isFeasible(TrajType& traj) const {return InsatNav2dAction::isFeasible(traj);};
+      TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id=0) const
       {return InsatNav2dAction::optimize(s1, s2, thread_id);}
-      TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0)
+      TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0) const
       {return InsatNav2dAction::warmOptimize(t1, t2, thread_id);}
-      double getCost(const TrajType& traj, int thread_id=0)
+      double getCost(const TrajType& traj, int thread_id=0) const
       {return InsatNav2dAction::getCost(traj, thread_id);}
     };
 
@@ -73,19 +75,19 @@ namespace ps
     {
 
     public:
-        IMoveUpRightAction(const std::string& type, ParamsType params, std::vector<std::vector<int>> map, OptPtrVecType opt, bool is_expensive = true):
+        IMoveUpRightAction(const std::string& type, ParamsType params, std::vector<std::vector<int>> map, OptVecPtrType opt, bool is_expensive = true):
                 InsatNav2dAction(type, params, map, opt, is_expensive)
         {
             move_dir_ = {1, 1};
         };
 
-      void setOpt(OptPtrVecType& opt) {InsatNav2dAction::setOpt(opt);};
-      bool isFeasible(TrajType& traj) {return InsatNav2dAction::isFeasible(traj);};
-      TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id=0)
+      void setOpt(OptVecPtrType& opt) {InsatNav2dAction::setOpt(opt);};
+      bool isFeasible(TrajType& traj) const {return InsatNav2dAction::isFeasible(traj);};
+      TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id=0) const
       {return InsatNav2dAction::optimize(s1, s2, thread_id);}
-      TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0)
+      TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0) const
       {return InsatNav2dAction::warmOptimize(t1, t2, thread_id);}
-      double getCost(const TrajType& traj, int thread_id=0)
+      double getCost(const TrajType& traj, int thread_id=0) const
       {return InsatNav2dAction::getCost(traj, thread_id);}
     };
 
@@ -93,19 +95,19 @@ namespace ps
     {
 
     public:
-        IMoveRightAction(const std::string& type, ParamsType params, std::vector<std::vector<int>> map, OptPtrVecType opt, bool is_expensive = true):
+        IMoveRightAction(const std::string& type, ParamsType params, std::vector<std::vector<int>> map, OptVecPtrType opt, bool is_expensive = true):
                 InsatNav2dAction(type, params, map, opt, is_expensive)
         {
             move_dir_ = {1, 0};
         };
 
-      void setOpt(OptPtrVecType& opt) {InsatNav2dAction::setOpt(opt);};
-      bool isFeasible(TrajType& traj) {return InsatNav2dAction::isFeasible(traj);};
-      TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id=0)
+      void setOpt(OptVecPtrType& opt) {InsatNav2dAction::setOpt(opt);};
+      bool isFeasible(TrajType& traj) const {return InsatNav2dAction::isFeasible(traj);};
+      TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id=0) const
       {return InsatNav2dAction::optimize(s1, s2, thread_id);}
-      TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0)
+      TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0) const
       {return InsatNav2dAction::warmOptimize(t1, t2, thread_id);}
-      double getCost(const TrajType& traj, int thread_id=0)
+      double getCost(const TrajType& traj, int thread_id=0) const
       {return InsatNav2dAction::getCost(traj, thread_id);}
     };
 
@@ -113,19 +115,19 @@ namespace ps
     {
 
     public:
-        IMoveRightDownAction(const std::string& type, ParamsType params, std::vector<std::vector<int>> map, OptPtrVecType opt, bool is_expensive = true):
+        IMoveRightDownAction(const std::string& type, ParamsType params, std::vector<std::vector<int>> map, OptVecPtrType opt, bool is_expensive = true):
                 InsatNav2dAction(type, params, map, opt, is_expensive)
         {
             move_dir_ = {1, -1};
         };
 
-      void setOpt(OptPtrVecType& opt) {InsatNav2dAction::setOpt(opt);};
-      bool isFeasible(TrajType& traj) {return InsatNav2dAction::isFeasible(traj);};
-      TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id=0)
+      void setOpt(OptVecPtrType& opt) {InsatNav2dAction::setOpt(opt);};
+      bool isFeasible(TrajType& traj) const {return InsatNav2dAction::isFeasible(traj);};
+      TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id=0) const
       {return InsatNav2dAction::optimize(s1, s2, thread_id);}
-      TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0)
+      TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0) const
       {return InsatNav2dAction::warmOptimize(t1, t2, thread_id);}
-      double getCost(const TrajType& traj, int thread_id=0)
+      double getCost(const TrajType& traj, int thread_id=0) const
       {return InsatNav2dAction::getCost(traj, thread_id);}
     };
 
@@ -134,19 +136,19 @@ namespace ps
     {
 
     public:
-        IMoveDownAction(const std::string& type, ParamsType params, std::vector<std::vector<int>> map, OptPtrVecType opt, bool is_expensive = true):
+        IMoveDownAction(const std::string& type, ParamsType params, std::vector<std::vector<int>> map, OptVecPtrType opt, bool is_expensive = true):
                 InsatNav2dAction(type, params, map, opt, is_expensive)
         {
             move_dir_ = {0, -1};
         };
 
-      void setOpt(OptPtrVecType& opt) {InsatNav2dAction::setOpt(opt);};
-      bool isFeasible(TrajType& traj) {return InsatNav2dAction::isFeasible(traj);};
-      TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id=0)
+      void setOpt(OptVecPtrType& opt) {InsatNav2dAction::setOpt(opt);};
+      bool isFeasible(TrajType& traj) const {return InsatNav2dAction::isFeasible(traj);};
+      TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id=0) const
       {return InsatNav2dAction::optimize(s1, s2, thread_id);}
-      TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0)
+      TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0) const
       {return InsatNav2dAction::warmOptimize(t1, t2, thread_id);}
-      double getCost(const TrajType& traj, int thread_id=0)
+      double getCost(const TrajType& traj, int thread_id=0) const
       {return InsatNav2dAction::getCost(traj, thread_id);}
     };
 
@@ -154,19 +156,19 @@ namespace ps
     {
 
     public:
-        IMoveDownLeftAction(const std::string& type, ParamsType params, std::vector<std::vector<int>> map, OptPtrVecType opt, bool is_expensive = true):
+        IMoveDownLeftAction(const std::string& type, ParamsType params, std::vector<std::vector<int>> map, OptVecPtrType opt, bool is_expensive = true):
                 InsatNav2dAction(type, params, map, opt, is_expensive)
         {
             move_dir_ = {-1, -1};
         };
 
-      void setOpt(OptPtrVecType& opt) {InsatNav2dAction::setOpt(opt);};
-      bool isFeasible(TrajType& traj) {return InsatNav2dAction::isFeasible(traj);};
-      TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id=0)
+      void setOpt(OptVecPtrType& opt) {InsatNav2dAction::setOpt(opt);};
+      bool isFeasible(TrajType& traj) const {return InsatNav2dAction::isFeasible(traj);};
+      TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id=0) const
       {return InsatNav2dAction::optimize(s1, s2, thread_id);}
-      TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0)
+      TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0) const
       {return InsatNav2dAction::warmOptimize(t1, t2, thread_id);}
-      double getCost(const TrajType& traj, int thread_id=0)
+      double getCost(const TrajType& traj, int thread_id=0) const
       {return InsatNav2dAction::getCost(traj, thread_id);}
     };
 
@@ -175,19 +177,19 @@ namespace ps
     {
 
     public:
-        IMoveLeftAction(const std::string& type, ParamsType params, std::vector<std::vector<int>> map, OptPtrVecType opt, bool is_expensive = true):
+        IMoveLeftAction(const std::string& type, ParamsType params, std::vector<std::vector<int>> map, OptVecPtrType opt, bool is_expensive = true):
                 InsatNav2dAction(type, params, map, opt, is_expensive)
         {
             move_dir_ = {-1, 0};
         };
 
-      void setOpt(OptPtrVecType& opt) {InsatNav2dAction::setOpt(opt);};
-      bool isFeasible(TrajType& traj) {return InsatNav2dAction::isFeasible(traj);};
-      TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id=0)
+      void setOpt(OptVecPtrType& opt) {InsatNav2dAction::setOpt(opt);};
+      bool isFeasible(TrajType& traj) const {return InsatNav2dAction::isFeasible(traj);};
+      TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id=0) const
       {return InsatNav2dAction::optimize(s1, s2, thread_id);}
-      TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0)
+      TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0) const
       {return InsatNav2dAction::warmOptimize(t1, t2, thread_id);}
-      double getCost(const TrajType& traj, int thread_id=0)
+      double getCost(const TrajType& traj, int thread_id=0) const
       {return InsatNav2dAction::getCost(traj, thread_id);}
     };
 
@@ -196,19 +198,19 @@ namespace ps
     {
 
     public:
-        IMoveLeftUpAction(const std::string& type, ParamsType params, std::vector<std::vector<int>> map, OptPtrVecType opt, bool is_expensive = true):
+        IMoveLeftUpAction(const std::string& type, ParamsType params, std::vector<std::vector<int>> map, OptVecPtrType opt, bool is_expensive = true):
                 InsatNav2dAction(type, params, map, opt, is_expensive)
         {
             move_dir_ = {-1, 1};
         };
 
-      void setOpt(OptPtrVecType& opt) {InsatNav2dAction::setOpt(opt);};
-      bool isFeasible(TrajType& traj) {return InsatNav2dAction::isFeasible(traj);};
-      TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id=0)
+      void setOpt(OptVecPtrType& opt) {InsatNav2dAction::setOpt(opt);};
+      bool isFeasible(TrajType& traj) const {return InsatNav2dAction::isFeasible(traj);};
+      TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id=0) const
       {return InsatNav2dAction::optimize(s1, s2, thread_id);}
-      TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0)
+      TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0) const
       {return InsatNav2dAction::warmOptimize(t1, t2, thread_id);}
-      double getCost(const TrajType& traj, int thread_id=0)
+      double getCost(const TrajType& traj, int thread_id=0) const
       {return InsatNav2dAction::getCost(traj, thread_id);}
     };
 

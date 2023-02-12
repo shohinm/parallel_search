@@ -16,10 +16,10 @@ namespace ps
                 : Action(type, params, is_expensive){};
         virtual ~InsatAction(){};
 
-        virtual TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id=0)=0;
-        virtual TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0)=0;
-        virtual double getCost(const TrajType& traj, int thread_id=0)=0;
-        virtual bool isFeasible(TrajType& traj)=0;
+        virtual TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id=0) const =0;
+        virtual TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0) const =0;
+        virtual double getCost(const TrajType& traj, int thread_id=0) const =0;
+        virtual bool isFeasible(TrajType& traj) const =0;
 
     protected:
         std::string type_;

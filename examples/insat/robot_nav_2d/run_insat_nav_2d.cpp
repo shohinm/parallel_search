@@ -14,7 +14,7 @@
 #include "planners/EpasePlanner.hpp"
 #include "planners/GepasePlanner.hpp"
 #include "planners/MplpPlanner.hpp"
-#include "planners/insat/opt/dummy_opt.hpp"
+#include "planners/insat/opt/DummyOpt.hpp"
 #include "planners/insat/InsatPlanner.hpp"
 
 using namespace std;
@@ -173,7 +173,7 @@ size_t EdgeKeyGenerator(const EdgePtrType& edge_ptr)
 
 void constructActions(vector<shared_ptr<Action>>& action_ptrs,
                       ParamsType& action_params,
-                      std::vector<DummyOpt::Ptr>& opt,
+                      InsatNav2dAction::OptVecPtrType& opt,
                       vector<vector<int>>& map)
 {
     // Define action parameters
@@ -318,23 +318,18 @@ int main(int argc, char* argv[])
     }
 
     // create opt
-    auto opt = std::make_shared<DummyOpt>(DummyOpt::InterpMode::LINEAR, 5e-1, 1e-1);
-    std::vector<DummyOpt::Ptr> opt_vec(num_threads, opt);
+    auto opt = DummyOpt(DummyOpt::InterpMode::LINEAR, 5e-1, 1e-1);
+    std::vector<DummyOpt> opt_vec(num_threads, opt);
+    auto opt_vec_ptr = std::make_shared<InsatNav2dAction::OptVecType>(opt_vec);
 
     // Construct actions
     ParamsType action_params;
     vector<shared_ptr<Action>> action_ptrs;
-    constructActions(action_ptrs, action_params, opt_vec, map);
+    constructActions(action_ptrs, action_params, opt_vec_ptr, map);
 
     // Construct planner
     shared_ptr<Planner> planner_ptr;
     constructPlanner(planner_name, planner_ptr, action_ptrs, planner_params, action_params);
-
-    // Give access to InsatAction (env) to opt
-    for (auto& o: opt_vec)
-    {
-        o->setEnv(action_ptrs);
-    }
 
     // Run experiments
     int start_goal_idx = 0;

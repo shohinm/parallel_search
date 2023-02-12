@@ -8,7 +8,7 @@ namespace ps
     InsatNav2dAction::InsatNav2dAction(const std::string& type,
                                        ParamsType params,
                                        std::vector<std::vector<int>>& map,
-                                       OptPtrVecType& opt,
+                                       OptVecPtrType& opt,
                                        bool is_expensive) : InsatAction(type, params, is_expensive),
                                                             map_(map),
                                                             opt_(opt)
@@ -86,7 +86,7 @@ namespace ps
         return GetSuccessor(parent_state_vars, thread_id);
     }
 
-    bool InsatNav2dAction::isValidCell(int x, int y)
+    bool InsatNav2dAction::isValidCell(int x, int y) const
     {
         int x_limit =  map_.size();
         int y_limit =  map_[0].size();
@@ -174,12 +174,12 @@ namespace ps
     }
 
     // INSAT
-    void InsatNav2dAction::setOpt(OptPtrVecType& opt)
+    void InsatNav2dAction::setOpt(OptVecPtrType& opt)
     {
         opt_ = opt;
     }
 
-  bool InsatNav2dAction::isFeasible(TrajType &traj)
+  bool InsatNav2dAction::isFeasible(TrajType &traj) const
   {
     bool feas = true;
     for (int i=0; i<traj.cols(); ++i)
@@ -198,7 +198,7 @@ namespace ps
 
   TrajType InsatNav2dAction::optimize(const StateVarsType &s1,
                                                         const StateVarsType &s2,
-                                                        int thread_id)
+                                                        int thread_id) const
   {
 //    VecDf p1 = Eigen::Map<const VecDf, Eigen::Unaligned>(s1.data(), s1.size());
 //    VecDf p2 = Eigen::Map<const VecDf, Eigen::Unaligned>(s2.data(), s2.size());
@@ -206,19 +206,19 @@ namespace ps
     Eigen::Map<const VecDf> p1(&s1[0], s1.size());
     Eigen::Map<const VecDf> p2(&s2[0], s2.size());
 
-    return opt_[thread_id]->optimize(p1, p2);
+    return (*opt_)[thread_id].optimize(this, p1, p2);
   }
 
   TrajType InsatNav2dAction::warmOptimize(const TrajType &t1,
                                                             const TrajType &t2,
-                                                            int thread_id)
+                                                            int thread_id) const
   {
-    return opt_[thread_id]->warmOptimize(t1, t2);
+    return (*opt_)[thread_id].warmOptimize(this, t1, t2);
   }
 
-  double InsatNav2dAction::getCost(const TrajType &traj, int thread_id)
+  double InsatNav2dAction::getCost(const TrajType &traj, int thread_id) const
   {
-    return opt_[thread_id]->calculateCost(traj);
+    return (*opt_)[thread_id].calculateCost(traj);
   }
 
 }
