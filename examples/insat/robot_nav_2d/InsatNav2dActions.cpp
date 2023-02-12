@@ -23,7 +23,7 @@ namespace ps
     ActionSuccessor InsatNav2dAction::GetSuccessor(StateVarsType state_vars, int thread_id)
     {
         std::vector<double> next_state_vars(2, 0);
-        for (int i = 0; i < params_["length"]; ++i)
+        for (int i = 0; i < Action::params_["length"]; ++i)
         {
             next_state_vars[0] = state_vars[0] + i*move_dir_[0];
             next_state_vars[1] = state_vars[1] + i*move_dir_[1];
@@ -182,7 +182,7 @@ namespace ps
   bool InsatNav2dAction::isFeasible(TrajType &traj)
   {
     bool feas = true;
-    for (int i=0; i<=traj.rows(); ++i)
+    for (int i=0; i<traj.cols(); ++i)
     {
       double x = traj.col(i)(0);
       double y = traj.col(i)(1);
@@ -200,8 +200,11 @@ namespace ps
                                                         const StateVarsType &s2,
                                                         int thread_id)
   {
-    VecDf p1 = Eigen::Map<const VecDf, Eigen::Unaligned>(s1.data(), s1.size());
-    VecDf p2 = Eigen::Map<const VecDf, Eigen::Unaligned>(s2.data(), s2.size());
+//    VecDf p1 = Eigen::Map<const VecDf, Eigen::Unaligned>(s1.data(), s1.size());
+//    VecDf p2 = Eigen::Map<const VecDf, Eigen::Unaligned>(s2.data(), s2.size());
+
+    Eigen::Map<const VecDf> p1(&s1[0], s1.size());
+    Eigen::Map<const VecDf> p2(&s2[0], s2.size());
 
     return opt_[thread_id]->optimize(p1, p2);
   }

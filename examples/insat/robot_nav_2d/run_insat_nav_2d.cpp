@@ -414,6 +414,18 @@ int main(int argc, char* argv[])
             cv::circle(img2, cv::Point(starts[exp_idx][0], starts[exp_idx][1]), action_params["footprint_size"], cv::Scalar(0, 255, 0), -1, 8);
             cv::circle(img2, cv::Point(goals[exp_idx][0], goals[exp_idx][1]), action_params["footprint_size"], cv::Scalar(0, 0, 255), -1, 8 );
 
+            for (int i=0; i<planner_ptr->GetPlan().size()-1; ++i)
+            {
+              auto pe1 = planner_ptr->GetPlan()[i];
+              auto pe2 = planner_ptr->GetPlan()[i+1];
+              cv::line(img2, cv::Point(pe1.state_[0], pe1.state_[1]), cv::Point(pe2.state_[0], pe2.state_[1]), cv::Scalar(255, 0, 0), 2, cv::LINE_AA);
+            }
+            auto pe1 = planner_ptr->GetPlan().front();
+            auto pe2 = planner_ptr->GetPlan().back();
+            cv::line(img2, cv::Point(starts[exp_idx][0], starts[exp_idx][1]), cv::Point(pe1.state_[0], pe1.state_[1]), cv::Scalar(255, 0, 0), 2, cv::LINE_AA);
+            cv::line(img2, cv::Point(pe2.state_[0], pe2.state_[1]), cv::Point(goals[exp_idx][0], goals[exp_idx][1]), cv::Scalar(255, 0, 0), 2, cv::LINE_AA);
+
+
             cv::resize(img2, img2, cv::Size(4*img.cols/scale, 4*img.rows/scale));
             cv::imshow("Plan", img2);
             cv::waitKey(500);
