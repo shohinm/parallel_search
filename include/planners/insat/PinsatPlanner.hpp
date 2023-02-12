@@ -11,7 +11,7 @@
 namespace ps
 {
 
-class PinsatPlanner : public GepasePlanner, public InsatPlanner
+class PinsatPlanner : virtual public GepasePlanner, virtual public InsatPlanner
 {
     public:
         typedef smpl::intrusive_heap<InsatEdge, IsLesserEdge> EdgeQueueMinType;

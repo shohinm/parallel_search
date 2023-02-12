@@ -53,16 +53,16 @@ bool PinsatPlanner::Plan()
                 popped_edges.emplace_back(curr_edge_ptr);
 
                 // If the parent state is being expanded, then all the outgoing edges are safe to expand
-                if (curr_edge_ptr->parent_state_ptr_->IsBeingExpanded())
+                if (curr_edge_ptr->lowD_parent_state_ptr_->IsBeingExpanded())
                     break;
 
                 // Independence check of curr_edge with edges in BE
                 for (auto& being_expanded_state : being_expanded_states_)
                 {
-                    if (being_expanded_state != curr_edge_ptr->parent_state_ptr_)
+                    if (being_expanded_state != curr_edge_ptr->lowD_parent_state_ptr_)
                     {
-                        auto h_diff = computeHeuristic(being_expanded_state, curr_edge_ptr->parent_state_ptr_);
-                        if (curr_edge_ptr->parent_state_ptr_->GetGValue() > being_expanded_state->GetGValue() + heuristic_w_*h_diff)
+                        auto h_diff = computeHeuristic(being_expanded_state, curr_edge_ptr->lowD_parent_state_ptr_);
+                        if (curr_edge_ptr->lowD_parent_state_ptr_->GetGValue() > being_expanded_state->GetGValue() + heuristic_w_*h_diff)
                         {
                             curr_edge_ptr = NULL;
                             break;
@@ -75,10 +75,10 @@ bool PinsatPlanner::Plan()
                     // Independence check of curr_edge with edges in OPEN that are in front of curr_edge
                     for (auto& popped_edge_ptr : popped_edges)
                     {
-                        if (popped_edge_ptr->parent_state_ptr_ != curr_edge_ptr->parent_state_ptr_)
+                        if (popped_edge_ptr->lowD_parent_state_ptr_ != curr_edge_ptr->lowD_parent_state_ptr_)
                         {
-                            auto h_diff = computeHeuristic(popped_edge_ptr->parent_state_ptr_, curr_edge_ptr->parent_state_ptr_);
-                            if (curr_edge_ptr->parent_state_ptr_->GetGValue() > popped_edge_ptr->parent_state_ptr_->GetGValue() + heuristic_w_*h_diff)
+                            auto h_diff = computeHeuristic(popped_edge_ptr->lowD_parent_state_ptr_, curr_edge_ptr->lowD_parent_state_ptr_);
+                            if (curr_edge_ptr->lowD_parent_state_ptr_->GetGValue() > popped_edge_ptr->lowD_parent_state_ptr_->GetGValue() + heuristic_w_*h_diff)
                             {
                                 curr_edge_ptr = NULL;
                                 break;
@@ -113,7 +113,7 @@ bool PinsatPlanner::Plan()
 
             
             // Return solution if goal state is expanded
-            if (isGoalState(curr_edge_ptr->parent_state_ptr_) && (!terminate_))
+            if (isGoalState(curr_edge_ptr->lowD_parent_state_ptr_) && (!terminate_))
             {
                 auto t_end = chrono::steady_clock::now();
                 double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
@@ -124,7 +124,7 @@ bool PinsatPlanner::Plan()
                 // cout << "--------------------------------------------------------" << endl;            
                 
                 // Construct path
-                goal_state_ptr_ = curr_edge_ptr->parent_state_ptr_;
+                goal_state_ptr_ = curr_edge_ptr->lowD_parent_state_ptr_;
                 constructPlan(goal_state_ptr_);   
                 terminate_ = true;
                 recheck_flag_ = true;
@@ -140,9 +140,9 @@ bool PinsatPlanner::Plan()
         if (curr_edge_ptr->action_ptr_ == dummy_action_ptr_)
         {
             planner_stats_.num_state_expansions_++;  
-            curr_edge_ptr->parent_state_ptr_->SetVisited();
-            curr_edge_ptr->parent_state_ptr_->SetBeingExpanded();
-            being_expanded_states_.push(curr_edge_ptr->parent_state_ptr_);
+            curr_edge_ptr->lowD_parent_state_ptr_->SetVisited();
+            curr_edge_ptr->lowD_parent_state_ptr_->SetBeingExpanded();
+            being_expanded_states_.push(curr_edge_ptr->lowD_parent_state_ptr_);
         }
 
         lock_.unlock();
@@ -238,15 +238,15 @@ void PinsatPlanner::expand(InsatEdgePtrType edge_ptr, int thread_id)
     // Proxy edge, add the real edges to Eopen
     if (edge_ptr->action_ptr_ == dummy_action_ptr_)
     {       
-        auto state_ptr = edge_ptr->parent_state_ptr_;
+        auto state_ptr = edge_ptr->lowD_parent_state_ptr_;
 
         state_ptr->SetAncestors(getStateAncestors(state_ptr));
 
-        for (auto& action_ptr: actions_ptrs_)
+        for (auto& action_ptr: insat_actions_ptrs_)
         {
             if (action_ptr->CheckPreconditions(state_ptr->GetStateVars()))
             {
-                auto edge_ptr_next = new InsatEdge(state_ptr, action_ptr);
+                auto edge_ptr_next = new InsatEdge(state_ptr, NULL, action_ptr);
                 edge_map_.insert(make_pair(getEdgeKey(edge_ptr_next), edge_ptr_next));
                 edge_ptr_next->expansion_priority_ = edge_ptr->expansion_priority_;
                 state_ptr->num_successors_+=1;
@@ -271,19 +271,19 @@ void PinsatPlanner::expand(InsatEdgePtrType edge_ptr, int thread_id)
     }
 
 
-    if (edge_ptr->parent_state_ptr_->num_expanded_successors_ == edge_ptr->parent_state_ptr_->num_successors_)
+    if (edge_ptr->lowD_parent_state_ptr_->num_expanded_successors_ == edge_ptr->lowD_parent_state_ptr_->num_successors_)
     {
-        edge_ptr->parent_state_ptr_->UnsetBeingExpanded();
-        if (being_expanded_states_.contains(edge_ptr->parent_state_ptr_))
+        edge_ptr->lowD_parent_state_ptr_->UnsetBeingExpanded();
+        if (being_expanded_states_.contains(edge_ptr->lowD_parent_state_ptr_))
         {   
-            being_expanded_states_.erase(edge_ptr->parent_state_ptr_);
+            being_expanded_states_.erase(edge_ptr->lowD_parent_state_ptr_);
             notifyMainThread();
         }
     }
 
-    if (edge_ptr->parent_state_ptr_->num_expanded_successors_ > edge_ptr->parent_state_ptr_->num_successors_)
+    if (edge_ptr->lowD_parent_state_ptr_->num_expanded_successors_ > edge_ptr->lowD_parent_state_ptr_->num_successors_)
     {
-        edge_ptr->parent_state_ptr_->Print();
+        edge_ptr->lowD_parent_state_ptr_->Print();
         throw runtime_error("Number of expanded edges cannot be greater than number of successors");
     }
     else
@@ -305,7 +305,7 @@ void PinsatPlanner::expandEdge(InsatEdgePtrType edge_ptr, int thread_id)
     // lock_.unlock();
     // // Evaluate the edge
     // auto t_start = chrono::steady_clock::now();
-    // auto action_successor = action_ptr->GetSuccessor(edge_ptr->parent_state_ptr_->GetStateVars(), thread_id);
+    // auto action_successor = action_ptr->GetSuccessor(edge_ptr->lowD_parent_state_ptr_->GetStateVars(), thread_id);
     // auto t_end = chrono::steady_clock::now();
     // //********************
     
@@ -332,7 +332,7 @@ void PinsatPlanner::expandEdge(InsatEdgePtrType edge_ptr, int thread_id)
     //         TrajType traj;
     //         double cost = 0;
     //         bool root=true;
-    //         auto ancestors = edge_ptr->parent_state_ptr_->GetAncestors();
+    //         auto ancestors = edge_ptr->lowD_parent_state_ptr_->GetAncestors();
          
     //         lock_.unlock();
             
@@ -367,7 +367,7 @@ void PinsatPlanner::expandEdge(InsatEdgePtrType edge_ptr, int thread_id)
 
     //         cost = action_ptr->getCost(traj);
     //         double new_g_val = cost;
-    //         // double new_g_val = edge_ptr->parent_state_ptr_->GetGValue() + cost;
+    //         // double new_g_val = edge_ptr->lowD_parent_state_ptr_->GetGValue() + cost;
 
 
     //         if (successor_state_ptr->GetGValue() > new_g_val)
@@ -428,7 +428,7 @@ void PinsatPlanner::expandEdge(InsatEdgePtrType edge_ptr, int thread_id)
     //     if (VERBOSE) edge_ptr->Print("No successors for");
     // }
 
-    // edge_ptr->parent_state_ptr_->num_expanded_successors_ += 1;
+    // edge_ptr->lowD_parent_state_ptr_->num_expanded_successors_ += 1;
 
 }
 

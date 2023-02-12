@@ -310,7 +310,6 @@ namespace ps
 
 
         std::vector<std::shared_ptr<InsatAction>> insat_actions_ptrs_;
-        int num_threads_;
         InsatStatePtrType start_state_ptr_;
         InsatStatePtrType goal_state_ptr_;
         InsatStateQueueMinType insat_state_open_list_;
