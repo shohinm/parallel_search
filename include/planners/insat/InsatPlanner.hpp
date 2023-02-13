@@ -311,6 +311,7 @@ namespace ps
             }
             planner_stats_.path_length_ += plan_.size();
         }
+        
 
         void exit()
         {
@@ -320,7 +321,7 @@ namespace ps
                 insat_state_open_list_.pop();
             }
 
-            Planner::exit();
+            cleanUp();
         }
 
 

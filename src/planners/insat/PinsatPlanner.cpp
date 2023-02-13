@@ -461,13 +461,49 @@ void PinsatPlanner::expandEdge(InsatEdgePtrType edge_ptr, int thread_id)
 
 void PinsatPlanner::exit()
 {
+    for (int thread_id = 0; thread_id < num_threads_-1; ++thread_id)
+    {
+        unique_lock<mutex> locker(lock_vec_[thread_id]);
+        edge_expansion_status_[thread_id] = 1;
+        locker.unlock();
+        cv_vec_[thread_id].notify_one();
+    }
+
+    planner_stats_.num_threads_spawned_ = edge_expansion_futures_.size()+1;
+    bool all_expansion_threads_terminated = false;
+    while (!all_expansion_threads_terminated)
+    {
+        all_expansion_threads_terminated = true;
+        for (auto& fut : edge_expansion_futures_)
+        {
+            if (!isFutureReady(fut))
+            {
+                all_expansion_threads_terminated = false;
+                break;
+            }
+        }
+    }
+    edge_expansion_futures_.clear();
+    
     // Clear open list
     while (!edge_open_list_.empty())
     {
         edge_open_list_.pop();
     }
-    
+
+    // Clear BE
     being_expanded_states_.clear();
 
-    GepasePlanner::exit();
+    for (auto& state_it : insat_state_map_)
+    {
+        if (state_it.second)
+        {
+            delete state_it.second;
+            state_it.second = NULL;
+        }
+    }
+    insat_state_map_.clear();
+
+    Planner::exit();
+
 }
