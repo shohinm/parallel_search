@@ -200,9 +200,6 @@ namespace ps
                                                         const StateVarsType &s2,
                                                         int thread_id) const
   {
-//    VecDf p1 = Eigen::Map<const VecDf, Eigen::Unaligned>(s1.data(), s1.size());
-//    VecDf p2 = Eigen::Map<const VecDf, Eigen::Unaligned>(s2.data(), s2.size());
-
     Eigen::Map<const VecDf> p1(&s1[0], s1.size());
     Eigen::Map<const VecDf> p2(&s2[0], s2.size());
 

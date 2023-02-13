@@ -168,7 +168,7 @@ size_t EdgeKeyGenerator(const EdgePtrType& edge_ptr)
 
 void constructActions(vector<shared_ptr<Action>>& action_ptrs,
                       ParamsType& action_params,
-                      std::vector<DummyOpt::Ptr>& opt,
+                      InsatNav2dAction::OptVecPtrType& opt,
                       vector<vector<int>>& map)
 {
     // Define action parameters
@@ -177,50 +177,40 @@ void constructActions(vector<shared_ptr<Action>>& action_ptrs,
     action_params["cache_footprint"] = 1;
 
     ParamsType expensive_action_params = action_params;
-    expensive_action_params["cache_footprint"] = 0;
+    expensive_action_params["cache_footprint"] = 1;
 
-    auto move_up_controller_ptr = make_shared<IMoveUpAction>("MoveUp", action_params, map, opt, 0);
+    auto move_up_controller_ptr = make_shared<IMoveUpAction>("MoveUp", action_params, map, opt, 1);
     action_ptrs.emplace_back(move_up_controller_ptr);
 
-//    auto move_up_right_controller_ptr = make_shared<IMoveUpRightAction>("MoveUpRight", expensive_action_params, map, opt);
-//    action_ptrs.emplace_back(move_up_right_controller_ptr);
+    auto move_up_right_controller_ptr = make_shared<IMoveUpRightAction>("MoveUpRight", expensive_action_params, map, opt, 1);
+    action_ptrs.emplace_back(move_up_right_controller_ptr);
 
-    auto move_right_controller_ptr = make_shared<IMoveRightAction>("MoveRight", action_params, map, opt, 0);
+    auto move_right_controller_ptr = make_shared<IMoveRightAction>("MoveRight", action_params, map, opt, 1);
     action_ptrs.emplace_back(move_right_controller_ptr);
 
-//    auto move_right_down_controller_ptr = make_shared<IMoveRightDownAction>("MoveRightDown", expensive_action_params, map, opt);
-//    action_ptrs.emplace_back(move_right_down_controller_ptr);
+    auto move_right_down_controller_ptr = make_shared<IMoveRightDownAction>("MoveRightDown", expensive_action_params, map, opt, 1);
+    action_ptrs.emplace_back(move_right_down_controller_ptr);
 
-    auto move_down_controller_ptr = make_shared<IMoveDownAction>("MoveDown", action_params, map, opt, 0);
+    auto move_down_controller_ptr = make_shared<IMoveDownAction>("MoveDown", action_params, map, opt, 1);
     action_ptrs.emplace_back(move_down_controller_ptr);
 
-//    auto move_down_left_controller_ptr = make_shared<IMoveDownLeftAction>("MoveDownLeft", expensive_action_params, map, opt);
-//    action_ptrs.emplace_back(move_down_left_controller_ptr);
+    auto move_down_left_controller_ptr = make_shared<IMoveDownLeftAction>("MoveDownLeft", expensive_action_params, map, opt, 1);
+    action_ptrs.emplace_back(move_down_left_controller_ptr);
 
-    auto move_left_controller_ptr = make_shared<IMoveLeftAction>("MoveLeft", action_params, map, opt, 0);
+    auto move_left_controller_ptr = make_shared<IMoveLeftAction>("MoveLeft", action_params, map, opt, 1);
     action_ptrs.emplace_back(move_left_controller_ptr);
 
-//    auto move_left_up_controller_ptr = make_shared<IMoveLeftUpAction>("MoveLeftUp", expensive_action_params, map, opt);
-//    action_ptrs.emplace_back(move_left_up_controller_ptr);
+    auto move_left_up_controller_ptr = make_shared<IMoveLeftUpAction>("MoveLeftUp", expensive_action_params, map, opt, 1);
+    action_ptrs.emplace_back(move_left_up_controller_ptr);
 
 }
 
 void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vector<shared_ptr<Action>>& action_ptrs, ParamsType& planner_params, ParamsType& action_params)
 {
-    if (planner_name == "wastar")
-        planner_ptr = make_shared<WastarPlanner>(planner_params);
-    else if (planner_name == "pwastar")
-        planner_ptr = make_shared<PwastarPlanner>(planner_params);
-    else if (planner_name == "pase")
-        planner_ptr = make_shared<PasePlanner>(planner_params);
-    else if (planner_name == "epase")
-        planner_ptr = make_shared<EpasePlanner>(planner_params);
-    else if (planner_name == "gepase")
-        planner_ptr = make_shared<GepasePlanner>(planner_params);
-    else if (planner_name == "mplp")
-        planner_ptr = make_shared<MplpPlanner>(planner_params);
-    else if (planner_name == "insat")
+    if (planner_name == "insat")
         planner_ptr = std::make_shared<InsatPlanner>(planner_params);
+    else if (planner_name == "pinsat")
+        planner_ptr = std::make_shared<PinsatPlanner>(planner_params);
     else
         throw runtime_error("Planner type not identified!");
 
@@ -297,23 +287,18 @@ int main(int argc, char* argv[])
     }
 
     // create opt
-    auto opt = std::make_shared<DummyOpt>(DummyOpt::InterpMode::LINEAR, 5e-1, 1e-1);
-    std::vector<DummyOpt::Ptr> opt_vec{opt};
+    auto opt = DummyOpt(DummyOpt::InterpMode::LINEAR, 5e-1, 1e-1);
+    std::vector<DummyOpt> opt_vec(num_threads, opt);
+    auto opt_vec_ptr = std::make_shared<InsatNav2dAction::OptVecType>(opt_vec);
 
     // Construct actions
     ParamsType action_params;
     vector<shared_ptr<Action>> action_ptrs;
-    constructActions(action_ptrs, action_params, opt_vec, map);
+    constructActions(action_ptrs, action_params, opt_vec_ptr, map);
 
     // Construct planner
     shared_ptr<Planner> planner_ptr;
     constructPlanner(planner_name, planner_ptr, action_ptrs, planner_params, action_params);
-
-    // Give access to InsatAction (env) to opt
-    for (auto& o: opt_vec)
-    {
-        o->setEnv(action_ptrs);
-    }
 
     // Run experiments
     int start_goal_idx = 0;
