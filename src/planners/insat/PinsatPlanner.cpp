@@ -2,6 +2,8 @@
 #include <algorithm>
 #include <planners/insat/PinsatPlanner.hpp>
 
+#define INDEPENDENCE_CHECK 0
+
 using namespace std;
 using namespace ps;
 
@@ -56,33 +58,36 @@ bool PinsatPlanner::Plan()
                 if (curr_edge_ptr->lowD_parent_state_ptr_->IsBeingExpanded())
                     break;
 
-                // Independence check of curr_edge with edges in BE
-                for (auto& being_expanded_state : being_expanded_states_)
+                if (INDEPENDENCE_CHECK)
                 {
-                    if (being_expanded_state != curr_edge_ptr->lowD_parent_state_ptr_)
+                    // Independence check of curr_edge with edges in BE
+                    for (auto& being_expanded_state : being_expanded_states_)
                     {
-                        auto h_diff = computeHeuristic(being_expanded_state, curr_edge_ptr->lowD_parent_state_ptr_);
-                        if (curr_edge_ptr->lowD_parent_state_ptr_->GetGValue() > being_expanded_state->GetGValue() + heuristic_w_*h_diff)
+                        if (being_expanded_state != curr_edge_ptr->lowD_parent_state_ptr_)
                         {
-                            curr_edge_ptr = NULL;
-                            break;
-                        }
-                    }
-                }
-     
-                if (curr_edge_ptr)
-                {
-                    // Independence check of curr_edge with edges in OPEN that are in front of curr_edge
-                    for (auto& popped_edge_ptr : popped_edges)
-                    {
-                        if (popped_edge_ptr->lowD_parent_state_ptr_ != curr_edge_ptr->lowD_parent_state_ptr_)
-                        {
-                            auto h_diff = computeHeuristic(popped_edge_ptr->lowD_parent_state_ptr_, curr_edge_ptr->lowD_parent_state_ptr_);
-                            if (curr_edge_ptr->lowD_parent_state_ptr_->GetGValue() > popped_edge_ptr->lowD_parent_state_ptr_->GetGValue() + heuristic_w_*h_diff)
+                            auto h_diff = computeHeuristic(being_expanded_state, curr_edge_ptr->lowD_parent_state_ptr_);
+                            if (curr_edge_ptr->lowD_parent_state_ptr_->GetGValue() > being_expanded_state->GetGValue() + heuristic_w_*h_diff)
                             {
                                 curr_edge_ptr = NULL;
                                 break;
-                            }                        
+                            }
+                        }
+                    }
+         
+                    if (curr_edge_ptr)
+                    {
+                        // Independence check of curr_edge with edges in OPEN that are in front of curr_edge
+                        for (auto& popped_edge_ptr : popped_edges)
+                        {
+                            if (popped_edge_ptr->lowD_parent_state_ptr_ != curr_edge_ptr->lowD_parent_state_ptr_)
+                            {
+                                auto h_diff = computeHeuristic(popped_edge_ptr->lowD_parent_state_ptr_, curr_edge_ptr->lowD_parent_state_ptr_);
+                                if (curr_edge_ptr->lowD_parent_state_ptr_->GetGValue() > popped_edge_ptr->lowD_parent_state_ptr_->GetGValue() + heuristic_w_*h_diff)
+                                {
+                                    curr_edge_ptr = NULL;
+                                    break;
+                                }                        
+                            }
                         }
                     }
                 }
