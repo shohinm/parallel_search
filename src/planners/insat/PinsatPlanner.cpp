@@ -337,7 +337,7 @@ void PinsatPlanner::expandEdge(InsatEdgePtrType edge_ptr, int thread_id)
 
     auto action_ptr = edge_ptr->action_ptr_;
 
-    // lock_.unlock();
+    lock_.unlock();
     // Evaluate the edge
     auto t_start = chrono::steady_clock::now();
     auto action_successor = action_ptr->GetSuccessor(edge_ptr->lowD_parent_state_ptr_->GetStateVars(), thread_id);
@@ -345,7 +345,7 @@ void PinsatPlanner::expandEdge(InsatEdgePtrType edge_ptr, int thread_id)
     //********************
     
     auto t_lock_s = chrono::steady_clock::now();
-    // lock_.lock();
+    lock_.lock();
     auto t_lock_e = chrono::steady_clock::now();
     planner_stats_.lock_time_ += 1e-9*chrono::duration_cast<chrono::nanoseconds>(t_lock_e-t_lock_s).count();
 
@@ -369,7 +369,7 @@ void PinsatPlanner::expandEdge(InsatEdgePtrType edge_ptr, int thread_id)
             bool root=true;
             auto ancestors = edge_ptr->lowD_parent_state_ptr_->GetAncestors();
          
-            // lock_.unlock();
+            lock_.unlock();
             for (auto& anc: ancestors)
             {
                 TrajType inc_traj = action_ptr->optimize(anc->GetStateVars(), successor_state_ptr->GetStateVars(), thread_id);
@@ -398,7 +398,7 @@ void PinsatPlanner::expandEdge(InsatEdgePtrType edge_ptr, int thread_id)
                     break;
                 }
             }
-            // lock_.lock();
+            lock_.lock();
 
             if (traj.size() != 0)
             {
