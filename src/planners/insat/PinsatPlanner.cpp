@@ -1,38 +1,36 @@
 #include <iostream>
 #include <algorithm>
-#include <planners/GepasePlanner.hpp>
-
-#define NO_INDEPENDENCE_CHECK 0
+#include <planners/insat/PinsatPlanner.hpp>
 
 using namespace std;
 using namespace ps;
 
-GepasePlanner::GepasePlanner(ParamsType planner_params):
+PinsatPlanner::PinsatPlanner(ParamsType planner_params):
+GepasePlanner(planner_params),
+InsatPlanner(planner_params),
 Planner(planner_params)
 {    
-    num_threads_  = planner_params["num_threads"];
-    vector<LockType> lock_vec(num_threads_-1);
-    lock_vec_.swap(lock_vec);
+
 }
 
-GepasePlanner::~GepasePlanner()
+PinsatPlanner::~PinsatPlanner()
 {
     
 }
 
-bool GepasePlanner::Plan()
+bool PinsatPlanner::Plan()
 {
     
     initialize();    
     auto t_start = chrono::steady_clock::now();
     
-    vector<EdgePtrType> popped_edges;
+    vector<InsatEdgePtrType> popped_edges;
 
     lock_.lock();
 
     while(!terminate_)
     {
-        EdgePtrType curr_edge_ptr = NULL;
+        InsatEdgePtrType curr_edge_ptr = NULL;
 
         while (!curr_edge_ptr && !terminate_)
         {
@@ -55,39 +53,36 @@ bool GepasePlanner::Plan()
                 popped_edges.emplace_back(curr_edge_ptr);
 
                 // If the parent state is being expanded, then all the outgoing edges are safe to expand
-                if (curr_edge_ptr->parent_state_ptr_->IsBeingExpanded())
+                if (curr_edge_ptr->lowD_parent_state_ptr_->IsBeingExpanded())
                     break;
 
-                if (NO_INDEPENDENCE_CHECK)
-                {                
-                    // Independence check of curr_edge with edges in BE
-                    for (auto& being_expanded_state : being_expanded_states_)
+                // Independence check of curr_edge with edges in BE
+                for (auto& being_expanded_state : being_expanded_states_)
+                {
+                    if (being_expanded_state != curr_edge_ptr->lowD_parent_state_ptr_)
                     {
-                        if (being_expanded_state != curr_edge_ptr->parent_state_ptr_)
+                        auto h_diff = computeHeuristic(being_expanded_state, curr_edge_ptr->lowD_parent_state_ptr_);
+                        if (curr_edge_ptr->lowD_parent_state_ptr_->GetGValue() > being_expanded_state->GetGValue() + heuristic_w_*h_diff)
                         {
-                            auto h_diff = computeHeuristic(being_expanded_state, curr_edge_ptr->parent_state_ptr_);
-                            if (curr_edge_ptr->parent_state_ptr_->GetGValue() > being_expanded_state->GetGValue() + heuristic_w_*h_diff)
+                            curr_edge_ptr = NULL;
+                            break;
+                        }
+                    }
+                }
+     
+                if (curr_edge_ptr)
+                {
+                    // Independence check of curr_edge with edges in OPEN that are in front of curr_edge
+                    for (auto& popped_edge_ptr : popped_edges)
+                    {
+                        if (popped_edge_ptr->lowD_parent_state_ptr_ != curr_edge_ptr->lowD_parent_state_ptr_)
+                        {
+                            auto h_diff = computeHeuristic(popped_edge_ptr->lowD_parent_state_ptr_, curr_edge_ptr->lowD_parent_state_ptr_);
+                            if (curr_edge_ptr->lowD_parent_state_ptr_->GetGValue() > popped_edge_ptr->lowD_parent_state_ptr_->GetGValue() + heuristic_w_*h_diff)
                             {
                                 curr_edge_ptr = NULL;
                                 break;
-                            }
-                        }
-                    }
-         
-                    if (curr_edge_ptr)
-                    {
-                        // Independence check of curr_edge with edges in OPEN that are in front of curr_edge
-                        for (auto& popped_edge_ptr : popped_edges)
-                        {
-                            if (popped_edge_ptr->parent_state_ptr_ != curr_edge_ptr->parent_state_ptr_)
-                            {
-                                auto h_diff = computeHeuristic(popped_edge_ptr->parent_state_ptr_, curr_edge_ptr->parent_state_ptr_);
-                                if (curr_edge_ptr->parent_state_ptr_->GetGValue() > popped_edge_ptr->parent_state_ptr_->GetGValue() + heuristic_w_*h_diff)
-                                {
-                                    curr_edge_ptr = NULL;
-                                    break;
-                                }                        
-                            }
+                            }                        
                         }
                     }
                 }
@@ -118,7 +113,7 @@ bool GepasePlanner::Plan()
 
             
             // Return solution if goal state is expanded
-            if (isGoalState(curr_edge_ptr->parent_state_ptr_) && (!terminate_))
+            if (isGoalState(curr_edge_ptr->lowD_parent_state_ptr_) && (!terminate_))
             {
                 auto t_end = chrono::steady_clock::now();
                 double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
@@ -129,7 +124,7 @@ bool GepasePlanner::Plan()
                 // cout << "--------------------------------------------------------" << endl;            
                 
                 // Construct path
-                goal_state_ptr_ = curr_edge_ptr->parent_state_ptr_;
+                goal_state_ptr_ = curr_edge_ptr->lowD_parent_state_ptr_;
                 constructPlan(goal_state_ptr_);   
                 terminate_ = true;
                 recheck_flag_ = true;
@@ -145,9 +140,9 @@ bool GepasePlanner::Plan()
         if (curr_edge_ptr->action_ptr_ == dummy_action_ptr_)
         {
             planner_stats_.num_state_expansions_++;  
-            curr_edge_ptr->parent_state_ptr_->SetVisited();
-            curr_edge_ptr->parent_state_ptr_->SetBeingExpanded();
-            being_expanded_states_.push(curr_edge_ptr->parent_state_ptr_);
+            curr_edge_ptr->lowD_parent_state_ptr_->SetVisited();
+            curr_edge_ptr->lowD_parent_state_ptr_->SetBeingExpanded();
+            being_expanded_states_.push(curr_edge_ptr->lowD_parent_state_ptr_);
         }
 
         lock_.unlock();
@@ -173,7 +168,7 @@ bool GepasePlanner::Plan()
                     if (thread_id >= num_threads_current)
                     {
                         if (VERBOSE) cout << "Spawning edge expansion thread " << thread_id << endl;
-                        edge_expansion_futures_.emplace_back(async(launch::async, &GepasePlanner::expandEdgeLoop, this, thread_id));
+                        edge_expansion_futures_.emplace_back(async(launch::async, &PinsatPlanner::expandEdgeLoop, this, thread_id));
                     }
                     locker.lock();
                     edge_expansion_vec_[thread_id] = curr_edge_ptr;
@@ -203,9 +198,18 @@ bool GepasePlanner::Plan()
     return false;
 }
 
-void GepasePlanner::initialize()
+void PinsatPlanner::initialize()
 {
-    Planner::initialize();
+    plan_.clear();
+
+    // Reset goal state
+    goal_state_ptr_ = NULL;
+
+    // Reset h_min
+    h_val_min_ = DINF;
+
+    // Reset state
+    planner_stats_ = PlannerStats();
     planner_stats_.num_jobs_per_thread_.resize(num_threads_, 0);
 
     terminate_ = false;
@@ -223,21 +227,20 @@ void GepasePlanner::initialize()
     edge_expansion_futures_.clear();
 
     // Insert proxy edge with start state
+    start_state_ptr_->SetGValue(0);
+    start_state_ptr_->SetHValue(computeHeuristic(start_state_ptr_));
     dummy_action_ptr_ = NULL;
-    auto edge_ptr = new Edge(start_state_ptr_, dummy_action_ptr_);
+    auto edge_ptr = new InsatEdge(start_state_ptr_, dummy_action_ptr_);
     edge_ptr->expansion_priority_ = heuristic_w_*computeHeuristic(start_state_ptr_);
 
     edge_map_.insert(make_pair(getEdgeKey(edge_ptr), edge_ptr));
     edge_open_list_.push(edge_ptr);   
+    
+    constructInsatActions();
+
 }
 
-void GepasePlanner::notifyMainThread()
-{
-    recheck_flag_ = true;
-    cv_.notify_one();
-}
-
-void GepasePlanner::expandEdgeLoop(int thread_id)
+void PinsatPlanner::expandEdgeLoop(int thread_id)
 {
     while (!terminate_)
     {
@@ -258,7 +261,7 @@ void GepasePlanner::expandEdgeLoop(int thread_id)
     }    
 }
 
-void GepasePlanner::expand(EdgePtrType edge_ptr, int thread_id)
+void PinsatPlanner::expand(InsatEdgePtrType edge_ptr, int thread_id)
 {
     auto t_start = chrono::steady_clock::now();
     lock_.lock();
@@ -270,13 +273,15 @@ void GepasePlanner::expand(EdgePtrType edge_ptr, int thread_id)
     // Proxy edge, add the real edges to Eopen
     if (edge_ptr->action_ptr_ == dummy_action_ptr_)
     {       
-        auto state_ptr = edge_ptr->parent_state_ptr_;
+        auto state_ptr = edge_ptr->lowD_parent_state_ptr_;
 
-        for (auto& action_ptr: actions_ptrs_)
+        state_ptr->SetAncestors(getStateAncestors(state_ptr));
+
+        for (auto& action_ptr: insat_actions_ptrs_)
         {
             if (action_ptr->CheckPreconditions(state_ptr->GetStateVars()))
             {
-                auto edge_ptr_next = new Edge(state_ptr, action_ptr);
+                auto edge_ptr_next = new InsatEdge(state_ptr, action_ptr);
                 edge_map_.insert(make_pair(getEdgeKey(edge_ptr_next), edge_ptr_next));
                 edge_ptr_next->expansion_priority_ = edge_ptr->expansion_priority_;
                 state_ptr->num_successors_+=1;
@@ -301,19 +306,19 @@ void GepasePlanner::expand(EdgePtrType edge_ptr, int thread_id)
     }
 
 
-    if (edge_ptr->parent_state_ptr_->num_expanded_successors_ == edge_ptr->parent_state_ptr_->num_successors_)
+    if (edge_ptr->lowD_parent_state_ptr_->num_expanded_successors_ == edge_ptr->lowD_parent_state_ptr_->num_successors_)
     {
-        edge_ptr->parent_state_ptr_->UnsetBeingExpanded();
-        if (being_expanded_states_.contains(edge_ptr->parent_state_ptr_))
+        edge_ptr->lowD_parent_state_ptr_->UnsetBeingExpanded();
+        if (being_expanded_states_.contains(edge_ptr->lowD_parent_state_ptr_))
         {   
-            being_expanded_states_.erase(edge_ptr->parent_state_ptr_);
+            being_expanded_states_.erase(edge_ptr->lowD_parent_state_ptr_);
             notifyMainThread();
         }
     }
 
-    if (edge_ptr->parent_state_ptr_->num_expanded_successors_ > edge_ptr->parent_state_ptr_->num_successors_)
+    if (edge_ptr->lowD_parent_state_ptr_->num_expanded_successors_ > edge_ptr->lowD_parent_state_ptr_->num_successors_)
     {
-        edge_ptr->parent_state_ptr_->Print();
+        edge_ptr->lowD_parent_state_ptr_->Print();
         throw runtime_error("Number of expanded edges cannot be greater than number of successors");
     }
     else
@@ -327,90 +332,134 @@ void GepasePlanner::expand(EdgePtrType edge_ptr, int thread_id)
     lock_.unlock();
 }
 
-void GepasePlanner::expandEdge(EdgePtrType edge_ptr, int thread_id)
+void PinsatPlanner::expandEdge(InsatEdgePtrType edge_ptr, int thread_id)
 {
 
     auto action_ptr = edge_ptr->action_ptr_;
 
-    lock_.unlock();
+    // lock_.unlock();
     // Evaluate the edge
     auto t_start = chrono::steady_clock::now();
-    auto action_successor = action_ptr->GetSuccessor(edge_ptr->parent_state_ptr_->GetStateVars(), thread_id);
+    auto action_successor = action_ptr->GetSuccessor(edge_ptr->lowD_parent_state_ptr_->GetStateVars(), thread_id);
     auto t_end = chrono::steady_clock::now();
     //********************
     
     auto t_lock_s = chrono::steady_clock::now();
-    lock_.lock();
+    // lock_.lock();
     auto t_lock_e = chrono::steady_clock::now();
-
     planner_stats_.lock_time_ += 1e-9*chrono::duration_cast<chrono::nanoseconds>(t_lock_e-t_lock_s).count();
-    planner_stats_.action_eval_times_[action_ptr->GetType()].emplace_back(1e-9*chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count());
 
     planner_stats_.num_evaluated_edges_++; // Only the edges controllers that satisfied pre-conditions and args are in the open list
 
     if (action_successor.success_)
     {
-        auto successor_state_ptr = constructState(action_successor.successor_state_vars_costs_.back().first);
-        double cost = action_successor.successor_state_vars_costs_.back().second;                
+        auto successor_state_ptr = constructInsatState(action_successor.successor_state_vars_costs_.back().first);
+        // double cost = action_successor.successor_state_vars_costs_.back().second;                
 
         // Set successor and cost in expanded edge
         edge_ptr->child_state_ptr_ = successor_state_ptr;
-        edge_ptr->SetCost(cost);
+        // edge_ptr->SetCost(cost);
 
         if (!successor_state_ptr->IsVisited())
         {
-            double new_g_val = edge_ptr->parent_state_ptr_->GetGValue() + cost;
-            
-            if (successor_state_ptr->GetGValue() > new_g_val)
+         
+            InsatStatePtrType best_anc;
+            TrajType traj;
+            double cost = 0, inc_cost = 0;
+            bool root=true;
+            auto ancestors = edge_ptr->lowD_parent_state_ptr_->GetAncestors();
+         
+            // lock_.unlock();
+            for (auto& anc: ancestors)
             {
+                TrajType inc_traj = action_ptr->optimize(anc->GetStateVars(), successor_state_ptr->GetStateVars(), thread_id);
+                if (root && inc_traj.size() > 0)
+                {
+                    root = false;
+                    inc_cost = action_ptr->getCost(inc_traj);
+                    traj = inc_traj;
+                    best_anc = anc;
+                    break;
+                }
+                else if (root && inc_traj.size() == 0)
+                {
+                    root = false;
+                    continue;
+                }
+                else if (inc_traj.size() == 0)
+                {
+                    continue;
+                }
+                else
+                {
+                    inc_cost = action_ptr->getCost(inc_traj);
+                    traj = action_ptr->warmOptimize(anc->GetIncomingEdgePtr()->traj_, inc_traj, thread_id);
+                    best_anc = anc;
+                    break;
+                }
+            }
+            // lock_.lock();
 
-                double h_val = successor_state_ptr->GetHValue();
+            if (traj.size() != 0)
+            {
+                cost = action_ptr->getCost(traj);
+                double new_g_val = cost;
                 
-                if (h_val == -1)
+                if (successor_state_ptr->GetGValue() > new_g_val)
                 {
-                    h_val = computeHeuristic(successor_state_ptr);
-                    successor_state_ptr->SetHValue(h_val);        
-                }
 
-                if (h_val != DINF)
-                {
-                    h_val_min_ = h_val < h_val_min_ ? h_val : h_val_min_;
-                    successor_state_ptr->SetGValue(new_g_val);
-                    successor_state_ptr->SetFValue(new_g_val + heuristic_w_*h_val);
-                    successor_state_ptr->SetIncomingEdgePtr(edge_ptr);
+                    double h_val = successor_state_ptr->GetHValue();
                     
-                    // Insert poxy edge
-                    auto edge_temp = Edge(successor_state_ptr, dummy_action_ptr_);
-                    auto edge_key = getEdgeKey(&edge_temp);
-                    auto it_edge = edge_map_.find(edge_key); 
-                    EdgePtrType proxy_edge_ptr;
-
-                    if (it_edge == edge_map_.end())
+                    if (h_val == -1)
                     {
-                        proxy_edge_ptr = new Edge(successor_state_ptr, dummy_action_ptr_);
-                        edge_map_.insert(make_pair(edge_key, proxy_edge_ptr));
-                    }
-                    else
-                    {
-                        proxy_edge_ptr = it_edge->second;
+                        h_val = computeHeuristic(successor_state_ptr);
+                        successor_state_ptr->SetHValue(h_val);        
                     }
 
-                    proxy_edge_ptr->expansion_priority_ = new_g_val + heuristic_w_*h_val;
-                    
-                    if (edge_open_list_.contains(proxy_edge_ptr))
+                    if (h_val != DINF)
                     {
-                        edge_open_list_.decrease(proxy_edge_ptr);
-                    }
-                    else
-                    {
-                        edge_open_list_.push(proxy_edge_ptr);
-                    }
-    
-                    notifyMainThread();
+                        h_val_min_ = h_val < h_val_min_ ? h_val : h_val_min_;
+                        successor_state_ptr->SetGValue(new_g_val);
+                        successor_state_ptr->SetFValue(new_g_val + heuristic_w_*h_val);
+                        successor_state_ptr->SetIncomingEdgePtr(edge_ptr);
 
-                }
+                        edge_ptr->SetTraj(traj);
+                        edge_ptr->SetTrajCost(cost);
+                        edge_ptr->SetCost(inc_cost);
+                        edge_ptr->fullD_parent_state_ptr_ = best_anc;
+                        // Insert poxy edge
+                        auto edge_temp = Edge(successor_state_ptr, dummy_action_ptr_);
+                        auto edge_key = getEdgeKey(&edge_temp);
+                        auto it_edge = edge_map_.find(edge_key); 
+                        InsatEdgePtrType proxy_edge_ptr;
 
-            }       
+                        if (it_edge == edge_map_.end())
+                        {
+                            proxy_edge_ptr = new InsatEdge(successor_state_ptr, dummy_action_ptr_);
+                            edge_map_.insert(make_pair(edge_key, proxy_edge_ptr));
+                        }
+                        else
+                        {
+                            proxy_edge_ptr = dynamic_cast<InsatEdgePtrType>(it_edge->second);
+                        }
+
+                        proxy_edge_ptr->expansion_priority_ = new_g_val + heuristic_w_*h_val;
+                        
+                        if (edge_open_list_.contains(proxy_edge_ptr))
+                        {
+                            edge_open_list_.decrease(proxy_edge_ptr);
+                        }
+                        else
+                        {
+                            edge_open_list_.push(proxy_edge_ptr);
+                        }
+        
+                        notifyMainThread();
+
+                    }
+
+                }       
+            }
         }
     }
     else
@@ -418,11 +467,11 @@ void GepasePlanner::expandEdge(EdgePtrType edge_ptr, int thread_id)
         if (VERBOSE) edge_ptr->Print("No successors for");
     }
 
-    edge_ptr->parent_state_ptr_->num_expanded_successors_ += 1;
+    edge_ptr->lowD_parent_state_ptr_->num_expanded_successors_ += 1;
 
 }
 
-void GepasePlanner::exit()
+void PinsatPlanner::exit()
 {
     for (int thread_id = 0; thread_id < num_threads_-1; ++thread_id)
     {
@@ -447,12 +496,37 @@ void GepasePlanner::exit()
         }
     }
     edge_expansion_futures_.clear();
-
+    
+    // Clear open list
     while (!edge_open_list_.empty())
     {
         edge_open_list_.pop();
     }
+
+    // Clear BE
     being_expanded_states_.clear();
 
-    Planner::exit();
+    for (auto& state_it : insat_state_map_)
+    {
+        if (state_it.second)
+        {
+            delete state_it.second;
+            state_it.second = NULL;
+        }
+    }
+    insat_state_map_.clear();
+
+    // Planner::exit();
+    for (auto& edge_it : edge_map_)
+    {
+        if (edge_it.second)
+        {
+            delete edge_it.second;
+            edge_it.second = NULL;
+        }
+    }
+    edge_map_.clear();
+    
+    State::ResetStateIDCounter();
+    Edge::ResetStateIDCounter();
 }

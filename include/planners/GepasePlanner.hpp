@@ -8,7 +8,7 @@
 namespace ps
 {
 
-class GepasePlanner : public Planner
+class GepasePlanner : virtual public Planner
 {
     public:
         typedef smpl::intrusive_heap<State, IsLesserState> BEType;

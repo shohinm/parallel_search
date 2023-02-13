@@ -25,12 +25,13 @@ class Planner
         // Lower priority edge will be in the front
         typedef smpl::intrusive_heap<Edge, IsLesserEdge> EdgeQueueMinType;
 
+        Planner()=delete;
         Planner(ParamsType planner_params);
         virtual ~Planner();
         
         virtual bool Plan() = 0;
         std::vector<PlanElement> GetPlan() const;
-        virtual PlannerStats GetStats() const;
+        PlannerStats GetStats() const;
 
         void SetActions(std::vector<std::shared_ptr<Action>> actions_ptrs);
         virtual void SetStartState(const StateVarsType& state_vars);
