@@ -253,10 +253,22 @@ int main(int argc, char* argv[])
 {
     int num_threads;
 
-    if (argc != 3) throw runtime_error("Format: run_robot_nav_2d [planner_name] [num_threads]");
+    if (!strcmp(argv[1], "insat"))
+    {
+        if (argc != 2) throw runtime_error("Format: run_robot_nav_2d insat");
+        num_threads = 1;
+    }
+    else if (!strcmp(argv[1], "pinsat"))
+    {
+        if (argc != 3) throw runtime_error("Format: run_robot_nav_2d pinsat [num_threads]");
+        num_threads = atoi(argv[2]);
+    }
+    else
+    {
+        throw runtime_error("Planner " + string(argv[1]) + " not identified");
+    }
 
     string planner_name = argv[1];
-    num_threads = atoi(argv[2]);
 
     // Experiment parameters
     int num_runs = 50;
