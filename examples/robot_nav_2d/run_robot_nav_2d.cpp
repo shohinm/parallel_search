@@ -435,11 +435,16 @@ int main(int argc, char* argv[])
                 {
                     auto c1 = cv::Point(plan_element.state_[0]-action_params["footprint_size"], plan_element.state_[1]+action_params["footprint_size"]);
                     auto c2 = cv::Point(plan_element.state_[0]+action_params["footprint_size"], plan_element.state_[1]-action_params["footprint_size"]);
-
                     cv::rectangle(img2, c1, c2, cv::Scalar(255, 0, 0), -1, 8);
                 }
-                cv::circle(img2, cv::Point(starts[exp_idx][0], starts[exp_idx][1]), action_params["footprint_size"], cv::Scalar(0, 255, 0), -1, 8);
-                cv::circle(img2, cv::Point(goals[exp_idx][0], goals[exp_idx][1]), action_params["footprint_size"], cv::Scalar(0, 0, 255), -1, 8 );
+
+                auto c1 = cv::Point(starts[exp_idx][0]-action_params["footprint_size"], starts[exp_idx][1]+action_params["footprint_size"]);
+                auto c2 = cv::Point(starts[exp_idx][0]+action_params["footprint_size"], starts[exp_idx][1]-action_params["footprint_size"]);
+                cv::rectangle(img2, c1, c2, cv::Scalar(0, 255, 0), -1, 8);
+
+                c1 = cv::Point(goals[exp_idx][0]-action_params["footprint_size"], goals[exp_idx][1]+action_params["footprint_size"]);
+                c2 = cv::Point(goals[exp_idx][0]+action_params["footprint_size"], goals[exp_idx][1]-action_params["footprint_size"]);
+                cv::rectangle(img2, c1, c2, cv::Scalar(0, 0, 255), -1, 8);
 
                 cv::resize(img2, img2, cv::Size(4*img.cols/scale, 4*img.rows/scale));
                 cv::imshow("Plan", img2);
