@@ -302,7 +302,6 @@ namespace ps
             }
             while(state_ptr->GetIncomingEdgePtr())
             {
-                state_ptr->Print();
                 if (state_ptr->GetIncomingEdgePtr()) // For start state_ptr, there is no incoming edge
                     plan_.insert(plan_.begin(), PlanElement(state_ptr->GetStateVars(), state_ptr->GetIncomingEdgePtr()->action_ptr_, state_ptr->GetIncomingEdgePtr()->GetCost()));
                 else

@@ -361,7 +361,7 @@ void PinsatPlanner::expandEdge(InsatEdgePtrType edge_ptr, int thread_id)
             
             for (auto& anc: ancestors)
             {
-                TrajType inc_traj = action_ptr->optimize(anc->GetStateVars(), successor_state_ptr->GetStateVars());
+                TrajType inc_traj = action_ptr->optimize(anc->GetStateVars(), successor_state_ptr->GetStateVars(), thread_id);
                 if (root && inc_traj.size() > 0)
                 {
                     root = false;
@@ -382,7 +382,7 @@ void PinsatPlanner::expandEdge(InsatEdgePtrType edge_ptr, int thread_id)
                 else
                 {
                     inc_cost = action_ptr->getCost(inc_traj);
-                    traj = action_ptr->warmOptimize(anc->GetIncomingEdgePtr()->traj_, inc_traj);
+                    traj = action_ptr->warmOptimize(anc->GetIncomingEdgePtr()->traj_, inc_traj, thread_id);
                     best_anc = anc;
                     break;
                 }
