@@ -222,11 +222,11 @@ void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vec
     planner_ptr->SetGoalChecker(bind(isGoalState, placeholders::_1, action_params["length"]));
 }
 
-void loadStartsGoalsFromFile(vector<vector<double>>& starts, vector<vector<double>>& goals, int scale, int num_runs)
+void loadStartsGoalsFromFile(vector<vector<double>>& starts, vector<vector<double>>& goals, int scale, int num_runs, const string& path)
 {
-    ifstream starts_fin("../examples/robot_nav_2d/resources/nav2d_starts.txt");
-    ifstream goals_fin("../examples/robot_nav_2d/resources/nav2d_goals.txt");
-
+    ifstream starts_fin(path + "nav2d_starts.txt");
+    ifstream goals_fin(path + "nav2d_goals.txt");    
+   
     for (int j = 0; j < num_runs; ++j)
     {
         vector<double> start, goal;
@@ -234,9 +234,9 @@ void loadStartsGoalsFromFile(vector<vector<double>>& starts, vector<vector<doubl
         for (int i = 0; i < 2; ++i)
         {
             starts_fin >> val_start;
-            goals_fin >> val_goal;
-            start.push_back((scale/5.0)*val_start);
-            goal.push_back((scale/5.0)*val_goal);
+            goals_fin >> val_goal;                
+            start.push_back(scale*val_start);
+            goal.push_back(scale*val_goal);
         }
         start[2] = to_degrees(start[2]);
         goal[2] = to_degrees(goal[2]);
@@ -244,8 +244,8 @@ void loadStartsGoalsFromFile(vector<vector<double>>& starts, vector<vector<doubl
         goals.emplace_back(goal);
 
         double cost, length;
-        starts_fin >> cost;
-        starts_fin >> length;
+        starts_fin >> cost;            
+        starts_fin >> length;            
     }
 }
 
@@ -259,8 +259,8 @@ int main(int argc, char* argv[])
     num_threads = atoi(argv[2]);
 
     // Experiment parameters
-    int num_runs = 20;
-    int scale = 5;
+    int num_runs = 50;
+    vector<int> scale_vec = {5, 5, 5, 10, 5};
     bool visualize_plan = true;
     bool load_starts_goals_from_file = true;
 
@@ -270,145 +270,219 @@ int main(int argc, char* argv[])
     planner_params["heuristic_weight"] = 50;
 
     // Read map
-    vector<vector<int>> map;
     int width, height;
     cv::Mat img;
-    map = loadMap("../examples/robot_nav_2d/resources/hrt201n.map", img, width, height, scale);
 
-    // Read starts and goals from text file
-    vector<vector<double>> starts, goals;
+    vector<vector<vector<int>>> map_vec;
+    vector<cv::Mat> img_vec;
 
-    if (load_starts_goals_from_file)
-        loadStartsGoalsFromFile(starts, goals, scale, num_runs);
-    else
+    map_vec.emplace_back(loadMap("../examples/robot_nav_2d/resources/hrt201n/hrt201n.map", img, width, height, scale_vec[0]));
+    img_vec.emplace_back(img.clone());
+    map_vec.emplace_back(loadMap("../examples/robot_nav_2d/resources/den501d/den501d.map", img, width, height, scale_vec[1]));
+    img_vec.emplace_back(img.clone());
+    map_vec.emplace_back(loadMap("../examples/robot_nav_2d/resources/den520d/den520d.map", img, width, height, scale_vec[2]));
+    img_vec.emplace_back(img.clone());
+    map_vec.emplace_back(loadMap("../examples/robot_nav_2d/resources/ht_chantry/ht_chantry.map", img, width, height, scale_vec[3]));
+    img_vec.emplace_back(img.clone());
+    map_vec.emplace_back(loadMap("../examples/robot_nav_2d/resources/brc203d/brc203d.map", img, width, height, scale_vec[4]));
+    img_vec.emplace_back(img.clone());
+
+
+    vector<string> starts_goals_path = {"../examples/robot_nav_2d/resources/hrt201n/", 
+    "../examples/robot_nav_2d/resources/den501d/", 
+    "../examples/robot_nav_2d/resources/den520d/",
+    "../examples/robot_nav_2d/resources/ht_chantry/",
+    "../examples/robot_nav_2d/resources/brc203d/",
+    };
+
+    vector<double> all_maps_time_vec, all_maps_cost_vec;
+    vector<int> all_maps_num_edges_vec;
+    unordered_map<string, vector<double>> all_action_eval_times;
+
+    for (int m_idx = 0; m_idx < map_vec.size(); ++m_idx)
     {
-        starts = vector<vector<double>> (num_runs, {scale*10.0, scale*61.0});
-        goals = vector<vector<double>> (num_runs, {scale*200.0, scale*170.0});
-    }
+        auto map = map_vec[m_idx];
+        auto img = img_vec[m_idx];
+        auto scale = scale_vec[m_idx];
+    
+        // create opt
+        auto opt = DummyOpt(DummyOpt::InterpMode::LINEAR, 5e-1, 1e-1);
+        std::vector<DummyOpt> opt_vec(num_threads, opt);
+        auto opt_vec_ptr = std::make_shared<InsatNav2dAction::OptVecType>(opt_vec);
 
-    // create opt
-    auto opt = DummyOpt(DummyOpt::InterpMode::LINEAR, 5e-1, 1e-1);
-    std::vector<DummyOpt> opt_vec(num_threads, opt);
-    auto opt_vec_ptr = std::make_shared<InsatNav2dAction::OptVecType>(opt_vec);
+        // Construct actions
+        ParamsType action_params;
+        vector<shared_ptr<Action>> action_ptrs;
+        constructActions(action_ptrs, action_params, opt_vec_ptr, map);
 
-    // Construct actions
-    ParamsType action_params;
-    vector<shared_ptr<Action>> action_ptrs;
-    constructActions(action_ptrs, action_params, opt_vec_ptr, map);
+        // Construct planner
+        shared_ptr<Planner> planner_ptr;
+        constructPlanner(planner_name, planner_ptr, action_ptrs, planner_params, action_params);
 
-    // Construct planner
-    shared_ptr<Planner> planner_ptr;
-    constructPlanner(planner_name, planner_ptr, action_ptrs, planner_params, action_params);
+        // Read starts and goals from text file
+        vector<vector<double>> starts, goals;
 
-    // Run experiments
-    int start_goal_idx = 0;
-    vector<double> time_vec, cost_vec;
-    vector<int> num_edges_vec, threads_used_vec;
-    vector<int> jobs_per_thread(planner_params["num_threads"], 0);
-
-    cout << "Map size: (" << map.size() << ", " << map[0].size() << ") | "
-         << " | Planner: " << planner_name
-         << " | Heuristic weight: " << planner_params["heuristic_weight"]
-         << " | Number of threads: " << planner_params["num_threads"]
-         << " | Number of runs: " << num_runs
-         << endl;
-    cout <<  "---------------------------------------------------" << endl;
-
-    if (visualize_plan) cv::namedWindow("Plan", cv::WINDOW_AUTOSIZE );// Create a window for display.
-
-    int num_success = 0;
-    for (int exp_idx = 0; exp_idx < num_runs; ++exp_idx )
-    {
-        cout << "Experiment: " << exp_idx << endl;
-
-        if (start_goal_idx >= starts.size())
-            start_goal_idx = 0;
-
-        // Set start state
-        planner_ptr->SetStartState(starts[start_goal_idx]);
-
-        // Set goal conditions
-        goal.clear();
-        goal.emplace_back(goals[start_goal_idx][0]);
-        goal.emplace_back(goals[start_goal_idx][1]);
-
-        double t=0, cost=0;
-        int num_edges=0;
-
-        bool plan_found = planner_ptr->Plan();
-
-        if (plan_found)
-        {
-            auto planner_stats = planner_ptr->GetStats();
-            time_vec.emplace_back(planner_stats.total_time_);
-            cost_vec.emplace_back(planner_stats.path_cost_);
-            num_edges_vec.emplace_back(planner_stats.num_evaluated_edges_);
-            threads_used_vec.emplace_back(planner_stats.num_threads_spawned_);
-            cout << " | Time (s): " << planner_stats.total_time_
-                 << " | Cost: " << planner_stats.path_cost_
-                 << " | Length: " << planner_stats.path_length_
-                 << " | State expansions: " << planner_stats.num_state_expansions_
-                 << " | Threads used: " << planner_stats.num_threads_spawned_ << "/" << planner_params["num_threads"]
-                 << " | Lock time: " <<  planner_stats.lock_time_
-                 << " | Expand time: " << planner_stats.cumulative_expansions_time_
-                 << " | Threads: " << planner_stats.num_threads_spawned_ << "/" << planner_params["num_threads"] << endl;
-
-            // cout << endl << "------------- Jobs per thread -------------" << endl;
-            // for (int tidx = 0; tidx < planner_params["num_threads"]; ++tidx)
-            // cout << "thread: " << tidx << " jobs: " << planner_stats.num_jobs_per_thread_[tidx] << endl;
-            for (int tidx = 0; tidx < planner_params["num_threads"]; ++tidx)
-                jobs_per_thread[tidx] += planner_stats.num_jobs_per_thread_[tidx];
-
-            num_success++;
-        }
+        if (load_starts_goals_from_file)
+            loadStartsGoalsFromFile(starts, goals, scale, num_runs, starts_goals_path[m_idx]);
         else
-            cout << " | Plan not found!" << endl;
-
-        ++start_goal_idx;
-
-        if (visualize_plan)
         {
-            cv::Mat img2 = img.clone();
-
-            // Display map with start and goal
-            for (auto& plan_element: planner_ptr->GetPlan())
-            {
-                cv::circle(img2, cv::Point(plan_element.state_[0], plan_element.state_[1]), action_params["footprint_size"], cv::Scalar(255, 0, 0), -1, 8);
-            }
-            cv::circle(img2, cv::Point(starts[exp_idx][0], starts[exp_idx][1]), action_params["footprint_size"], cv::Scalar(0, 255, 0), -1, 8);
-            cv::circle(img2, cv::Point(goals[exp_idx][0], goals[exp_idx][1]), action_params["footprint_size"], cv::Scalar(0, 0, 255), -1, 8 );
-
-            for (int i=0; i<planner_ptr->GetPlan().size()-1; ++i)
-            {
-              auto pe1 = planner_ptr->GetPlan()[i];
-              auto pe2 = planner_ptr->GetPlan()[i+1];
-              cv::line(img2, cv::Point(pe1.state_[0], pe1.state_[1]), cv::Point(pe2.state_[0], pe2.state_[1]), cv::Scalar(255, 0, 0), 2, cv::LINE_AA);
-            }
-            auto pe1 = planner_ptr->GetPlan().front();
-            auto pe2 = planner_ptr->GetPlan().back();
-            cv::line(img2, cv::Point(starts[exp_idx][0], starts[exp_idx][1]), cv::Point(pe1.state_[0], pe1.state_[1]), cv::Scalar(255, 0, 0), 2, cv::LINE_AA);
-            cv::line(img2, cv::Point(pe2.state_[0], pe2.state_[1]), cv::Point(goals[exp_idx][0], goals[exp_idx][1]), cv::Scalar(255, 0, 0), 2, cv::LINE_AA);
-
-
-            cv::resize(img2, img2, cv::Size(4*img.cols/scale, 4*img.rows/scale));
-            cv::imshow("Plan", img2);
-            cv::waitKey(500);
-
-            img2.setTo(cv::Scalar(0,0,0));
-            cv::imshow("Plan", img2);
-
+            starts = vector<vector<double>> (num_runs, {scale*10.0, scale*61.0});
+            goals = vector<vector<double>> (num_runs, {scale*200.0, scale*170.0});
         }
+
+        // Run experiments
+        int start_goal_idx = 0;
+        vector<double> time_vec, cost_vec;
+        vector<int> num_edges_vec, threads_used_vec;
+        vector<int> jobs_per_thread(planner_params["num_threads"], 0);
+        unordered_map<string, vector<double>> action_eval_times;
+
+        cout << "Map size: (" << map.size() << ", " << map[0].size() << ") | "
+             << " | Planner: " << planner_name
+             << " | Heuristic weight: " << planner_params["heuristic_weight"]
+             << " | Number of threads: " << planner_params["num_threads"]
+             << " | Number of runs: " << num_runs
+             << endl;
+        cout <<  "---------------------------------------------------" << endl;
+
+        if (visualize_plan) cv::namedWindow("Plan", cv::WINDOW_AUTOSIZE );// Create a window for display.
+
+        int num_success = 0;
+        for (int exp_idx = 0; exp_idx < num_runs; ++exp_idx )
+        {
+            cout << "Experiment: " << exp_idx << endl;
+
+            if (start_goal_idx >= starts.size())
+                start_goal_idx = 0;
+
+            // Set start state
+            planner_ptr->SetStartState(starts[start_goal_idx]);
+
+            // Set goal conditions
+            goal.clear();
+            goal.emplace_back(goals[start_goal_idx][0]);
+            goal.emplace_back(goals[start_goal_idx][1]);
+
+            double t=0, cost=0;
+            int num_edges=0;
+
+            bool plan_found = planner_ptr->Plan();
+
+            if (plan_found)
+            {
+                auto planner_stats = planner_ptr->GetStats();
+                
+                time_vec.emplace_back(planner_stats.total_time_);
+                all_maps_time_vec.emplace_back(planner_stats.total_time_);
+                cost_vec.emplace_back(planner_stats.path_cost_);
+                all_maps_cost_vec.emplace_back(planner_stats.path_cost_);
+                num_edges_vec.emplace_back(planner_stats.num_evaluated_edges_);
+                all_maps_num_edges_vec.emplace_back(planner_stats.num_evaluated_edges_);
+
+                for (auto& [action, times] : planner_stats.action_eval_times_)
+                { 
+                    action_eval_times[action].insert(action_eval_times[action].end(), times.begin(), times.end());
+                    all_action_eval_times[action].insert(all_action_eval_times[action].end(), times.begin(), times.end());
+                }
+
+                threads_used_vec.emplace_back(planner_stats.num_threads_spawned_);
+                cout << " | Time (s): " << planner_stats.total_time_
+                     << " | Cost: " << planner_stats.path_cost_
+                     << " | Length: " << planner_stats.path_length_
+                     << " | State expansions: " << planner_stats.num_state_expansions_
+                     << " | Threads used: " << planner_stats.num_threads_spawned_ << "/" << planner_params["num_threads"]
+                     << " | Lock time: " <<  planner_stats.lock_time_
+                     << " | Expand time: " << planner_stats.cumulative_expansions_time_
+                     << " | Threads: " << planner_stats.num_threads_spawned_ << "/" << planner_params["num_threads"] << endl;
+
+                // cout << endl << "------------- Jobs per thread -------------" << endl;
+                // for (int tidx = 0; tidx < planner_params["num_threads"]; ++tidx)
+                // cout << "thread: " << tidx << " jobs: " << planner_stats.num_jobs_per_thread_[tidx] << endl;
+                for (int tidx = 0; tidx < planner_params["num_threads"]; ++tidx)
+                    jobs_per_thread[tidx] += planner_stats.num_jobs_per_thread_[tidx];
+
+                num_success++;
+            }
+            else
+                cout << " | Plan not found!" << endl;
+
+            ++start_goal_idx;
+
+            if (visualize_plan)
+            {
+                cv::Mat img2 = img.clone();
+
+                // Display map with start and goal
+                for (auto& plan_element: planner_ptr->GetPlan())
+                {
+                    auto c1 = cv::Point(plan_element.state_[0]-action_params["footprint_size"], plan_element.state_[1]+action_params["footprint_size"]);
+                    auto c2 = cv::Point(plan_element.state_[0]+action_params["footprint_size"], plan_element.state_[1]-action_params["footprint_size"]);
+
+                    cv::rectangle(img2, c1, c2, cv::Scalar(255, 0, 0), -1, 8);
+                }
+
+                auto c1 = cv::Point(starts[exp_idx][0]-action_params["footprint_size"], starts[exp_idx][1]+action_params["footprint_size"]);
+                auto c2 = cv::Point(starts[exp_idx][0]+action_params["footprint_size"], starts[exp_idx][1]-action_params["footprint_size"]);
+                cv::rectangle(img2, c1, c2, cv::Scalar(0, 255, 0), -1, 8);
+
+                c1 = cv::Point(goals[exp_idx][0]-action_params["footprint_size"], goals[exp_idx][1]+action_params["footprint_size"]);
+                c2 = cv::Point(goals[exp_idx][0]+action_params["footprint_size"], goals[exp_idx][1]-action_params["footprint_size"]);
+                cv::rectangle(img2, c1, c2, cv::Scalar(0, 0, 255), -1, 8);
+
+                for (int i=0; i<planner_ptr->GetPlan().size()-1; ++i)
+                {
+                  auto pe1 = planner_ptr->GetPlan()[i];
+                  auto pe2 = planner_ptr->GetPlan()[i+1];
+                  cv::line(img2, cv::Point(pe1.state_[0], pe1.state_[1]), cv::Point(pe2.state_[0], pe2.state_[1]), cv::Scalar(255, 0, 0), 2, cv::LINE_AA);
+                }
+                auto pe1 = planner_ptr->GetPlan().front();
+                auto pe2 = planner_ptr->GetPlan().back();
+                cv::line(img2, cv::Point(starts[exp_idx][0], starts[exp_idx][1]), cv::Point(pe1.state_[0], pe1.state_[1]), cv::Scalar(255, 0, 0), 2, cv::LINE_AA);
+                cv::line(img2, cv::Point(pe2.state_[0], pe2.state_[1]), cv::Point(goals[exp_idx][0], goals[exp_idx][1]), cv::Scalar(255, 0, 0), 2, cv::LINE_AA);
+
+
+                cv::resize(img2, img2, cv::Size(4*img.cols/scale, 4*img.rows/scale));
+                cv::imshow("Plan", img2);
+                cv::waitKey(500);
+
+                img2.setTo(cv::Scalar(0,0,0));
+                cv::imshow("Plan", img2);
+
+            }
+        }
+
+        cout << endl << "************************" << endl;
+        cout << "Number of runs: " << num_runs << endl;
+        cout << "Mean time: " << accumulate(time_vec.begin(), time_vec.end(), 0.0)/time_vec.size() << endl;
+        cout << "Mean cost: " << accumulate(cost_vec.begin(), cost_vec.end(), 0.0)/cost_vec.size() << endl;    
+        cout << "Mean threads used: " << accumulate(threads_used_vec.begin(), threads_used_vec.end(), 0.0)/threads_used_vec.size() << "/" << planner_params["num_threads"] << endl;
+        cout << "Mean evaluated edges: " << roundOff(accumulate(num_edges_vec.begin(), num_edges_vec.end(), 0.0)/double(num_edges_vec.size()), 2) << endl;
+        cout << endl << "------------- Mean jobs per thread -------------" << endl;
+        for (int tidx = 0; tidx < planner_params["num_threads"]; ++tidx)
+        {
+            cout << "thread: " << tidx << " jobs: " << jobs_per_thread[tidx]/num_success << endl;
+        }
+        cout << "************************" << endl;
+    
+        cout << endl << "------------- Mean action eval times -------------" << endl;
+        for (auto [action, times] : action_eval_times)
+        {
+            cout << action << ": " << accumulate(times.begin(), times.end(), 0.0)/times.size() << endl; 
+        }
+        cout << "************************" << endl;
     }
 
+    cout << endl << "************ Global Stats ************" << endl;
+    cout << "Mean time: " << accumulate(all_maps_time_vec.begin(), all_maps_time_vec.end(), 0.0)/all_maps_time_vec.size() << endl;
+    cout << "Mean cost: " << accumulate(all_maps_cost_vec.begin(), all_maps_cost_vec.end(), 0.0)/all_maps_cost_vec.size() << endl;    
+    cout << "Mean evaluated edges: " << roundOff(accumulate(all_maps_num_edges_vec.begin(), all_maps_num_edges_vec.end(), 0.0)/double(all_maps_num_edges_vec.size()), 2) << endl;
     cout << endl << "************************" << endl;
-    cout << "Number of runs: " << num_runs << endl;
-    cout << "Mean time: " << accumulate(time_vec.begin(), time_vec.end(), 0.0)/time_vec.size() << endl;
-    cout << "Mean cost: " << accumulate(cost_vec.begin(), cost_vec.end(), 0.0)/cost_vec.size() << endl;
-    cout << "Mean threads used: " << accumulate(threads_used_vec.begin(), threads_used_vec.end(), 0.0)/threads_used_vec.size() << "/" << planner_params["num_threads"] << endl;
-    cout << "Mean evaluated edges: " << roundOff(accumulate(num_edges_vec.begin(), num_edges_vec.end(), 0.0)/double(num_edges_vec.size()), 2) << endl;
-    cout << endl << "------------- Mean jobs per thread -------------" << endl;
-    for (int tidx = 0; tidx < planner_params["num_threads"]; ++tidx)
-        cout << "thread: " << tidx << " jobs: " << jobs_per_thread[tidx]/num_success << endl;
+
+    cout << endl << "------------- Mean action eval times -------------" << endl;
+    for (auto [action, times] : all_action_eval_times)
+    {
+        cout << action << ": " << accumulate(times.begin(), times.end(), 0.0)/times.size() << endl; 
+    }
     cout << "************************" << endl;
 
 
