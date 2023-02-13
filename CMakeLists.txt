@@ -3,9 +3,12 @@ cmake_minimum_required(VERSION 2.8)
 project (epase)
 add_compile_options(-std=c++17)
 
+list(APPEND CMAKE_PREFIX_PATH /opt/drake)
+
 find_package(OpenCV REQUIRED)
 find_package(SBPL REQUIRED)
 find_package(Eigen3 REQUIRED)
+find_package(drake REQUIRED)
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
@@ -19,9 +22,13 @@ SET(CMAKE_C_FLAGS_RELEASE "-O3")
 
 include_directories(include
                     ${SBPL_INCLUDE_DIRS}
-                    ${EIGEN3_INCLUDE_DIR})
+                    ${EIGEN3_INCLUDE_DIR}
+                    ${drake_INCLUDE_DIRS})
+include_directories(/opt/drake/include)
+#message(STATUS "foo include dir: ${drake_LIBRARIES}")
 
 link_directories(${SBPL_LIBRARY_DIRS})
+#link_directories(/opt/drake/lib)
 
 set(SOURCES
     src/common/State.cpp 
@@ -56,6 +63,12 @@ target_link_libraries(run_insat_nav_2d
         ${OpenCV_LIBRARIES}
         ${SBPL_LIBRARIES}
         pthread)
+
+add_executable(drake_test
+        examples/insat/opt/DrakeTest.cpp)
+
+target_link_libraries(drake_test
+        ${drake_LIBRARIES})
 
 add_executable(domain_template
         examples/domain_template/domain_template.cpp
