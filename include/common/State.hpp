@@ -28,6 +28,10 @@ public:
 	double GetGValue() const {return g_val_;};
 	void ResetGValue() {g_val_ = std::numeric_limits<double>::max();};
 
+	void SetVValue(const double& v_val) {v_val_ = v_val;};
+	double GetVValue() const {return v_val_;}; 
+	void ResetVValue() {v_val_ = std::numeric_limits<double>::max();};
+
 	void SetHValue(const double& h_val) {h_val_ = h_val;};
 	double GetHValue() const {return h_val_;};
 	void ResetHValue() {h_val_ = -1;};
@@ -63,6 +67,7 @@ private:
 	double g_val_;
     double h_val_;
 	double f_val_;
+	double v_val_;
 	std::atomic<bool> is_visited_;
     std::atomic<bool> being_expanded_;
     EdgePtrType incoming_edge_ptr_;

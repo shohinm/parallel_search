@@ -35,3 +35,7 @@
 build/
 devel/
 logs/
+
+# IDE
+tags
+.vscode
