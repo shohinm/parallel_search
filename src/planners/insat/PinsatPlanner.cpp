@@ -358,7 +358,6 @@ void PinsatPlanner::expandEdge(InsatEdgePtrType edge_ptr, int thread_id)
             auto ancestors = edge_ptr->lowD_parent_state_ptr_->GetAncestors();
          
             lock_.unlock();
-            
             for (auto& anc: ancestors)
             {
                 TrajType inc_traj = action_ptr->optimize(anc->GetStateVars(), successor_state_ptr->GetStateVars(), thread_id);
@@ -387,68 +386,68 @@ void PinsatPlanner::expandEdge(InsatEdgePtrType edge_ptr, int thread_id)
                     break;
                 }
             }
-
             lock_.lock();
 
-            cost = action_ptr->getCost(traj);
-            double new_g_val = cost;
-            // double new_g_val = edge_ptr->lowD_parent_state_ptr_->GetGValue() + cost;
-
-
-            if (successor_state_ptr->GetGValue() > new_g_val)
+            if (traj.size() != 0)
             {
-
-                double h_val = successor_state_ptr->GetHValue();
+                cost = action_ptr->getCost(traj);
+                double new_g_val = cost;
                 
-                if (h_val == -1)
+                if (successor_state_ptr->GetGValue() > new_g_val)
                 {
-                    h_val = computeHeuristic(successor_state_ptr);
-                    successor_state_ptr->SetHValue(h_val);        
-                }
 
-                if (h_val != DINF)
-                {
-                    h_val_min_ = h_val < h_val_min_ ? h_val : h_val_min_;
-                    successor_state_ptr->SetGValue(new_g_val);
-                    successor_state_ptr->SetFValue(new_g_val + heuristic_w_*h_val);
-                    successor_state_ptr->SetIncomingEdgePtr(edge_ptr);
-
-                    edge_ptr->SetTraj(traj);
-                    edge_ptr->SetTrajCost(cost);
-                    edge_ptr->SetCost(inc_cost);
-                    edge_ptr->fullD_parent_state_ptr_ = best_anc;
-                    // Insert poxy edge
-                    auto edge_temp = Edge(successor_state_ptr, dummy_action_ptr_);
-                    auto edge_key = getEdgeKey(&edge_temp);
-                    auto it_edge = edge_map_.find(edge_key); 
-                    InsatEdgePtrType proxy_edge_ptr;
-
-                    if (it_edge == edge_map_.end())
-                    {
-                        proxy_edge_ptr = new InsatEdge(successor_state_ptr, dummy_action_ptr_);
-                        edge_map_.insert(make_pair(edge_key, proxy_edge_ptr));
-                    }
-                    else
-                    {
-                        proxy_edge_ptr = dynamic_cast<InsatEdgePtrType>(it_edge->second);
-                    }
-
-                    proxy_edge_ptr->expansion_priority_ = new_g_val + heuristic_w_*h_val;
+                    double h_val = successor_state_ptr->GetHValue();
                     
-                    if (edge_open_list_.contains(proxy_edge_ptr))
+                    if (h_val == -1)
                     {
-                        edge_open_list_.decrease(proxy_edge_ptr);
+                        h_val = computeHeuristic(successor_state_ptr);
+                        successor_state_ptr->SetHValue(h_val);        
                     }
-                    else
+
+                    if (h_val != DINF)
                     {
-                        edge_open_list_.push(proxy_edge_ptr);
+                        h_val_min_ = h_val < h_val_min_ ? h_val : h_val_min_;
+                        successor_state_ptr->SetGValue(new_g_val);
+                        successor_state_ptr->SetFValue(new_g_val + heuristic_w_*h_val);
+                        successor_state_ptr->SetIncomingEdgePtr(edge_ptr);
+
+                        edge_ptr->SetTraj(traj);
+                        edge_ptr->SetTrajCost(cost);
+                        edge_ptr->SetCost(inc_cost);
+                        edge_ptr->fullD_parent_state_ptr_ = best_anc;
+                        // Insert poxy edge
+                        auto edge_temp = Edge(successor_state_ptr, dummy_action_ptr_);
+                        auto edge_key = getEdgeKey(&edge_temp);
+                        auto it_edge = edge_map_.find(edge_key); 
+                        InsatEdgePtrType proxy_edge_ptr;
+
+                        if (it_edge == edge_map_.end())
+                        {
+                            proxy_edge_ptr = new InsatEdge(successor_state_ptr, dummy_action_ptr_);
+                            edge_map_.insert(make_pair(edge_key, proxy_edge_ptr));
+                        }
+                        else
+                        {
+                            proxy_edge_ptr = dynamic_cast<InsatEdgePtrType>(it_edge->second);
+                        }
+
+                        proxy_edge_ptr->expansion_priority_ = new_g_val + heuristic_w_*h_val;
+                        
+                        if (edge_open_list_.contains(proxy_edge_ptr))
+                        {
+                            edge_open_list_.decrease(proxy_edge_ptr);
+                        }
+                        else
+                        {
+                            edge_open_list_.push(proxy_edge_ptr);
+                        }
+        
+                        notifyMainThread();
+
                     }
-    
-                    notifyMainThread();
 
-                }
-
-            }       
+                }       
+            }
         }
     }
     else
