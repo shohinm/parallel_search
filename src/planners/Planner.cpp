@@ -90,8 +90,19 @@ void Planner::resetStates()
     {
         it->second->ResetGValue();
         it->second->ResetFValue();
-        // it->second->ResetVValue();
+        it->second->ResetVValue();
         it->second->ResetIncomingEdgePtr();        
+        it->second->UnsetVisited();     
+        it->second->UnsetBeingExpanded();      
+        it->second->num_successors_ = 0;   
+        it->second->num_expanded_successors_ = 0;   
+    }
+}
+
+void Planner::resetClosed()
+{
+    for (auto it = state_map_.begin(); it != state_map_.end(); ++it)
+    {
         it->second->UnsetVisited();     
         it->second->UnsetBeingExpanded();      
         it->second->num_successors_ = 0;   

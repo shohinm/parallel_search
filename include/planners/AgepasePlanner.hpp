@@ -22,7 +22,7 @@ class AgepasePlanner : public GepasePlanner
         void expandEdge(EdgePtrType edge_ptr, int thread_id);
         void exit();
 
-        EdgeQueueMinType edge_incon_list_;
+        std::vector<EdgePtrType> edge_incon_list_;
         double time_budget_;
         bool found_plan_;
         bool found_plan_optimal_;

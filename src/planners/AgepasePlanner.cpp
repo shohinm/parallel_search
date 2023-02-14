@@ -23,6 +23,7 @@ bool AgepasePlanner::Plan()
     auto t_start = chrono::steady_clock::now();
     while (heuristic_w_>=1 && time_budget_>0 && !found_plan_optimal_) {
         terminate_ = false;
+        resetClosed();
         improvePath();
         heuristic_w_ = floor(heuristic_w_/2);
         // append inconsistent list's edges into Eopen
@@ -31,6 +32,17 @@ bool AgepasePlanner::Plan()
             edge_open_list_.push(*it_edge);
         }
         edge_incon_list_.clear();
+        // rebuild open list
+        EdgeQueueMinType edge_open_list;
+        for(auto it_edge = edge_open_list_.begin(); it_edge != edge_open_list_.end(); it_edge++)
+        {
+            // Recompute the f-value/priority of the state/edge
+            auto temp_state_ptr = (*it_edge)->parent_state_ptr_;
+            temp_state_ptr->SetFValue(temp_state_ptr->GetGValue() + heuristic_w_*temp_state_ptr->GetHValue());
+            (*it_edge)->expansion_priority_ = temp_state_ptr->GetGValue() + heuristic_w_*temp_state_ptr->GetHValue();
+            edge_open_list.push(*it_edge);
+        }
+        edge_open_list_.swap(edge_open_list);
     }
     terminate_ = true;
     auto t_end = chrono::steady_clock::now();

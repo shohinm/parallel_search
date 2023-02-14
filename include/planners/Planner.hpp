@@ -46,6 +46,7 @@ class Planner
         
         virtual void initialize();
         void resetStates();
+        void resetClosed();
         StatePtrType constructState(const StateVarsType& state);
         size_t getEdgeKey(const EdgePtrType& edge_ptr);
         double computeHeuristic(const StatePtrType& state_ptr);
