@@ -17,15 +17,14 @@ class AgepasePlanner : public GepasePlanner
 
     protected:
         void initialize();
-        bool improvePath();
+        void improvePath();
         void expand(EdgePtrType edge_ptr, int thread_id);
         void expandEdge(EdgePtrType edge_ptr, int thread_id);
+        void exitMultiThread();
         void exit();
 
         std::vector<EdgePtrType> edge_incon_list_;
         double time_budget_;
-        bool found_plan_;
-        bool found_plan_optimal_;
 };
 
 }

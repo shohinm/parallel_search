@@ -21,10 +21,15 @@ bool AgepasePlanner::Plan()
 {
     initialize();    
     auto t_start = chrono::steady_clock::now();
-    while (heuristic_w_>=1 && time_budget_>0 && !found_plan_optimal_) {
+    while (heuristic_w_>=1 && time_budget_>0) {
         terminate_ = false;
         resetClosed();
         improvePath();
+        // Early termination if there's no solution
+        if (goal_state_ptr_->GetGValue() == DINF)
+        {
+            break;
+        }
         heuristic_w_ = floor(heuristic_w_/2);
         // append inconsistent list's edges into Eopen
         for(auto it_edge = edge_incon_list_.begin(); it_edge != edge_incon_list_.end(); it_edge++)
@@ -32,7 +37,6 @@ bool AgepasePlanner::Plan()
             edge_open_list_.push(*it_edge);
         }
         edge_incon_list_.clear();
-        // rebuild open list
         EdgeQueueMinType edge_open_list;
         for(auto it_edge = edge_open_list_.begin(); it_edge != edge_open_list_.end(); it_edge++)
         {
@@ -48,7 +52,7 @@ bool AgepasePlanner::Plan()
     auto t_end = chrono::steady_clock::now();
     double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
     planner_stats_.total_time_ = 1e-9*t_elapsed;
-    if (found_plan_) {
+    if (goal_state_ptr_->GetGValue() != DINF) {
         exit();
         return true;
     }
@@ -60,11 +64,10 @@ bool AgepasePlanner::Plan()
 void AgepasePlanner::initialize()
 {
     GepasePlanner::initialize();
-    found_plan_ = false;
-    found_plan_optimal_ = false;
+    edge_incon_list_.clear();
 }
 
-bool AgepasePlanner::improvePath() {
+void AgepasePlanner::improvePath() {
     auto t_start = chrono::steady_clock::now();
     
     vector<EdgePtrType> popped_edges;
@@ -73,6 +76,14 @@ bool AgepasePlanner::improvePath() {
 
     while(!terminate_)
     {
+        // Time budget check
+        auto t_check = chrono::steady_clock::now();
+        double t_spent = chrono::duration_cast<chrono::nanoseconds>(t_check-t_start).count();
+        if (1e-9*t_spent > time_budget_)
+        {
+            break;
+        }
+
         EdgePtrType curr_edge_ptr = NULL;
 
         while (!curr_edge_ptr && !terminate_)
@@ -82,11 +93,32 @@ bool AgepasePlanner::improvePath() {
                 terminate_ = true;
                 auto t_end = chrono::steady_clock::now();
                 double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
-                planner_stats_.total_time_ = 1e-9*t_elapsed;
-                cout << "Goal Not Reached" << endl;   
+                time_budget_ -= 1e-9*t_elapsed;
                 lock_.unlock();
-                exit();
-                return false;
+                exitMultiThread();
+                // if (goal_state_ptr_->GetGValue() != DINF)
+                // {
+                //     cout << "Plan found in previous iteration" << endl;   
+                // }
+                // else
+                // {
+                //     cout << "Goal Not Reached" << endl;   
+                // }
+                return;
+            }
+
+            if (!edge_open_list_.empty())
+            {
+                if (goal_state_ptr_->GetGValue() < edge_open_list_.min()->expansion_priority_)
+                {
+                    terminate_ = true;
+                    auto t_end = chrono::steady_clock::now();
+                    double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
+                    time_budget_ -= 1e-9*t_elapsed;
+                    lock_.unlock();
+                    exitMultiThread();
+                    return;
+                }
             }
 
             while(!curr_edge_ptr && !edge_open_list_.empty())
@@ -155,26 +187,12 @@ bool AgepasePlanner::improvePath() {
             }
 
             
-            // Return solution if goal state is expanded
+            // Find solution if goal state is expanded (Note that the terminate condition is changed)
             if (isGoalState(curr_edge_ptr->parent_state_ptr_) && (!terminate_))
             {
-                auto t_end = chrono::steady_clock::now();
-                double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
-                planner_stats_.total_time_ = 1e-9*t_elapsed;
-
-                // cout << "--------------------------------------------------------" << endl;            
-                // cout << "Goal Reached!" << endl;
-                // cout << "--------------------------------------------------------" << endl;            
-                
                 // Construct path
                 goal_state_ptr_ = curr_edge_ptr->parent_state_ptr_;
-                constructPlan(goal_state_ptr_);   
-                terminate_ = true;
-                recheck_flag_ = true;
-                lock_.unlock();
-                exit();
-
-                return true;
+                constructPlan(goal_state_ptr_);
             }
             
         }
@@ -234,11 +252,12 @@ bool AgepasePlanner::improvePath() {
     terminate_ = true;
     auto t_end = chrono::steady_clock::now();
     double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
-    planner_stats_.total_time_ = 1e-9*t_elapsed;
+    time_budget_ -= 1e-9*t_elapsed;
+    // planner_stats_.total_time_ = 1e-9*t_elapsed;
     // cout << "Goal Not Reached, Number of states expanded: " << planner_stats_.num_state_expansions_ << endl;   
     lock_.unlock();
-    exit();
-    return false;
+    exitMultiThread();
+    return;
 }
 
 void AgepasePlanner::expand(EdgePtrType edge_ptr, int thread_id)
@@ -405,6 +424,18 @@ void AgepasePlanner::expandEdge(EdgePtrType edge_ptr, int thread_id)
 
 void AgepasePlanner::exit()
 {
+    edge_incon_list_.clear();
+    while (!edge_open_list_.empty())
+    {
+        edge_open_list_.pop();
+    }
+    being_expanded_states_.clear();
+
+    Planner::exit();
+}
+
+void AgepasePlanner::exitMultiThread()
+{
     for (int thread_id = 0; thread_id < num_threads_-1; ++thread_id)
     {
         unique_lock<mutex> locker(lock_vec_[thread_id]);
@@ -428,12 +459,4 @@ void AgepasePlanner::exit()
         }
     }
     edge_expansion_futures_.clear();
-
-    while (!edge_open_list_.empty())
-    {
-        edge_open_list_.pop();
-    }
-    being_expanded_states_.clear();
-
-    Planner::exit();
 }
