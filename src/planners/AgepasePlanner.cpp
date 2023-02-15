@@ -273,6 +273,8 @@ void AgepasePlanner::expand(EdgePtrType edge_ptr, int thread_id)
     if (edge_ptr->action_ptr_ == dummy_action_ptr_)
     {       
         auto state_ptr = edge_ptr->parent_state_ptr_;
+        
+        state_ptr->SetVValue(state_ptr->GetGValue());
 
         for (auto& action_ptr: actions_ptrs_)
         {
@@ -357,46 +359,45 @@ void AgepasePlanner::expandEdge(EdgePtrType edge_ptr, int thread_id)
         edge_ptr->child_state_ptr_ = successor_state_ptr;
         edge_ptr->SetCost(cost);
 
-        if (!successor_state_ptr->IsVisited())
-        {
-            double new_g_val = edge_ptr->parent_state_ptr_->GetGValue() + cost;
-            
-            if (successor_state_ptr->GetGValue() > new_g_val)
-            {
+        double new_g_val = edge_ptr->parent_state_ptr_->GetGValue() + cost;
 
-                double h_val = successor_state_ptr->GetHValue();
+        if (successor_state_ptr->GetGValue() > new_g_val)
+        {
+            double h_val = successor_state_ptr->GetHValue();
+            
+            if (h_val == -1)
+            {
+                h_val = computeHeuristic(successor_state_ptr);
+                successor_state_ptr->SetHValue(h_val);        
+            }
+
+            if (h_val != DINF)
+            {
+                h_val_min_ = h_val < h_val_min_ ? h_val : h_val_min_;
+                successor_state_ptr->SetGValue(new_g_val);
+                successor_state_ptr->SetFValue(new_g_val + heuristic_w_*h_val);
+                successor_state_ptr->SetIncomingEdgePtr(edge_ptr);
                 
-                if (h_val == -1)
+                // Insert poxy edge
+                auto edge_temp = Edge(successor_state_ptr, dummy_action_ptr_);
+                auto edge_key = getEdgeKey(&edge_temp);
+                auto it_edge = edge_map_.find(edge_key); 
+                EdgePtrType proxy_edge_ptr;
+
+                if (it_edge == edge_map_.end())
                 {
-                    h_val = computeHeuristic(successor_state_ptr);
-                    successor_state_ptr->SetHValue(h_val);        
+                    proxy_edge_ptr = new Edge(successor_state_ptr, dummy_action_ptr_);
+                    edge_map_.insert(make_pair(edge_key, proxy_edge_ptr));
+                }
+                else
+                {
+                    proxy_edge_ptr = it_edge->second;
                 }
 
-                if (h_val != DINF)
+                proxy_edge_ptr->expansion_priority_ = new_g_val + heuristic_w_*h_val;
+                
+                if (!successor_state_ptr->IsVisited())
                 {
-                    h_val_min_ = h_val < h_val_min_ ? h_val : h_val_min_;
-                    successor_state_ptr->SetGValue(new_g_val);
-                    successor_state_ptr->SetFValue(new_g_val + heuristic_w_*h_val);
-                    successor_state_ptr->SetIncomingEdgePtr(edge_ptr);
-                    
-                    // Insert poxy edge
-                    auto edge_temp = Edge(successor_state_ptr, dummy_action_ptr_);
-                    auto edge_key = getEdgeKey(&edge_temp);
-                    auto it_edge = edge_map_.find(edge_key); 
-                    EdgePtrType proxy_edge_ptr;
-
-                    if (it_edge == edge_map_.end())
-                    {
-                        proxy_edge_ptr = new Edge(successor_state_ptr, dummy_action_ptr_);
-                        edge_map_.insert(make_pair(edge_key, proxy_edge_ptr));
-                    }
-                    else
-                    {
-                        proxy_edge_ptr = it_edge->second;
-                    }
-
-                    proxy_edge_ptr->expansion_priority_ = new_g_val + heuristic_w_*h_val;
-                    
                     if (edge_open_list_.contains(proxy_edge_ptr))
                     {
                         edge_open_list_.decrease(proxy_edge_ptr);
@@ -405,11 +406,15 @@ void AgepasePlanner::expandEdge(EdgePtrType edge_ptr, int thread_id)
                     {
                         edge_open_list_.push(proxy_edge_ptr);
                     }
-    
-                    notifyMainThread();
-
+                }
+                else
+                {
+                    if (find(edge_incon_list_.begin(), edge_incon_list_.end(), proxy_edge_ptr) == edge_incon_list_.end()) {
+                        edge_incon_list_.emplace_back(proxy_edge_ptr);
+                    }
                 }
 
+                notifyMainThread();
             }       
         }
     }
