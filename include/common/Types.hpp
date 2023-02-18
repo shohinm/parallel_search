@@ -7,6 +7,7 @@
 #include <mutex>
 #include <unordered_map>
 #include <common/EigenTypes.h>
+#include <common/insat/InsatTypes.hpp>
 #include "intrusive_heap.h"
 
 namespace ps
