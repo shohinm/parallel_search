@@ -26,7 +26,7 @@ void Planner::SetStartState(const StateVarsType& state_vars)
 	start_state_ptr_ = constructState(state_vars);
 }
 
-void Planner::SetGoalChecker(function<bool(const StatePtrType&)> callback)
+void Planner::SetGoalChecker(function<bool(const StateVarsType&)> callback)
 {
     goal_checker_ = callback;
 }
@@ -41,12 +41,12 @@ void Planner::SetEdgeKeyGenerator(function<size_t(const EdgePtrType&)> callback)
 	edge_key_generator_ = callback;
 }
 
-void Planner::SetHeuristicGenerator(function<double(const StatePtrType&)> callback)
+void Planner::SetHeuristicGenerator(function<double(const StateVarsType&)> callback)
 {
 	unary_heuristic_generator_ = callback;
 }
 
-void Planner::SetStateToStateHeuristicGenerator(function<double(const StatePtrType&, const StatePtrType&)> callback)
+void Planner::SetStateToStateHeuristicGenerator(function<double(const StateVarsType&, const StateVarsType&)> callback)
 {
 	binary_heuristic_generator_ = callback;
 }
@@ -75,12 +75,8 @@ void Planner::initialize()
     // Reset goal state
     goal_state_ptr_ = NULL;
 
-    // Reset state
-    planner_stats_ = PlannerStats();
-
     // Reset h_min
     h_val_min_ = DINF;
-
 }
 
 
@@ -129,17 +125,17 @@ StatePtrType Planner::constructState(const StateVarsType& state)
 
 double Planner::computeHeuristic(const StatePtrType& state_ptr)
 {
-    return roundOff(unary_heuristic_generator_(state_ptr));
+    return roundOff(unary_heuristic_generator_(state_ptr->GetStateVars()));
 }
 
 double Planner::computeHeuristic(const StatePtrType& state_ptr_1, const StatePtrType& state_ptr_2)
 {
-    return roundOff(binary_heuristic_generator_(state_ptr_1, state_ptr_2));
+    return roundOff(binary_heuristic_generator_(state_ptr_1->GetStateVars(), state_ptr_2->GetStateVars()));
 }
 
 bool Planner::isGoalState(const StatePtrType& state_ptr)
 {
-    return goal_checker_(state_ptr);
+    return goal_checker_(state_ptr->GetStateVars());
 }
 
 void Planner::constructPlan(StatePtrType& state_ptr)
