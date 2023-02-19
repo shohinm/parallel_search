@@ -126,7 +126,7 @@ namespace ps
   }
 
   /// MuJoCo
-  std::vector<VecDf> ManipulationAction::GetSuccessor(const VecDf &state)
+  std::vector<VecDf> ManipulationAction::GetSuccessor(const VecDf &state, int thread_id)
   {
     std::vector<VecDf> successors;
     for (int i=0; i<2*m_->nq; ++i)
@@ -171,13 +171,13 @@ namespace ps
     return successors;
   }
 
-  bool ManipulationAction::isCollisionFree(StateVarsType &state_vars) const
+  bool ManipulationAction::isCollisionFree(StateVarsType &state_vars, int thread_id) const
   {
     Eigen::Map<const VecDf> state(&state_vars[0], state_vars.size());
     return isCollisionFree(state);
   }
 
-  bool ManipulationAction::isCollisionFree(const VecDf &state) const
+  bool ManipulationAction::isCollisionFree(const VecDf &state, int thread_id) const
   {
     // Set curr configuration
     mju_copy(d_->qpos, state.data(), m_->nq);
@@ -188,7 +188,7 @@ namespace ps
     return d_->ncon>0? false: true;
   }
 
-  bool ManipulationAction::isCollisionFree(const VecDf &curr, const VecDf &succ, VecDf &free_state) const
+  bool ManipulationAction::isCollisionFree(const VecDf &curr, const VecDf &succ, VecDf &free_state, int thread_id) const
   {
     double ang_dist = angles::calcAngDist(curr, succ);
     int n = static_cast<int>(ceil(ang_dist/(1.5*2e-3)));
@@ -209,12 +209,12 @@ namespace ps
     return coll_free;
   }
 
-  bool ManipulationAction::validateJointLimits(const VecDf &state)
+  bool ManipulationAction::validateJointLimits(const VecDf &state, int thread_id)
   {
     return true;
   }
 
-  double ManipulationAction::getCostToSuccessor(const VecDf &current_state, const VecDf &successor_state)
+  double ManipulationAction::getCostToSuccessor(const VecDf &current_state, const VecDf &successor_state, int thread_id)
   {
     VecDf angle_dist(m_->nq);
     for (int i=0; i<m_->nq; ++i)

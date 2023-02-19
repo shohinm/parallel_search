@@ -55,6 +55,10 @@ namespace ps
     typedef std::vector<OptType> OptVecType;
     typedef std::shared_ptr<OptVecType> OptVecPtrType;
 
+    /// Mujoco
+    typedef std::vector<mjModel> MjModelVecType;
+    typedef std::vector<mjData> MjDataVecType;
+
     ManipulationAction(const std::string& type,
                      ParamsType params,
                      std::string& mj_modelpath,
@@ -71,14 +75,14 @@ namespace ps
     VecDf contToDisc(const VecDf & cont_state);
 
     /// MuJoCo
-    std::vector<VecDf> GetSuccessor(const VecDf& state);
-    bool isCollisionFree(const VecDf& state) const;
-    bool isCollisionFree(StateVarsType& state_vars) const;
+    std::vector<VecDf> GetSuccessor(const VecDf& state, int thread_id=0);
+    bool isCollisionFree(const VecDf& state, int thread_id=0) const;
+    bool isCollisionFree(StateVarsType& state_vars, int thread_id=0) const;
     bool isCollisionFree(const VecDf& curr,
                          const VecDf& succ,
-                         VecDf& free_state) const; /// Edge collision check and return the last free state
-    bool validateJointLimits(const VecDf& state);
-    double getCostToSuccessor(const VecDf& current_state, const VecDf& successor_state);
+                         VecDf& free_state, int thread_id=0) const; /// Edge collision check and return the last free state
+    bool validateJointLimits(const VecDf& state, int thread_id=0);
+    double getCostToSuccessor(const VecDf& current_state, const VecDf& successor_state, int thread_id=0);
 
     /// INSAT
     void setOpt(OptVecPtrType& opt);
