@@ -26,7 +26,9 @@ class RrtPlanner : public Planner
         double angleDifference(double angle1, double angle2);
         double calculateDistance(const StateVarsType& state_1, const StateVarsType& state_2);
         StatePtrType getNearestNeighbor(const StateVarsType& sampled_state);
-        StatePtrType extend(const StatePtrType& nearest_neighbor, const StateVarsType& sampled_state);
+        bool isValidConfiguration(const StateVarsType& state_vars, int thread_id);
+        StatePtrType extend(const StatePtrType& nearest_neighbor, const StateVarsType& sampled_state, 
+            bool& is_collision, int thread_id);
         void exit();
 
         int num_threads_;

@@ -65,7 +65,8 @@ void RrtPlanner::rrtThread(int thread_id)
     {
         auto sampled_state = sampleState();
         auto nearest_neighbor = getNearestNeighbor(sampled_state);
-        auto state_ptr = extend(nearest_neighbor, sampled_state);
+        bool is_collision;
+        auto state_ptr = extend(nearest_neighbor, sampled_state, is_collision, thread_id);
 
         if (isGoalState(state_ptr) && (!terminate_))
         {
@@ -164,9 +165,59 @@ StatePtrType RrtPlanner::getNearestNeighbor(const StateVarsType& sampled_state)
     return nearest_state;
 }
 
-StatePtrType RrtPlanner::extend(const StatePtrType& nearest_neighbor, const StateVarsType& sampled_state)
+bool RrtPlanner::isValidConfiguration(const StateVarsType& state_vars, int thread_id)
 {
+    // return actions_ptrs_->isCollisionFree(state_vars, thread_id);
+}
 
+StatePtrType RrtPlanner::extend(const StatePtrType& nearest_neighbor, const StateVarsType& sampled_state, 
+    bool& is_collision, int thread_id)
+{
+    int ndof = nearest_neighbor->GetStateVars().size();
+    auto nearest_state_vars = nearest_neighbor->GetStateVars();
+    // if sampledNode is closer than m_eps, return that 
+    if (calculateDistance(sampled_state, nearest_state_vars) < planner_params_["eps"])
+    {
+        return constructState(sampled_state);
+    }
+
+    double angle_diff_norm = 0;
+    for (int i = 0; i < ndof; ++i)
+    {
+        double diff = angleDifference(sampled_state[i], nearest_state_vars[i]);
+        angle_diff_norm += pow(diff,2);
+    }
+    angle_diff_norm = sqrt(angle_diff_norm);
+
+    StateVarsType final_state(ndof, 0);
+    for (int i = 0; i < ndof; ++i)
+    {
+        final_state[i] = nearest_state_vars[i] + 
+        planner_params_["eps"]*(angleDifference(sampled_state[i],nearest_state_vars[i])/angle_diff_norm); 
+    }
+
+    StateVarsType curr_state = nearest_state_vars;
+    StateVarsType final_valid_state = nearest_state_vars;
+
+    int num_samples = planner_params_["num_samples"];
+
+    for (int i = 0; i < num_samples; ++i)
+    {
+        for (int j = 0; j < ndof; ++j)
+        {
+            curr_state[j] = nearest_state_vars[j] + ((double)(i)/(num_samples-1))*angleDifference(final_state[j],nearest_state_vars[j]);/*/angleDiffNorm);*/
+        }
+
+        if(!isValidConfiguration(curr_state, thread_id))
+        {
+            is_collision = true;
+            break;
+        }
+
+        final_valid_state = curr_state;
+    }
+    
+    return constructState(final_valid_state); 
 }
 
 void RrtPlanner::exit()
