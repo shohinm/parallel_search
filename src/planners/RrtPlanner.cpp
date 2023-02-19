@@ -18,7 +18,7 @@ RrtPlanner::~RrtPlanner()
 
 void RrtPlanner::SetGoalState(const StateVarsType& state_vars)
 {
-    goal_state_ptr_ = constructState(state_vars);
+    goal_state_ptr_ = constructState(state_vars, state_map_);
 }
 
 bool RrtPlanner::Plan()
@@ -59,19 +59,39 @@ void RrtPlanner::initialize()
     planner_stats_.num_threads_spawned_ = 2;
 }
 
+StatePtrType RrtPlanner::constructState(const StateVarsType& state, StatePtrMapType& state_map)
+{
+    size_t key = state_key_generator_(state);
+    StatePtrMapType::iterator it = state_map.find(key);
+    StatePtrType state_ptr;
+    
+    // Check if state exists in the search state map
+    if (it == state_map.end())
+    {
+        state_ptr = new State(state);
+        state_map.insert(pair<size_t, StatePtrType>(key, state_ptr));
+    }
+    else 
+    {
+        state_ptr = it->second;
+    }
+   
+    return state_ptr;
+}
+
 void RrtPlanner::rrtThread(int thread_id)
 {
     while (!terminate_)
     {
-        auto sampled_state = sampleState();
+        auto sampled_state = sampleState(goal_state_ptr_);
         auto nearest_neighbor = getNearestNeighbor(sampled_state);
         bool is_collision;
-        auto state_ptr = extend(nearest_neighbor, sampled_state, is_collision, thread_id);
+        auto state_ptr = extend(nearest_neighbor, sampled_state, is_collision, state_map_, thread_id);
 
-        if (isGoalState(state_ptr) && (!terminate_))
-        {
-            goal_state_ptr_ = state_ptr;
-            
+        auto dist_to_goal = calculateDistance(state_ptr->GetStateVars(), goal_state_ptr_->GetStateVars());
+
+        if ((!terminate_) && (dist_to_goal < planner_params_["termination_distance"]))
+        {            
             // Reconstruct and return path
             constructPlan(state_ptr);   
             terminate_ = true;
@@ -93,14 +113,14 @@ StateVarsType RrtPlanner::sampleSateUniform()
 
 }
 
-StateVarsType RrtPlanner::sampleState()
+StateVarsType RrtPlanner::sampleState(StatePtrType goal_state_ptr)
 {
     double r = getRandomNumberBetween(0,1);
 
     StateVarsType sampled_state;
     if (r < planner_params_["goal_bias_probability"])
     {
-        sampled_state = goal_state_ptr_->GetStateVars();
+        sampled_state = goal_state_ptr->GetStateVars();
     }
     else
     {           
@@ -167,37 +187,17 @@ StatePtrType RrtPlanner::getNearestNeighbor(const StateVarsType& sampled_state)
 
 bool RrtPlanner::isValidConfiguration(const StateVarsType& state_vars, int thread_id)
 {
-    // return actions_ptrs_->isCollisionFree(state_vars, thread_id);
+    // return dynamic_cast<ManipulationAction>(actions_ptrs_[0])->isCollisionFree(state_vars, thread_id);
+    // Need to also check for joint limits
 }
 
-StatePtrType RrtPlanner::extend(const StatePtrType& nearest_neighbor, const StateVarsType& sampled_state, 
+StateVarsType RrtPlanner::collisionFree(const StateVarsType& state_vars_start,
+    const StateVarsType& state_vars_end, const StatePtrMapType& state_map,
     bool& is_collision, int thread_id)
 {
-    int ndof = nearest_neighbor->GetStateVars().size();
-    auto nearest_state_vars = nearest_neighbor->GetStateVars();
-    // if sampledNode is closer than m_eps, return that 
-    if (calculateDistance(sampled_state, nearest_state_vars) < planner_params_["eps"])
-    {
-        return constructState(sampled_state);
-    }
-
-    double angle_diff_norm = 0;
-    for (int i = 0; i < ndof; ++i)
-    {
-        double diff = angleDifference(sampled_state[i], nearest_state_vars[i]);
-        angle_diff_norm += pow(diff,2);
-    }
-    angle_diff_norm = sqrt(angle_diff_norm);
-
-    StateVarsType final_state(ndof, 0);
-    for (int i = 0; i < ndof; ++i)
-    {
-        final_state[i] = nearest_state_vars[i] + 
-        planner_params_["eps"]*(angleDifference(sampled_state[i],nearest_state_vars[i])/angle_diff_norm); 
-    }
-
-    StateVarsType curr_state = nearest_state_vars;
-    StateVarsType final_valid_state = nearest_state_vars;
+    int ndof = state_vars_start.size();
+    StateVarsType final_valid_state  = state_vars_start;
+    StateVarsType curr_state = state_vars_start;
 
     int num_samples = planner_params_["num_samples"];
 
@@ -205,7 +205,8 @@ StatePtrType RrtPlanner::extend(const StatePtrType& nearest_neighbor, const Stat
     {
         for (int j = 0; j < ndof; ++j)
         {
-            curr_state[j] = nearest_state_vars[j] + ((double)(i)/(num_samples-1))*angleDifference(final_state[j],nearest_state_vars[j]);/*/angleDiffNorm);*/
+            curr_state[j] = state_vars_start[j] 
+            + ((double)(i)/(num_samples-1))*angleDifference(state_vars_end[j],state_vars_start[j]);/*/angleDiffNorm);*/
         }
 
         if(!isValidConfiguration(curr_state, thread_id))
@@ -216,8 +217,40 @@ StatePtrType RrtPlanner::extend(const StatePtrType& nearest_neighbor, const Stat
 
         final_valid_state = curr_state;
     }
+
+    return final_valid_state;
+}
+
+StatePtrType RrtPlanner::extend(const StatePtrType& nearest_neighbor, const StateVarsType& sampled_state, 
+    bool& is_collision, StatePtrMapType& state_map, int thread_id)
+{
+    int ndof = nearest_neighbor->GetStateVars().size();
+    auto nearest_state_vars = nearest_neighbor->GetStateVars();
+    // if sampledNode is closer than m_eps, return that 
+    if (calculateDistance(sampled_state, nearest_state_vars) < planner_params_["eps"])
+    {
+        return constructState(sampled_state, state_map);
+    }
+
+    double angle_diff_norm = 0;
+    for (int i = 0; i < ndof; ++i)
+    {
+        double diff = angleDifference(sampled_state[i], nearest_state_vars[i]);
+        angle_diff_norm += pow(diff,2);
+    }
+    angle_diff_norm = sqrt(angle_diff_norm);
+
+    StateVarsType final_state_vars(ndof, 0);
+    for (int i = 0; i < ndof; ++i)
+    {
+        final_state_vars[i] = nearest_state_vars[i] + 
+        planner_params_["eps"]*(angleDifference(sampled_state[i],nearest_state_vars[i])/angle_diff_norm); 
+    }
+
+    auto final_valid_state_vars = collisionFree(nearest_state_vars, final_state_vars, 
+        state_map, is_collision, thread_id);
     
-    return constructState(final_valid_state); 
+    return constructState(final_valid_state_vars, state_map); 
 }
 
 void RrtPlanner::exit()

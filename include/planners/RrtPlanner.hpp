@@ -13,22 +13,26 @@ class RrtPlanner : public Planner
     public:
         RrtPlanner(ParamsType planner_params);
         ~RrtPlanner();
-        void SetGoalState(const StateVarsType& state_vars);
+        virtual void SetGoalState(const StateVarsType& state_vars);
         bool Plan();
 
     protected:
         void initialize();
+        StatePtrType constructState(const StateVarsType& state, StatePtrMapType& state_map);
         void rrtThread(int thread_id);
         double getRandomNumberBetween(double min, double max);
         StateVarsType sampleSateUniform();
-        StateVarsType sampleState();
+        StateVarsType sampleState(StatePtrType goal_state_ptr);
         double wrapAngle(double angle);
         double angleDifference(double angle1, double angle2);
         double calculateDistance(const StateVarsType& state_1, const StateVarsType& state_2);
         StatePtrType getNearestNeighbor(const StateVarsType& sampled_state);
         bool isValidConfiguration(const StateVarsType& state_vars, int thread_id);
-        StatePtrType extend(const StatePtrType& nearest_neighbor, const StateVarsType& sampled_state, 
+        StateVarsType collisionFree(const StateVarsType& state_vars_start,
+            const StateVarsType& state_vars_end, const StatePtrMapType& state_map, 
             bool& is_collision, int thread_id);
+        StatePtrType extend(const StatePtrType& nearest_neighbor, const StateVarsType& sampled_state, 
+            bool& is_collision, StatePtrMapType& state_map, int thread_id);
         void exit();
 
         int num_threads_;

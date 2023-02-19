@@ -85,7 +85,6 @@ void Planner::initialize()
 
 }
 
-
 void Planner::resetStates()
 {
     for (auto it = state_map_.begin(); it != state_map_.end(); ++it)
