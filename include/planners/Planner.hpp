@@ -35,6 +35,7 @@ class Planner
 
         void SetActions(std::vector<std::shared_ptr<Action>> actions_ptrs);
         virtual void SetStartState(const StateVarsType& state_vars);
+        virtual void SetGoalState(const StateVarsType& state_vars);
         void SetGoalChecker(std::function<bool(const StatePtrType&)> callback);
 
         void SetStateMapKeyGenerator(std::function<std::size_t(const StateVarsType&)> callback);
