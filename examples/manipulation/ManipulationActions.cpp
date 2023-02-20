@@ -176,7 +176,12 @@ namespace ps
     return successors;
   }
 
-  bool ManipulationAction::isCollisionFree(StateVarsType &state_vars, int thread_id) const
+  bool ManipulationAction::isFeasible(const StateVarsType& state_vars, int thread_id)
+  {
+    return isCollisionFree(state_vars, thread_id);
+  }
+
+  bool ManipulationAction::isCollisionFree(const StateVarsType &state_vars, int thread_id) const
   {
     Eigen::Map<const VecDf> state(&state_vars[0], state_vars.size());
     return isCollisionFree(state, thread_id);

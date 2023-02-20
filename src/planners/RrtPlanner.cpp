@@ -211,8 +211,7 @@ StatePtrType RrtPlanner::getNearestNeighbor(const StateVarsType& sampled_state, 
 
 bool RrtPlanner::isValidConfiguration(const StateVarsType& state_vars, int thread_id)
 {
-    // return dynamic_cast<ManipulationAction>(actions_ptrs_[0])->isCollisionFree(state_vars, thread_id);
-    // Need to also check for joint limits
+    return actions_ptrs_[0]->IsFeasible(state_vars, thread_id);
 }
 
 StateVarsType RrtPlanner::collisionFree(const StateVarsType& state_vars_start,

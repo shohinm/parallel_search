@@ -77,8 +77,9 @@ namespace ps
 
     /// MuJoCo
     std::vector<VecDf> GetSuccessor(const VecDf& state, int thread_id=0);
+    bool isFeasible(const StateVarsType& state_vars, int thread_id=0);
     bool isCollisionFree(const VecDf& state, int thread_id=0) const;
-    bool isCollisionFree(StateVarsType& state_vars, int thread_id=0) const;
+    bool isCollisionFree(const StateVarsType& state_vars, int thread_id=0) const;
     bool isCollisionFree(const VecDf& curr,
                          const VecDf& succ,
                          VecDf& free_state, int thread_id=0) const; /// Edge collision check and return the last free state

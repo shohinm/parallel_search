@@ -36,6 +36,7 @@ class RrtPlanner : public Planner
             bool& is_collision, StatePtrMapType& state_map, int thread_id);
         void exit();
 
+        std::vector<std::shared_ptr<Action>> actions_ptrs_;
         int num_threads_;
         std::random_device random_device_;
         mutable LockType lock_;
