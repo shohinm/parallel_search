@@ -43,6 +43,8 @@ set(SOURCES
     src/planners/EpasePlanner.cpp
     src/planners/GepasePlanner.cpp
     src/planners/MplpPlanner.cpp
+    src/planners/RrtPlanner.cpp
+    src/planners/RrtConnectPlanner.cpp
     src/planners/insat/PinsatPlanner.cpp
 )
 

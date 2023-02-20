@@ -13,7 +13,7 @@ planner_params_(planner_params)
 
 Planner::~Planner()
 {
-	cleanUp();
+    cleanUp();
 }
 
 void Planner::SetActions(vector<shared_ptr<Action>> actions_ptrs)
@@ -23,7 +23,12 @@ void Planner::SetActions(vector<shared_ptr<Action>> actions_ptrs)
 
 void Planner::SetStartState(const StateVarsType& state_vars)
 {
-	start_state_ptr_ = constructState(state_vars);
+    start_state_ptr_ = constructState(state_vars);
+}
+
+void Planner::SetGoalState(const StateVarsType& state_vars)
+{
+    throw runtime_error("SetGoalState not implemented!");
 }
 
 void Planner::SetGoalChecker(function<bool(const StatePtrType&)> callback)
@@ -33,22 +38,22 @@ void Planner::SetGoalChecker(function<bool(const StatePtrType&)> callback)
 
 void Planner::SetStateMapKeyGenerator(function<size_t(const StateVarsType&)> callback)
 {
-	state_key_generator_ = callback;
+    state_key_generator_ = callback;
 }
 
 void Planner::SetEdgeKeyGenerator(function<size_t(const EdgePtrType&)> callback)
 {
-	edge_key_generator_ = callback;
+    edge_key_generator_ = callback;
 }
 
 void Planner::SetHeuristicGenerator(function<double(const StatePtrType&)> callback)
 {
-	unary_heuristic_generator_ = callback;
+    unary_heuristic_generator_ = callback;
 }
 
 void Planner::SetStateToStateHeuristicGenerator(function<double(const StatePtrType&, const StatePtrType&)> callback)
 {
-	binary_heuristic_generator_ = callback;
+    binary_heuristic_generator_ = callback;
 }
 
 std::vector<PlanElement> Planner::GetPlan() const
@@ -75,14 +80,10 @@ void Planner::initialize()
     // Reset goal state
     goal_state_ptr_ = NULL;
 
-    // Reset state
-    planner_stats_ = PlannerStats();
-
     // Reset h_min
     h_val_min_ = DINF;
 
 }
-
 
 void Planner::resetStates()
 {
@@ -173,7 +174,7 @@ void Planner::cleanUp()
             state_it.second = NULL;
         }
     }
-	state_map_.clear();
+    state_map_.clear();
 
     for (auto& edge_it : edge_map_)
     {
