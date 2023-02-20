@@ -56,14 +56,15 @@ namespace ps
     typedef std::shared_ptr<OptVecType> OptVecPtrType;
 
     /// Mujoco
-    typedef std::vector<mjModel> MjModelVecType;
-    typedef std::vector<mjData> MjDataVecType;
+    typedef std::vector<mjModel*> MjModelVecType;
+    typedef std::vector<mjData*> MjDataVecType;
 
     ManipulationAction(const std::string& type,
                      ParamsType params,
                      std::string& mj_modelpath,
                      VecDf ang_discretization,
                      OptVecPtrType& opt,
+                     int num_threads=1,
                      bool is_expensive = true);
 
     virtual bool CheckPreconditions(StateVarsType state);
@@ -72,7 +73,7 @@ namespace ps
     ActionSuccessor Evaluate(StateVarsType parent_state_vars, StateVarsType child_state_vars, int thread_id=0);
 
     /// Snap to Grid
-    VecDf contToDisc(const VecDf & cont_state);
+    VecDf contToDisc(const VecDf & cont_state, int thread_id=0);
 
     /// MuJoCo
     std::vector<VecDf> GetSuccessor(const VecDf& state, int thread_id=0);
@@ -81,7 +82,8 @@ namespace ps
     bool isCollisionFree(const VecDf& curr,
                          const VecDf& succ,
                          VecDf& free_state, int thread_id=0) const; /// Edge collision check and return the last free state
-    bool validateJointLimits(const VecDf& state, int thread_id=0);
+    bool validateJointLimits(const VecDf& state, int thread_id=0) const;
+    bool validateJointLimits(const StateVarsType& state_vars, int thread_id=0) const;
     double getCostToSuccessor(const VecDf& current_state, const VecDf& successor_state, int thread_id=0);
 
     /// INSAT
@@ -103,8 +105,10 @@ namespace ps
     OptVecPtrType opt_;
 
     /// MuJoCo
-    mjModel* m_;
-    mjData* d_=nullptr;
+//    mjModel* m_;
+//    mjData* d_=nullptr;
+    MjModelVecType m_;
+    MjDataVecType d_;
 
   };
 
@@ -117,19 +121,21 @@ namespace ps
                     std::string& mj_modelpath,
                     VecDf ang_discretization,
                     OptVecPtrType opt,
+                    int num_threads=1,
                     bool is_expensive = true):
             ManipulationAction(type,
                                params,
                                mj_modelpath,
                                ang_discretization,
                                opt,
+                               num_threads,
                                is_expensive)
     {
-      mprims_.resize(2*m_->nq, m_->nq);
+      mprims_.resize(2*m_[0]->nq, m_[0]->nq);
       mprims_.setZero();
-      for (int i=0; i<m_->nq; ++i)
+      for (int i=0; i<m_[0]->nq; ++i)
       {
-        for (int j=0; j<m_->nq; ++j)
+        for (int j=0; j<m_[0]->nq; ++j)
         {
           if (i==j)
           {
@@ -137,7 +143,8 @@ namespace ps
           }
         }
       }
-      mprims_.block(m_->nq,0,m_->nq,m_->nq) = -1*mprims_.block(0,0,m_->nq,m_->nq);
+      mprims_.block(m_[0]->nq,0,m_[0]->nq,m_[0]->nq) =
+              -1*mprims_.block(0,0,m_[0]->nq,m_[0]->nq);
     };
 
     void setOpt(OptVecPtrType& opt) {ManipulationAction::setOpt(opt);};

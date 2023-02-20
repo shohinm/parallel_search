@@ -43,15 +43,20 @@ namespace ps
                                          std::string& mj_modelpath,
                                          VecDf ang_discretization,
                                          OptVecPtrType& opt,
+                                         int num_threads,
                                          bool is_expensive) : InsatAction(type, params, is_expensive),
                                                           discretization_(ang_discretization),
                                                           opt_(opt)
   {
-    m_ = mj_loadXML(mj_modelpath.c_str(), nullptr, nullptr, 0);
-    d_ = mj_makeData(m_);
+
+    for (int i=0; i<num_threads; ++i)
+    {
+      m_.emplace_back(mj_loadXML(mj_modelpath.c_str(), nullptr, nullptr, 0));
+      d_.emplace_back(mj_makeData(m_[i]));
+    }
 
     // Caching discrete angles per DOF in the range -M_PI to M_PI
-    for (int i=0; i<m_->nq; ++i)
+    for (int i=0; i<m_[0]->nq; ++i)
     {
       double ang_lim = discretization_(i)*static_cast<int>(M_PI/discretization_(i));
       int num_angles = 1+(2*static_cast<int>(M_PI/discretization_(i)));
@@ -73,7 +78,7 @@ namespace ps
     for (auto s : successors)
     {
       StateVarsType succ;
-      succ.resize(m_->nq);
+      succ.resize(m_[thread_id]->nq);
       VecDf::Map(&succ[0], s.size()) = s;
 
       double cost = getCostToSuccessor(state, s);
@@ -95,10 +100,10 @@ namespace ps
   }
 
   /// Snap to Grid
-  VecDf ManipulationAction::contToDisc(const VecDf & cont_state)
+  VecDf ManipulationAction::contToDisc(const VecDf & cont_state, int thread_id)
   {
-    VecDf disc_state(m_->nq);
-    for (int i=0; i<m_->nq; ++i)
+    VecDf disc_state(m_[thread_id]->nq);
+    for (int i=0; i<m_[thread_id]->nq; ++i)
     {
       // Normalize angle to -pi to pi. Should already be in that range.
       // cont_state(i) = angles::normalize_angle(cont_state(i));
@@ -129,10 +134,10 @@ namespace ps
   std::vector<VecDf> ManipulationAction::GetSuccessor(const VecDf &state, int thread_id)
   {
     std::vector<VecDf> successors;
-    for (int i=0; i<2*m_->nq; ++i)
+    for (int i=0; i<2*m_[thread_id]->nq; ++i)
     {
-      VecDf succ(m_->nq);
-      for (int j=0; j<m_->nq; ++j)
+      VecDf succ(m_[thread_id]->nq);
+      for (int j=0; j<m_[thread_id]->nq; ++j)
       {
         succ(j) = state(j) + mprims_(i,j)*discretization_(j);
         succ(j) = angles::normalize_angle(succ(j));
@@ -144,7 +149,7 @@ namespace ps
         continue;
       }
 
-      VecDf free_state(m_->nq), con_state(m_->nq);
+      VecDf free_state(m_[thread_id]->nq), con_state(m_[thread_id]->nq);
 
       // state coll check
       if (isCollisionFree(succ))
@@ -174,18 +179,22 @@ namespace ps
   bool ManipulationAction::isCollisionFree(StateVarsType &state_vars, int thread_id) const
   {
     Eigen::Map<const VecDf> state(&state_vars[0], state_vars.size());
-    return isCollisionFree(state);
+    return isCollisionFree(state, thread_id);
   }
 
   bool ManipulationAction::isCollisionFree(const VecDf &state, int thread_id) const
   {
+    if (!validateJointLimits(state, thread_id))
+    {
+      return false;
+    }
     // Set curr configuration
-    mju_copy(d_->qpos, state.data(), m_->nq);
-    mju_zero(d_->qvel, m_->nv);
-    mju_zero(d_->qacc, m_->nv);
-    mj_fwdPosition(m_, d_);
+    mju_copy(d_[thread_id]->qpos, state.data(), m_[thread_id]->nq);
+    mju_zero(d_[thread_id]->qvel, m_[thread_id]->nv);
+    mju_zero(d_[thread_id]->qacc, m_[thread_id]->nv);
+    mj_fwdPosition(m_[thread_id], d_[thread_id]);
 
-    return d_->ncon>0? false: true;
+    return d_[thread_id]->ncon>0? false: true;
   }
 
   bool ManipulationAction::isCollisionFree(const VecDf &curr, const VecDf &succ, VecDf &free_state, int thread_id) const
@@ -199,7 +208,7 @@ namespace ps
     for (int k=0; k<=n; ++k)
     {
       VecDf interp = angles::interpolateAngle(curr, succ, rho*k);
-      if (!isCollisionFree(interp))
+      if (!isCollisionFree(interp, thread_id))
       {
         coll_free = false;
         break;
@@ -209,15 +218,31 @@ namespace ps
     return coll_free;
   }
 
-  bool ManipulationAction::validateJointLimits(const VecDf &state, int thread_id)
+  bool ManipulationAction::validateJointLimits(const VecDf &state, int thread_id) const
   {
-    return true;
+    bool valid = true;
+    for (int i=0; i<m_[thread_id]->njnt; ++i)
+    {
+      if (state(i) >= m_[thread_id]->jnt_range[2*i] && state(i) <= m_[thread_id]->jnt_range[2*i+1])
+      {
+        continue;
+      }
+      valid = false;
+      break;
+    }
+    return valid;
+  }
+
+  bool ManipulationAction::validateJointLimits(const StateVarsType &state_vars, int thread_id) const
+  {
+    Eigen::Map<const VecDf> state(&state_vars[0], state_vars.size());
+    return validateJointLimits(state, thread_id);
   }
 
   double ManipulationAction::getCostToSuccessor(const VecDf &current_state, const VecDf &successor_state, int thread_id)
   {
-    VecDf angle_dist(m_->nq);
-    for (int i=0; i<m_->nq; ++i)
+    VecDf angle_dist(m_[thread_id]->nq);
+    for (int i=0; i<m_[thread_id]->nq; ++i)
     {
       angle_dist(i) = angles::shortest_angular_distance(current_state(i),
                                                         successor_state(i));
