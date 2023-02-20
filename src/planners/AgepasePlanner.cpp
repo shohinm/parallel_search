@@ -20,17 +20,29 @@ AgepasePlanner::~AgepasePlanner()
 bool AgepasePlanner::Plan()
 {
     initialize();    
+    // cout << "edge_incon_list_: " << edge_incon_list_.size() << endl;
+    // cout << "edge_open_list_: " << edge_open_list_.size() << endl;
+    // cout << "being_expanded_states_: " <<  being_expanded_states_.size() << endl;
+    // cout << "state_map_: " << state_map_.size() << endl;
+    // cin.get();
+    double heuristic_w = heuristic_w_;
+    double time_budget = time_budget_;
     auto t_start = chrono::steady_clock::now();
     while (heuristic_w_>=1 && time_budget_>0) {
         terminate_ = false;
         resetClosed();
         improvePath();
+
+        // goal_state_ptr_->Print();
+        cout << "edge_incon_list_: " << edge_incon_list_.size() << endl;
+        cout << "edge_open_list_: " << edge_open_list_.size() << endl;
+        
         // Early termination if there's no solution
-        if (goal_state_ptr_->GetGValue() == DINF)
+        if (goal_state_ptr_ == NULL)
         {
             break;
         }
-        heuristic_w_ = floor(heuristic_w_/2);
+        heuristic_w_ -= 1;
         // append inconsistent list's edges into Eopen
         for(auto it_edge = edge_incon_list_.begin(); it_edge != edge_incon_list_.end(); it_edge++)
         {
@@ -49,10 +61,13 @@ bool AgepasePlanner::Plan()
         edge_open_list_.swap(edge_open_list);
     }
     terminate_ = true;
+    // Reset heuristic weight & time budget
+    heuristic_w_ = heuristic_w;
+    time_budget_ = time_budget;
     auto t_end = chrono::steady_clock::now();
     double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
     planner_stats_.total_time_ = 1e-9*t_elapsed;
-    if (goal_state_ptr_->GetGValue() != DINF) {
+    if (goal_state_ptr_ != NULL) {
         exit();
         return true;
     }
@@ -96,28 +111,23 @@ void AgepasePlanner::improvePath() {
                 time_budget_ -= 1e-9*t_elapsed;
                 lock_.unlock();
                 exitMultiThread();
-                // if (goal_state_ptr_->GetGValue() != DINF)
-                // {
-                //     cout << "Plan found in previous iteration" << endl;   
-                // }
-                // else
-                // {
-                //     cout << "Goal Not Reached" << endl;   
-                // }
                 return;
             }
 
             if (!edge_open_list_.empty())
             {
-                if (goal_state_ptr_->GetGValue() < edge_open_list_.min()->expansion_priority_)
+                if (goal_state_ptr_ != NULL)
                 {
-                    terminate_ = true;
-                    auto t_end = chrono::steady_clock::now();
-                    double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
-                    time_budget_ -= 1e-9*t_elapsed;
-                    lock_.unlock();
-                    exitMultiThread();
-                    return;
+                    if (goal_state_ptr_->GetGValue() < edge_open_list_.min()->expansion_priority_)
+                    {
+                        terminate_ = true;
+                        auto t_end = chrono::steady_clock::now();
+                        double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
+                        time_budget_ -= 1e-9*t_elapsed;
+                        lock_.unlock();
+                        exitMultiThread();
+                        return;
+                    }
                 }
             }
 

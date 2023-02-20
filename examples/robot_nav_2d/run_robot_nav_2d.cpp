@@ -13,6 +13,7 @@
 #include <planners/PasePlanner.hpp>
 #include <planners/EpasePlanner.hpp>
 #include <planners/GepasePlanner.hpp>
+#include <planners/AgepasePlanner.hpp>
 #include <planners/MplpPlanner.hpp>
 
 using namespace std;
@@ -217,8 +218,10 @@ void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vec
         planner_ptr = make_shared<EpasePlanner>(planner_params); 
     else if (planner_name == "gepase")
         planner_ptr = make_shared<GepasePlanner>(planner_params); 
+    else if (planner_name == "agepase")
+        planner_ptr = make_shared<AgepasePlanner>(planner_params);
     else if (planner_name == "mplp")
-        planner_ptr = make_shared<MplpPlanner>(planner_params); 
+        planner_ptr = make_shared<MplpPlanner>(planner_params);
     else
         throw runtime_error("Planner type not identified!");      
 
@@ -260,6 +263,7 @@ void loadStartsGoalsFromFile(vector<vector<double>>& starts, vector<vector<doubl
 int main(int argc, char* argv[])
 {
     int num_threads;
+    double time_budget = 0;
 
     if (!strcmp(argv[1], "wastar"))
     {
@@ -271,6 +275,12 @@ int main(int argc, char* argv[])
         if (argc != 3) throw runtime_error("Format: run_robot_nav_2d [planner_name] [num_threads]");
         if (atoi(argv[2]) < 4) throw runtime_error("mplp requires a minimum of 4 threads");
         num_threads = atoi(argv[2]);
+    }
+    else if (!strcmp(argv[1], "agepase"))
+    {
+        if (argc != 4) throw runtime_error("Format: run_robot_nav_2d agepase [num_threads] [time_budget]");
+        num_threads = atoi(argv[2]);
+        time_budget = atof(argv[3]);
     }
     else
     {
@@ -290,6 +300,8 @@ int main(int argc, char* argv[])
     string planner_name = argv[1];
     planner_params["num_threads"] = num_threads;
     planner_params["heuristic_weight"] = 50;
+    // planner_params["heuristic_weight"] = 1;
+    planner_params["time_budget"] = time_budget;
     
     // Read map
     int width, height;
@@ -321,7 +333,8 @@ int main(int argc, char* argv[])
     vector<int> all_maps_num_edges_vec;
     unordered_map<string, vector<double>> all_action_eval_times;
 
-    for (int m_idx = 0; m_idx < map_vec.size(); ++m_idx)
+    // for (int m_idx = 0; m_idx < map_vec.size(); ++m_idx)
+    for (int m_idx = 0; m_idx <  1; ++m_idx)
     {
         auto map = map_vec[m_idx];
         auto img = img_vec[m_idx];
@@ -365,7 +378,8 @@ int main(int argc, char* argv[])
         if (visualize_plan) cv::namedWindow("Plan", cv::WINDOW_AUTOSIZE );// Create a window for display.
         
         int num_success = 0;
-        for (int exp_idx = 0; exp_idx < num_runs; ++exp_idx )
+        // for (int exp_idx = 0; exp_idx < num_runs; ++exp_idx )
+        for (int exp_idx = 0; exp_idx < 1; ++exp_idx )
         {
             cout << "Experiment: " << exp_idx;
 
