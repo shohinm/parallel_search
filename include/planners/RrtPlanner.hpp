@@ -19,6 +19,7 @@ class RrtPlanner : public Planner
     protected:
         void initialize();
         StatePtrType constructState(const StateVarsType& state, StatePtrMapType& state_map);
+        EdgePtrType addEdge(StatePtrType parent_state, StatePtrType child_state, EdgePtrMapType& edge_map);
         void rrtThread(int thread_id);
         double getRandomNumberBetween(double min, double max);
         StateVarsType sampleSateUniform();
@@ -26,7 +27,7 @@ class RrtPlanner : public Planner
         double wrapAngle(double angle);
         double angleDifference(double angle1, double angle2);
         double calculateDistance(const StateVarsType& state_1, const StateVarsType& state_2);
-        StatePtrType getNearestNeighbor(const StateVarsType& sampled_state);
+        StatePtrType getNearestNeighbor(const StateVarsType& sampled_state, const StatePtrMapType& state_map);
         bool isValidConfiguration(const StateVarsType& state_vars, int thread_id);
         StateVarsType collisionFree(const StateVarsType& state_vars_start,
             const StateVarsType& state_vars_end, const StatePtrMapType& state_map, 

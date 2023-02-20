@@ -17,11 +17,13 @@ class RrtConnectPlanner : public RrtPlanner
 
     protected:
         void initialize();
-        bool connect(StatePtrType state_ptr, const StatePtrMapType& state_map);
+        bool connect(StatePtrType state_ptr, StatePtrMapType& state_map, EdgePtrMapType& edge_map, int thread_id);
         void rrtThread(int thread_id);
         void exit();
     
         StatePtrMapType state_map_goal_;
+        EdgePtrMapType edge_map_goal_;
+
         std::vector<int> start_goal_flag_;
 
 };

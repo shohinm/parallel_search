@@ -79,17 +79,38 @@ StatePtrType RrtPlanner::constructState(const StateVarsType& state, StatePtrMapT
     return state_ptr;
 }
 
+EdgePtrType RrtPlanner::addEdge(StatePtrType parent_state, StatePtrType child_state, EdgePtrMapType& edge_map)
+{
+    auto edge_temp = Edge(parent_state, actions_ptrs_[0], child_state);
+    auto edge_key = getEdgeKey(&edge_temp);
+    auto it_edge = edge_map.find(edge_key); 
+
+    EdgePtrType edge_ptr;
+
+    if (it_edge == edge_map.end())
+    {
+        edge_ptr = new Edge(parent_state, actions_ptrs_[0], child_state);
+        edge_map.insert(make_pair(edge_key, edge_ptr));
+    }
+    else
+    {
+        edge_ptr = it_edge->second;
+    }
+
+    return edge_ptr;
+}
+
 void RrtPlanner::rrtThread(int thread_id)
 {
     while (!terminate_)
     {
         auto sampled_state = sampleState(goal_state_ptr_);
-        auto nearest_neighbor = getNearestNeighbor(sampled_state);
+        auto nearest_neighbor = getNearestNeighbor(sampled_state, state_map_);
         bool is_collision;
         auto state_ptr = extend(nearest_neighbor, sampled_state, is_collision, state_map_, thread_id);
+        addEdge(nearest_neighbor, state_ptr, edge_map_);
 
         auto dist_to_goal = calculateDistance(state_ptr->GetStateVars(), goal_state_ptr_->GetStateVars());
-
         if ((!terminate_) && (dist_to_goal < planner_params_["termination_distance"]))
         {            
             // Reconstruct and return path
@@ -164,13 +185,13 @@ double RrtPlanner::calculateDistance(const StateVarsType& state_1, const StateVa
     return dist;
 }
 
-StatePtrType RrtPlanner::getNearestNeighbor(const StateVarsType& sampled_state)
+StatePtrType RrtPlanner::getNearestNeighbor(const StateVarsType& sampled_state, const StatePtrMapType& state_map)
 {
     lock_.lock();
     
     StatePtrType nearest_state;
     auto min_d = DINF;
-    for (auto& [state_id, state_ptr] : state_map_)
+    for (auto& [state_id, state_ptr] : state_map)
     {
         auto d = calculateDistance(state_ptr->GetStateVars(), sampled_state);
         if (d < min_d)
