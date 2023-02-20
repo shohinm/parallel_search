@@ -48,10 +48,10 @@ namespace ps
                                  duration_(1.0) {}
 
             BSplineOptParams(int num_positions, int num_control_points,
-                             int spline_order, double duration) : num_positions_(num_positions),
-                                                                  num_control_points_(num_control_points),
-                                                                  spline_order_(spline_order),
-                                                                  duration_(duration) {}
+                             int spline_order, double duration=1.0) : num_positions_(num_positions),
+                                                                      num_control_points_(num_control_points),
+                                                                      spline_order_(spline_order),
+                                                                      duration_(duration) {}
 
             int num_positions_;
             int num_control_points_;
@@ -68,7 +68,7 @@ namespace ps
         {
         }
 
-        BSplineTraj optimize(const InsatAction* act, const VecDf& s1, const VecDf& s2)
+        BSplineTraj optimizeWithCallback(const VecDf& s1, const VecDf& s2)
         {
             OptType opt(opt_params_.num_positions_,
                         opt_params_.num_control_points_,
@@ -98,41 +98,97 @@ namespace ps
 
             /// Cost
             auto c1 = prog.AddQuadraticErrorCost(MatDf::Identity(insat_params_.lowD_dims_, insat_params_.lowD_dims_),
-                                                  q0,opt.control_points().leftCols(1));
+                                                 q0,opt.control_points().leftCols(1));
             auto c2 = prog.AddQuadraticErrorCost(MatDf::Identity(insat_params_.lowD_dims_, insat_params_.lowD_dims_),
-                                                  qF, opt.control_points().rightCols(1));
+                                                 qF, opt.control_points().rightCols(1));
 
             /// Solve
             BSplineTraj traj;
             traj.result_ = drake::solvers::Solve(prog);
 
             return traj;
+
         }
 
-        void optimize(const VecDf& s1, const VecDf& s2, int N)
+        BSplineTraj optimize(const InsatAction* act, const VecDf& s1, const VecDf& s2)
         {
+            MatDf dummy_traj(insat_params_.fullD_dims_, 2);
+            dummy_traj << s1, s2;
+            BSplineTraj traj;
+            traj.disc_traj_ = dummy_traj;
+            return traj;
         }
 
-//        void warmOptimize(const InsatAction* act, const TrajType& traj1, const TrajType & traj2)
-//        {
-//            int N = traj1.cols()+traj2.cols();
-//            TrajType init_traj(traj1.rows(), N);
-//            TrajType opt_traj(traj1.rows(), N);
-//            TrajType soln_traj(traj1.rows(), N);
-//
-//            init_traj << traj1, traj2;
-//            opt_traj = linInterp(traj1.leftCols(1), traj2.rightCols(1), N);
-//
-//            for (double i=0.0; i<=1.0; i+=1.0/conv_delta_)
-//            {
-//                soln_traj = (1-i)*init_traj + i*opt_traj;
-//                if (!act->isFeasible(soln_traj))
-//                {
-//                    break;
-//                }
-//            }
-//            return soln_traj;
-//        }
+        MatDf sampleTrajectory(const BSplineTraj& traj, double dt=1e-1)
+        {
+            MatDf sampled_traj;
+            int i=0;
+            for (double t=0.0; t<=traj.traj_.end_time(); t+=dt)
+            {
+                sampled_traj.conservativeResize(insat_params_.lowD_dims_, sampled_traj.cols()+1);
+                sampled_traj.col(i) = traj.traj_.value(t);
+                ++i;
+            }
+        }
+
+        BSplineTraj warmOptimize(const InsatAction* act, const TrajType& traj1, const TrajType & traj2)
+        {
+            int N = traj1.disc_traj_.cols()+traj2.disc_traj_.cols();
+            MatDf init_traj(traj1.disc_traj_.rows(), N);
+
+            init_traj << traj1.disc_traj_, traj2.disc_traj_;
+
+            const VecDf& q0 = init_traj.leftCols(1);
+            const VecDf& qF = init_traj.rightCols(1);
+            VecDf dq0(insat_params_.aux_dims_);
+            dq0.setZero();
+
+            OptType opt(opt_params_.num_positions_,
+                        opt_params_.num_control_points_,
+                        opt_params_.spline_order_,
+                        opt_params_.duration_);
+            drake::solvers::MathematicalProgram& prog(opt.get_mutable_prog());
+
+            opt.AddDurationCost(1.0);
+            opt.AddPathLengthCost(1.0);
+
+            opt.AddPositionBounds(robot_params_.min_q_, robot_params_.max_q_);
+            opt.AddVelocityBounds(robot_params_.min_dq_, robot_params_.max_dq_);
+
+            opt.AddDurationConstraint(opt_params_.duration_, opt_params_.duration_);
+
+            /// Start constraint
+            opt.AddPathPositionConstraint(q0, q0, 0); // Linear constraint
+            opt.AddPathVelocityConstraint(dq0, dq0, 0); // Linear constraint
+            /// Goal constraint
+            opt.AddPathPositionConstraint(qF, qF, 1); // Linear constraint
+
+            /// Cost
+            auto c1 = prog.AddQuadraticErrorCost(MatDf::Identity(insat_params_.lowD_dims_, insat_params_.lowD_dims_),
+                                                 q0,opt.control_points().leftCols(1));
+            auto c2 = prog.AddQuadraticErrorCost(MatDf::Identity(insat_params_.lowD_dims_, insat_params_.lowD_dims_),
+                                                 qF, opt.control_points().rightCols(1));
+
+            if (traj1.result_.is_success())
+            {
+                opt.SetInitialGuess(opt.ReconstructTrajectory(traj1.result_));
+            }
+
+            /// Solve
+            BSplineTraj traj;
+            traj.result_ = drake::solvers::Solve(prog);
+            traj.traj_ = opt.ReconstructTrajectory(traj1.result_);
+
+            auto disc_traj = sampleTrajectory(traj);
+            if (act->isFeasible(disc_traj))
+            {
+
+            }
+
+
+            return traj;
+
+        }
 
 
         int clearCosts()
