@@ -105,8 +105,6 @@ namespace ps
     OptVecPtrType opt_;
 
     /// MuJoCo
-//    mjModel* m_;
-//    mjData* d_=nullptr;
     MjModelVecType m_;
     MjDataVecType d_;
 
