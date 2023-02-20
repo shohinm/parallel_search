@@ -7,12 +7,12 @@ using namespace std;
 using namespace ps;
 
 
-bool RobotNav2dAction::CheckPreconditions(StateVarsType state)
+bool RobotNav2dAction::CheckPreconditions(const StateVarsType& state)
 {
     return true;
 }
 
-ActionSuccessor RobotNav2dAction::GetSuccessor(StateVarsType state_vars, int thread_id)
+ActionSuccessor RobotNav2dAction::GetSuccessor(const StateVarsType& state_vars, int thread_id)
 {
     vector<double> next_state_vars(3, 0);
     for (int i = 0; i < params_["length"]; ++i)
@@ -45,7 +45,7 @@ ActionSuccessor RobotNav2dAction::GetSuccessor(StateVarsType state_vars, int thr
 
 }
 
-ActionSuccessor RobotNav2dAction::GetSuccessorLazy(StateVarsType state_vars, int thread_id)
+ActionSuccessor RobotNav2dAction::GetSuccessorLazy(const StateVarsType& state_vars, int thread_id)
 {
     vector<double> final_state_vars(3, 0);
     final_state_vars[0] = state_vars[0] + (params_["length"] - 1)*move_dir_[0];
@@ -74,7 +74,7 @@ ActionSuccessor RobotNav2dAction::GetSuccessorLazy(StateVarsType state_vars, int
 
 }
 
-ActionSuccessor RobotNav2dAction::Evaluate(StateVarsType parent_state_vars, StateVarsType child_state_vars, int thread_id)
+ActionSuccessor RobotNav2dAction::Evaluate(const StateVarsType& parent_state_vars, const StateVarsType& child_state_vars, int thread_id)
 {
     return GetSuccessor(parent_state_vars, thread_id);
 }

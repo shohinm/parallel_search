@@ -8,12 +8,12 @@ Action(type, params)
 
 }
 
-ActionSuccessor ActionTemplate::GetSuccessor(StateVarsType state_vars, int thread_id)
+ActionSuccessor ActionTemplate::GetSuccessor(const StateVarsType& state_vars, int thread_id)
 {
 
 }
 
-bool ActionTemplate::CheckPreconditions(StateVarsType state)
+bool ActionTemplate::CheckPreconditions(const StateVarsType& state)
 {
 
 }
