@@ -30,7 +30,8 @@ namespace ps
     typedef InsatEdge* InsatEdgePtrType;
     typedef std::mutex LockType;
     typedef std::unordered_map<std::string, double> ParamsType;
-    typedef MatDf TrajType;
+//    typedef MatDf TrajType;
+    typedef BSplineTraj TrajType;
 
     struct ActionSuccessor
     {
