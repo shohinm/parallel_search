@@ -3,9 +3,14 @@ cmake_minimum_required(VERSION 2.8)
 project (epase)
 add_compile_options(-std=c++17)
 
+list(APPEND CMAKE_PREFIX_PATH /opt/drake)
+set(MUJOCO_INCLUDE_DIR "third_party/mujoco-2.3.2/include")
+set(MUJOCO_LIB_DIR "third_party/mujoco-2.3.2/lib")
+
 find_package(OpenCV REQUIRED)
 find_package(SBPL REQUIRED)
 find_package(Eigen3 REQUIRED)
+#find_package(drake REQUIRED)
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
@@ -19,9 +24,14 @@ SET(CMAKE_C_FLAGS_RELEASE "-O3")
 
 include_directories(include
                     ${SBPL_INCLUDE_DIRS}
-                    ${EIGEN3_INCLUDE_DIR})
+                    ${EIGEN3_INCLUDE_DIR}
+                    ${drake_INCLUDE_DIRS}
+                    ${MUJOCO_INCLUDE_DIR})
+include_directories(/opt/drake/include)
 
 link_directories(${SBPL_LIBRARY_DIRS})
+link_directories(${MUJOCO_LIB_DIR})
+#link_directories(/opt/drake/lib)
 
 set(SOURCES
     src/common/State.cpp 
@@ -38,6 +48,16 @@ set(SOURCES
     src/planners/insat/PinsatPlanner.cpp
 )
 
+# LIBRARIES
+add_library(run_maninpulation
+        examples/manipulation/ManipulationActions.cpp
+        ${SOURCES})
+
+target_link_libraries(run_maninpulation
+        mujoco
+        pthread)
+
+# EXECUTABLES
 add_executable(run_robot_nav_2d
         examples/robot_nav_2d/run_robot_nav_2d.cpp
         examples/robot_nav_2d/RobotNav2dActions.cpp
@@ -59,10 +79,16 @@ target_link_libraries(run_insat_nav_2d
         ${SBPL_LIBRARIES}
         pthread)
 
+add_executable(drake_test
+        examples/insat/opt/DrakeTest.cpp)
+
+target_link_libraries(drake_test
+        ${drake_LIBRARIES})
+
 add_executable(domain_template
         examples/domain_template/domain_template.cpp
         examples/domain_template/ActionsTemplate.cpp
-        ${SOURCES})
+        ${SOURCES} include/common/insat/InsatTypes.hpp)
 
 target_link_libraries(domain_template
         pthread)
