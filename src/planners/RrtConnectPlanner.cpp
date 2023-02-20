@@ -68,7 +68,6 @@ void RrtConnectPlanner::rrtThread(int thread_id)
                 // Reconstruct and return path
                 constructPlan(state_ptr);   
                 terminate_ = true;
-                lock_.unlock();
                 return;
             }
         }
@@ -84,7 +83,6 @@ void RrtConnectPlanner::rrtThread(int thread_id)
                 // Reconstruct and return path
                 constructPlan(state_ptr);   
                 terminate_ = true;
-                lock_.unlock();
                 return;
             }
         }

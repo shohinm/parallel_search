@@ -61,6 +61,7 @@ void RrtPlanner::initialize()
 
 StatePtrType RrtPlanner::constructState(const StateVarsType& state, StatePtrMapType& state_map)
 {
+    lock_.lock();
     size_t key = state_key_generator_(state);
     StatePtrMapType::iterator it = state_map.find(key);
     StatePtrType state_ptr;
@@ -75,12 +76,14 @@ StatePtrType RrtPlanner::constructState(const StateVarsType& state, StatePtrMapT
     {
         state_ptr = it->second;
     }
+    lock_.unlock();
    
     return state_ptr;
 }
 
 EdgePtrType RrtPlanner::addEdge(StatePtrType parent_state, StatePtrType child_state, EdgePtrMapType& edge_map)
 {
+    lock_.lock();
     auto edge_temp = Edge(parent_state, actions_ptrs_[0], child_state);
     auto edge_key = getEdgeKey(&edge_temp);
     auto it_edge = edge_map.find(edge_key); 
@@ -96,6 +99,7 @@ EdgePtrType RrtPlanner::addEdge(StatePtrType parent_state, StatePtrType child_st
     {
         edge_ptr = it_edge->second;
     }
+    lock_.unlock();
 
     return edge_ptr;
 }
@@ -116,7 +120,6 @@ void RrtPlanner::rrtThread(int thread_id)
             // Reconstruct and return path
             constructPlan(state_ptr);   
             terminate_ = true;
-            lock_.unlock();
             return;
         }        
     }
