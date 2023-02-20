@@ -10,8 +10,6 @@ namespace ps
     {
     public:
 
-        typedef MatDf TrajType;
-
         InsatEdge(InsatStatePtrType lowD_parent_ptr, InsatActionPtrType action_ptr, InsatStatePtrType fullD_parent_ptr = NULL,  InsatStatePtrType child_ptr = NULL):
                 lowD_parent_state_ptr_(lowD_parent_ptr), lowD_child_state_ptr_(child_ptr),
                 fullD_parent_state_ptr_(fullD_parent_ptr), fullD_child_state_ptr_(child_ptr),
