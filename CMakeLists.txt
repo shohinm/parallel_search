@@ -10,7 +10,7 @@ set(MUJOCO_LIB_DIR "third_party/mujoco-2.3.2/lib")
 find_package(OpenCV REQUIRED)
 find_package(SBPL REQUIRED)
 find_package(Eigen3 REQUIRED)
-#find_package(drake REQUIRED)
+find_package(drake REQUIRED)
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
