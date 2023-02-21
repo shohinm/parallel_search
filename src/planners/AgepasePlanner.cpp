@@ -30,6 +30,7 @@ bool AgepasePlanner::Plan()
     auto t_start = chrono::steady_clock::now();
     while (heuristic_w_>=1 && time_budget_>0) {
         terminate_ = false;
+        // cout << "Iteration: #" << heuristic_w_ << endl;
         resetClosed();
         being_expanded_states_.clear();
         improvePath();
@@ -81,6 +82,7 @@ void AgepasePlanner::initialize()
 {
     GepasePlanner::initialize();
     edge_incon_list_.clear();
+    wait_ = false;
 }
 
 void AgepasePlanner::improvePath() {
@@ -119,24 +121,27 @@ void AgepasePlanner::improvePath() {
             {
                 if (goal_state_ptr_ != NULL)
                 {
-                    // Terminate condition: no state has f-value < goal's g-value
+                    // Terminate condition: no state in open/be has f-value < goal's g-value
                     if (goal_state_ptr_->GetGValue() < edge_open_list_.min()->expansion_priority_)
                     {
-                        // Construct path
-                        auto goal_state_ptr = goal_state_ptr_;
-                        constructPlan(goal_state_ptr);
-                        // cout << "None of the state in open has lower g value than goal state\n";
-                        // cout << "Goal State:\n";
-                        // goal_state_ptr_->Print();
-                        // cout << "Min Priority in Open:\n";
-                        // edge_open_list_.min()->Print();
-                        terminate_ = true;
-                        auto t_end = chrono::steady_clock::now();
-                        double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
-                        time_budget_ -= 1e-9*t_elapsed;
-                        lock_.unlock();
-                        exitMultiThread();
-                        return;
+                        // if (goal_state_ptr_->GetGValue() < being_expanded_states_.min()->GetFValue())
+                        // {
+                            // Construct path
+                            auto goal_state_ptr = goal_state_ptr_;
+                            constructPlan(goal_state_ptr);
+                            // cout << "None of the state in open has lower g value than goal state\n";
+                            // cout << "Goal State:\n";
+                            // goal_state_ptr_->Print();
+                            // cout << "Min Priority in Open:\n";
+                            // edge_open_list_.min()->Print();
+                            terminate_ = true;
+                            auto t_end = chrono::steady_clock::now();
+                            double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
+                            time_budget_ -= 1e-9*t_elapsed;
+                            lock_.unlock();
+                            exitMultiThread();
+                            return;
+                        // }
                     }
                 }
             }
@@ -204,8 +209,8 @@ void AgepasePlanner::improvePath() {
                 lock_.unlock();
                 // Wait for recheck_flag_ to be set true;
                 unique_lock<mutex> locker(lock_);
-                // cout << "Open list size is:\n";
-                // cout << edge_open_list_.size() << endl;
+                cout << "Open list size is:\n";
+                cout << edge_open_list_.size() << endl;
                 cv_.wait(locker, [this](){return (recheck_flag_ == true);});
                 recheck_flag_ = false;
                 locker.unlock();
@@ -222,7 +227,33 @@ void AgepasePlanner::improvePath() {
                 else if(curr_edge_ptr->parent_state_ptr_->GetGValue() < goal_state_ptr_->GetGValue())
                     goal_state_ptr_ = curr_edge_ptr->parent_state_ptr_;
             }
-            
+
+            // if (!edge_open_list_.empty())
+            // {
+            //     if (goal_state_ptr_ != NULL)
+            //     {
+            //         // Terminate condition: no state has f-value < goal's g-value
+            //         if (goal_state_ptr_->GetGValue() < edge_open_list_.min()->expansion_priority_)
+            //         {
+            //             // Construct path
+            //             auto goal_state_ptr = goal_state_ptr_;
+            //             constructPlan(goal_state_ptr);
+            //             // cout << "None of the state in open has lower g value than goal state\n";
+            //             // cout << "Goal State:\n";
+            //             // goal_state_ptr_->Print();
+            //             // cout << "Min Priority in Open:\n";
+            //             // edge_open_list_.min()->Print();
+            //             terminate_ = true;
+            //             auto t_end = chrono::steady_clock::now();
+            //             double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
+            //             time_budget_ -= 1e-9*t_elapsed;
+            //             lock_.unlock();
+            //             exitMultiThread();
+            //             return;
+            //         }
+            //     }
+            // }
+
         }
 
         // Insert the state in BE and mark it closed if the edge being expanded is dummy edge
@@ -247,8 +278,10 @@ void AgepasePlanner::improvePath() {
         {
             while (!edge_expansion_assigned)
             {
+                // cout << "Locking " << thread_id << endl;
                 unique_lock<mutex> locker(lock_vec_[thread_id]);
                 bool status = edge_expansion_status_[thread_id];
+                // cout << "Unlocking " << thread_id << endl;
                 locker.unlock();
 
                 if (!status)
@@ -257,6 +290,7 @@ void AgepasePlanner::improvePath() {
                     if (thread_id >= num_threads_current)
                     {
                         if (VERBOSE) cout << "Spawning edge expansion thread " << thread_id << endl;
+                        // cout << "Spawning edge expansion thread " << thread_id << endl;
                         edge_expansion_futures_.emplace_back(async(launch::async, &AgepasePlanner::expandEdgeLoop, this, thread_id));
                     }
                     locker.lock();
@@ -295,6 +329,15 @@ void AgepasePlanner::expand(EdgePtrType edge_ptr, int thread_id)
     auto t_lock_e = chrono::steady_clock::now();
     planner_stats_.lock_time_ += 1e-9*chrono::duration_cast<chrono::nanoseconds>(t_lock_e-t_start).count();
 
+    // Update goal state ptr
+    // if (isGoalState(edge_ptr->parent_state_ptr_))
+    // {
+    //     cout << "Setting GOAL!!!!!!!!!!!\n";
+    //     if (goal_state_ptr_ == NULL)
+    //         goal_state_ptr_ = edge_ptr->parent_state_ptr_;
+    //     else if(edge_ptr->parent_state_ptr_->GetGValue() < goal_state_ptr_->GetGValue())
+    //         goal_state_ptr_ = edge_ptr->parent_state_ptr_;
+    // }
 
     // edge_ptr->Print("Expanding ");
 
@@ -495,10 +538,13 @@ void AgepasePlanner::exit()
 
 void AgepasePlanner::exitMultiThread()
 {
+    // cout << "Calling Exit MultiThread\n";
     for (int thread_id = 0; thread_id < num_threads_-1; ++thread_id)
     {
+        // cout << "Locking " << thread_id << endl;
         unique_lock<mutex> locker(lock_vec_[thread_id]);
         edge_expansion_status_[thread_id] = 1;
+        // cout << "Unlocking " << thread_id << endl;
         locker.unlock();
         cv_vec_[thread_id].notify_one();
     }
@@ -512,10 +558,15 @@ void AgepasePlanner::exitMultiThread()
         {
             if (!isFutureReady(fut))
             {
+                // cout << "Future NOT Ready!!!\n";
                 all_expansion_threads_terminated = false;
                 break;
             }
         }
     }
     edge_expansion_futures_.clear();
+    for (int thread_id = 0; thread_id < num_threads_-1; ++thread_id)
+    {
+        edge_expansion_status_[thread_id] = 0;
+    }
 }
