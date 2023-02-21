@@ -101,16 +101,16 @@ void Planner::resetStates()
 
 void Planner::resetClosed()
 {
-    cout << "*********************** REsetting *********************" << endl;
+    // cout << "*********************** REsetting *********************" << endl;
     for (auto it = state_map_.begin(); it != state_map_.end(); ++it)
     {
-        it->second->Print();
+        // it->second->Print();
         it->second->UnsetVisited();     
         it->second->UnsetBeingExpanded();      
         // it->second->num_successors_ = 0;
         // it->second->num_expanded_successors_ = 0;   
     }
-    cout << "***********************  *********************" << endl;
+    // cout << "***********************  *********************" << endl;
 }
 
 size_t Planner::getEdgeKey(const EdgePtrType& edge_ptr)
@@ -158,17 +158,21 @@ bool Planner::isGoalState(const StatePtrType& state_ptr)
 
 void Planner::constructPlan(StatePtrType& state_ptr)
 {
+    double cost = 0;
+    plan_.clear();
     while(state_ptr->GetIncomingEdgePtr())
     {
         if (state_ptr->GetIncomingEdgePtr()) // For start state_ptr, there is no incoming edge
             plan_.insert(plan_.begin(), PlanElement(state_ptr->GetStateVars(), state_ptr->GetIncomingEdgePtr()->action_ptr_, state_ptr->GetIncomingEdgePtr()->GetCost()));        
         else
             plan_.insert(plan_.begin(), PlanElement(state_ptr->GetStateVars(), NULL, 0));        
-
-        planner_stats_.path_cost_ += state_ptr->GetIncomingEdgePtr()->GetCost();
+        state_ptr->GetIncomingEdgePtr()->Print();
+        cost += state_ptr->GetIncomingEdgePtr()->GetCost();
         state_ptr = state_ptr->GetIncomingEdgePtr()->parent_state_ptr_;     
     }
-    planner_stats_.path_length_ += plan_.size();
+
+    planner_stats_.path_length_ = plan_.size();
+    planner_stats_.path_cost_ = cost;
 }
 
 double Planner::roundOff(double value, int prec)

@@ -47,14 +47,7 @@ bool AgepasePlanner::Plan()
         // append inconsistent list's edges into Eopen
         for(auto it_edge = edge_incon_list_.begin(); it_edge != edge_incon_list_.end(); it_edge++)
         {
-            // if (edge_open_list_.contains(*it_edge))
-            // {
-            //     edge_open_list_.decrease(*it_edge);
-            // }
-            // else
-            // {
             edge_open_list_.push(*it_edge);
-            // }
         }
         edge_incon_list_.clear();
         EdgeQueueMinType edge_open_list;
@@ -162,14 +155,14 @@ void AgepasePlanner::improvePath() {
                         auto h_diff = computeHeuristic(being_expanded_state, curr_edge_ptr->parent_state_ptr_);
                         if (curr_edge_ptr->parent_state_ptr_->GetGValue() > being_expanded_state->GetGValue() + heuristic_w_*h_diff)
                         {
-                            being_expanded_state->Print();
-                            cout  << "Being expanded list size:" << being_expanded_states_.size() << endl;
+                            // being_expanded_state->Print();
+                            // cout  << "Being expanded list size:" << being_expanded_states_.size() << endl;
                             curr_edge_ptr = NULL;
                             break;
                         }
                     }
                 }
-                if (curr_edge_ptr) cout << "Failed Independence Check in BE.\n";
+                // if (curr_edge_ptr) cout << "Failed Independence Check in BE.\n";
      
                 if (curr_edge_ptr)
                 {
@@ -181,8 +174,8 @@ void AgepasePlanner::improvePath() {
                             auto h_diff = computeHeuristic(popped_edge_ptr->parent_state_ptr_, curr_edge_ptr->parent_state_ptr_);
                             if (curr_edge_ptr->parent_state_ptr_->GetGValue() > popped_edge_ptr->parent_state_ptr_->GetGValue() + heuristic_w_*h_diff)
                             {
-                                popped_edge_ptr->Print();
-                                cout << "Failed Independence Check in OPEN.\n";
+                                // popped_edge_ptr->Print();
+                                // cout << "Failed Independence Check in OPEN.\n";
                                 curr_edge_ptr = NULL;
                                 break;
                             }                        
@@ -207,8 +200,8 @@ void AgepasePlanner::improvePath() {
                 lock_.unlock();
                 // Wait for recheck_flag_ to be set true;
                 unique_lock<mutex> locker(lock_);
-                cout << "Open list size is:\n";
-                cout << edge_open_list_.size() << endl;
+                // cout << "Open list size is:\n";
+                // cout << edge_open_list_.size() << endl;
                 cv_.wait(locker, [this](){return (recheck_flag_ == true);});
                 recheck_flag_ = false;
                 locker.unlock();
@@ -221,6 +214,7 @@ void AgepasePlanner::improvePath() {
             if (isGoalState(curr_edge_ptr->parent_state_ptr_) && (!terminate_))
             {
                 // Construct path
+                cout << "***********************************Constructing PATH***************************************\n";
                 auto goal_state_ptr = curr_edge_ptr->parent_state_ptr_;
                 goal_state_ptr_ = goal_state_ptr;
                 constructPlan(goal_state_ptr);
@@ -299,7 +293,7 @@ void AgepasePlanner::expand(EdgePtrType edge_ptr, int thread_id)
     planner_stats_.lock_time_ += 1e-9*chrono::duration_cast<chrono::nanoseconds>(t_lock_e-t_start).count();
 
 
-    edge_ptr->Print("Expanding ");
+    // edge_ptr->Print("Expanding ");
 
     planner_stats_.num_jobs_per_thread_[thread_id] +=1;
     
@@ -338,7 +332,7 @@ void AgepasePlanner::expand(EdgePtrType edge_ptr, int thread_id)
                     if (VERBOSE) cout << "Pushing successor with g_val: " << state_ptr->GetGValue() << " | h_val: " << state_ptr->GetHValue() << endl;
                     if (edge_open_list_.contains(edge_ptr_next))
                     {
-                        edge_ptr_next->Print("Checking if real edge get decrease");
+                        // edge_ptr_next->Print("Checking if real edge get decrease");
                         // cin.get();
                         edge_open_list_.decrease(edge_ptr_next);
                     }
@@ -368,15 +362,13 @@ void AgepasePlanner::expand(EdgePtrType edge_ptr, int thread_id)
         if (being_expanded_states_.contains(edge_ptr->parent_state_ptr_))
         {   
             being_expanded_states_.erase(edge_ptr->parent_state_ptr_);
-            if (edge_ptr->parent_state_ptr_->GetStateID() == 62)
-                edge_ptr->Print("Deleting");
             notifyMainThread();
         }
     }
 
     if (edge_ptr->parent_state_ptr_->num_expanded_successors_ > edge_ptr->parent_state_ptr_->num_successors_)
     {
-        edge_ptr->parent_state_ptr_->Print();
+        // edge_ptr->parent_state_ptr_->Print();
         throw runtime_error("Number of expanded edges cannot be greater than number of successors");
     }
     else

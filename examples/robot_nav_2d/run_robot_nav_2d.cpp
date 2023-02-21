@@ -87,12 +87,12 @@ vector<vector<int>> loadMap(const char *fname, cv::Mat& img, int &width, int &he
     return scaled_map;
 
 }
-double computeHeuristic(const StatePtrType& state_ptr)
+double computeHeuristic(const StatePtrType& state_ptr, double dist_thresh)
 {
     auto state_vars = state_ptr->GetStateVars();
     double dist_to_goal_region = pow(pow((state_vars[0] - goal[0]), 2) + pow((state_vars[1] - goal[1]), 2), 0.5);
 
-    if (dist_to_goal_region < 0)
+    if (dist_to_goal_region < dist_thresh)
         dist_to_goal_region = 0;
     return dist_to_goal_region;
 }
@@ -109,7 +109,7 @@ double computeHeuristicStateToState(const StatePtrType& state_ptr_1, const State
 
 bool isGoalState(const StatePtrType& state_ptr, double dist_thresh)
 {
-    return (computeHeuristic(state_ptr) < dist_thresh);
+    return (computeHeuristic(state_ptr, dist_thresh) <= 0);
 }
 
 size_t StateKeyGenerator(const StateVarsType& state_vars)
@@ -228,7 +228,7 @@ void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vec
     planner_ptr->SetActions(action_ptrs);
     planner_ptr->SetStateMapKeyGenerator(bind(StateKeyGenerator, placeholders::_1));
     planner_ptr->SetEdgeKeyGenerator(bind(EdgeKeyGenerator, placeholders::_1));
-    planner_ptr->SetHeuristicGenerator(bind(computeHeuristic, placeholders::_1));
+    planner_ptr->SetHeuristicGenerator(bind(computeHeuristic, placeholders::_1, action_params["length"]));
     planner_ptr->SetStateToStateHeuristicGenerator(bind(computeHeuristicStateToState, placeholders::_1, placeholders::_2));
     planner_ptr->SetGoalChecker(bind(isGoalState, placeholders::_1, action_params["length"]));
 }
