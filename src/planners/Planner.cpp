@@ -166,7 +166,6 @@ void Planner::constructPlan(StatePtrType& state_ptr)
             plan_.insert(plan_.begin(), PlanElement(state_ptr->GetStateVars(), state_ptr->GetIncomingEdgePtr()->action_ptr_, state_ptr->GetIncomingEdgePtr()->GetCost()));        
         else
             plan_.insert(plan_.begin(), PlanElement(state_ptr->GetStateVars(), NULL, 0));        
-        state_ptr->GetIncomingEdgePtr()->Print();
         cost += state_ptr->GetIncomingEdgePtr()->GetCost();
         state_ptr = state_ptr->GetIncomingEdgePtr()->parent_state_ptr_;     
     }

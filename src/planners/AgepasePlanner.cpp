@@ -35,8 +35,8 @@ bool AgepasePlanner::Plan()
         improvePath();
 
         // goal_state_ptr_->Print();
-        cout << "edge_incon_list_: " << edge_incon_list_.size() << endl;
-        cout << "edge_open_list_: " << edge_open_list_.size() << endl;
+        // cout << "edge_incon_list_: " << edge_incon_list_.size() << endl;
+        // cout << "edge_open_list_: " << edge_open_list_.size() << endl;
         
         // Early termination if there's no solution
         if (goal_state_ptr_ == NULL)
@@ -119,13 +119,17 @@ void AgepasePlanner::improvePath() {
             {
                 if (goal_state_ptr_ != NULL)
                 {
+                    // Terminate condition: no state has f-value < goal's g-value
                     if (goal_state_ptr_->GetGValue() < edge_open_list_.min()->expansion_priority_)
                     {
-                        cout << "None of the state in open has lower g value than goal state\n";
-                        cout << "Goal State:\n";
-                        goal_state_ptr_->Print();
-                        cout << "Min Priority in Open:\n";
-                        edge_open_list_.min()->Print();
+                        // Construct path
+                        auto goal_state_ptr = goal_state_ptr_;
+                        constructPlan(goal_state_ptr);
+                        // cout << "None of the state in open has lower g value than goal state\n";
+                        // cout << "Goal State:\n";
+                        // goal_state_ptr_->Print();
+                        // cout << "Min Priority in Open:\n";
+                        // edge_open_list_.min()->Print();
                         terminate_ = true;
                         auto t_end = chrono::steady_clock::now();
                         double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
@@ -210,14 +214,13 @@ void AgepasePlanner::improvePath() {
             }
 
             
-            // Find solution if goal state is expanded (Note that the terminate condition is changed)
+            // Update goal state ptr
             if (isGoalState(curr_edge_ptr->parent_state_ptr_) && (!terminate_))
             {
-                // Construct path
-                cout << "***********************************Constructing PATH***************************************\n";
-                auto goal_state_ptr = curr_edge_ptr->parent_state_ptr_;
-                goal_state_ptr_ = goal_state_ptr;
-                constructPlan(goal_state_ptr);
+                if (goal_state_ptr_ == NULL)
+                    goal_state_ptr_ = curr_edge_ptr->parent_state_ptr_;
+                else if(curr_edge_ptr->parent_state_ptr_->GetGValue() < goal_state_ptr_->GetGValue())
+                    goal_state_ptr_ = curr_edge_ptr->parent_state_ptr_;
             }
             
         }
