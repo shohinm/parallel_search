@@ -1,0 +1,77 @@
+<mujoco model="abb_irb1600_6_12">
+    <compiler angle="radian" />
+    <size njmax="500" nconmax="100" />
+    <option collision="dynamic"/>
+    <asset>
+        <mesh name="base_link" file="base_link.stl" />
+        <mesh name="link_1" file="link_1.stl" />
+        <mesh name="link_2" file="link_2.stl" />
+        <mesh name="link_3" file="link_3.stl" />
+        <mesh name="link_4" file="link_4.stl" />
+        <mesh name="link_5" file="link_5.stl" />
+        <mesh name="link_6" file="link_6.stl" />
+        <mesh name="pedestal" file="pedestal.stl" scale="0.001 0.001 0.001"/>
+
+
+        <material name="BeigeMaterial" specular="0" shininess="0" reflectance="0" rgba="0.26 0.16 0.16796875 1" emission="0" />
+        <texture name="texplane" type="2d" builtin="checker" rgb1=".2 .3 .4" rgb2=".1 0.15 0.2" width="512" height="512" />
+        <material name="MatPlane" reflectance="0" texture="texplane" texrepeat="1 1" texuniform="true" />
+        <material name="MatGnd" specular=".3" shininess=".3" reflectance="0.3" rgba=".5 .55 .5 1"/>
+    </asset>
+    <worldbody>
+        <!-- Lights -->
+        <light name="light0" diffuse=".5 .5 .5" pos="1.5 1.5 2"   dir="-1 -1 -.5" castshadow="false" />
+        <light name="light1" diffuse=".5 .5 .5" pos="-1.5 1.5 2"  dir="1 -1 -.5" castshadow="false" />
+        <light name="light2" diffuse=".5 .5 .5" pos="1.5 -1.5 2"  dir="-1 1 -.5" castshadow="false" />
+        <light name="light3" diffuse=".5 .5 .5" pos="-1.5 -1.5 2" dir="1 1 -.5" castshadow="false" />
+        <!-- Floor -->
+        <geom name="floor" pos="0 0 0" size="5 5 .125" type="plane" material="BeigeMaterial" condim="3"  contype="0" conaffinity="0"/>
+
+
+        <!-- obstacles -->
+        <body name="cage" pos="0.65 -0.7 0" quat="0.707 0 0 -0.707">
+            <geom name="c1" size="0.03 0.03 1" pos="0.6 0.5 1" type="box" rgba="0.7 0.7 0.7 1" contype="3" conaffinity="3"/>
+            <geom name="c2" size="0.03 0.03 1" pos="-0.6 0.5 1" type="box" rgba="0.7 0.7 0.7 1" contype="3" conaffinity="3"/>
+            <geom name="c3" size="0.03 0.03 1" pos="0.6 -0.6 1" type="box" rgba="0.7 0.7 0.7 1" contype="3" conaffinity="3"/>
+            <geom name="c4" size="0.03 0.03 1" pos="-0.6 -0.6 1" type="box" rgba="0.7 0.7 0.7 1" contype="3" conaffinity="3"/>            
+        </body>
+
+        <body name="pedestal" pos="0.0 0.0 0.0">
+            <geom type="mesh" rgba="0 0 1 1" mesh="pedestal" euler="1.57 0 0" contype="1" conaffinity="1"/>
+            <body name="base" pos="0.65 -0.7 0.45">
+                <geom type="mesh" rgba="0.9 0.9 0.9 1" mesh="base_link" contype="2" conaffinity="2"/>
+                <body name="link_1" pos="0 0 0">
+                    <inertial pos="0.0444007 -0.00834001 0.340163" quat="0.575539 0.391509 0.239129 0.676973" mass="44.6131" diaginertia="1.4797 1.22366 0.686463" />
+                    <joint name="joint_1" pos="0 0 0" axis="0 0 1" limited="true" range="-3.14159 3.14159" />
+                    <geom type="mesh" rgba="0.9 0.9 0.9 1" mesh="link_1" contype="1" conaffinity="1"/>
+                    <body name="link_2" pos="0.15 0 0.4865">
+                        <inertial pos="-0.000162316 -0.181341 0.209041" quat="0.711714 -0.0257675 0.0284926 0.701418" mass="8.36275" diaginertia="0.278683 0.272236 0.0199549" />
+                        <joint name="joint_2" pos="0 0 0" axis="0 1 0" limited="true" range="-1.0995 1.9198" />
+                        <geom type="mesh" rgba="0.9 0.9 0.9 1" mesh="link_2"  contype="2" conaffinity="2"/>
+                        <body name="link_3" pos="0 0 0.475">
+                            <inertial pos="0.0211951 0.0175275 -0.0132258" quat="0.25664 0.667078 0.208923 0.667454" mass="16.0317" diaginertia="0.262454 0.244916 0.112849" />
+                            <joint name="joint_3" pos="0 0 0" axis="0 1 0" limited="true" range="-4.1015 0.9599" />
+                            <geom type="mesh" rgba="0.9 0.9 0.9 1" mesh="link_3" contype="1" conaffinity="1"/>
+                            <body name="link_4" pos="0.3 0 0">
+                                <inertial pos="0.184489 -0.000718245 -1.22946e-05" quat="0.0065586 0.706564 -0.00374281 0.707609" mass="2.96489" diaginertia="0.0275833 0.0267565 0.00469567" />
+                                <joint name="joint_4" pos="0 0 0" axis="1 0 0" limited="true" range="-3.4906 3.4906" />
+                                <geom type="mesh" rgba="0.9 0.9 0.9 1" mesh="link_4" contype="2" conaffinity="2"/>
+                                <body name="link_5" pos="0.3 0 0">
+                                    <inertial pos="1.38541e-08 2.00457e-06 5.41082e-08" quat="0.707107 5.68027e-06 5.68027e-06 0.707107" mass="0.183296" diaginertia="0.000132901 9.60035e-05 9.12007e-05" />
+                                    <joint name="joint_5" pos="0 0 0" axis="0 1 0" limited="true" range="-2.0071 2.0071" />
+                                    <geom type="mesh" rgba="0.9 0.9 0.9 1" mesh="link_5" contype="1" conaffinity="1"/>
+                                    <body name="link_6" pos="0.065 0 0">
+                                        <inertial pos="-0.0164152 2.0728e-06 0.000267316" quat="0.502798 0.497187 0.497346 0.50264" mass="0.0748395" diaginertia="3.09311e-05 3.06155e-05 1.53407e-05" />
+                                        <joint name="joint_6" pos="0 0 0" axis="1 0 0" limited="true" range="-6.9813 6.9813" />
+                                        <geom type="mesh" rgba="0.9 0.9 0.9 1" mesh="link_6" contype="1" conaffinity="1"/>
+                                    </body>
+                                </body>
+                            </body>
+                        </body>
+                    </body>
+                </body>            
+            </body>
+        </body>
+
+    </worldbody>
+</mujoco>
