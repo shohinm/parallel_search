@@ -20,7 +20,7 @@ class GepasePlanner : public Planner
         void initialize();
         void notifyMainThread();
         void expandEdgeLoop(int thread_id);    
-        void expand(EdgePtrType edge_ptr, int thread_id);
+        virtual void expand(EdgePtrType edge_ptr, int thread_id);
         void expandEdge(EdgePtrType edge_ptr, int thread_id);
         void exit();
 

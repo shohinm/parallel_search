@@ -234,23 +234,28 @@ void GepasePlanner::notifyMainThread()
 
 void GepasePlanner::expandEdgeLoop(int thread_id)
 {
-    while (!terminate_)
+    try{
+        while (!terminate_)
+        {
+            unique_lock<mutex> locker(lock_vec_[thread_id]);
+            cv_vec_[thread_id].wait(locker, [this, thread_id](){return (edge_expansion_status_[thread_id] == 1);});
+            locker.unlock();
+
+            if (terminate_)
+                break;
+
+            expand(edge_expansion_vec_[thread_id], thread_id);
+
+            locker.lock();
+            edge_expansion_vec_[thread_id] = NULL;
+            edge_expansion_status_[thread_id] = 0;
+            locker.unlock();
+        }   
+    } catch (const exception &exc)
     {
-        unique_lock<mutex> locker(lock_vec_[thread_id]);
-        cv_vec_[thread_id].wait(locker, [this, thread_id](){return (edge_expansion_status_[thread_id] == 1);});
-        locker.unlock();
-
-        if (terminate_)
-            break;
-
-        expand(edge_expansion_vec_[thread_id], thread_id);
-
-        locker.lock();
-        edge_expansion_vec_[thread_id] = NULL;
-        edge_expansion_status_[thread_id] = 0;
-        locker.unlock();
-
-    }    
+        cout << "Caught Exception\n";
+        cerr << exc.what();
+    }
 }
 
 void GepasePlanner::expand(EdgePtrType edge_ptr, int thread_id)
