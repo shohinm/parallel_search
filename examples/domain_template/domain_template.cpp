@@ -7,11 +7,11 @@ using namespace ps;
 /**
  * @brief      Calculates the heuristic.
  *
- * @param[in]  state_ptr  The state pointer
+ * @param[in]  state_ptr  The state variables
  *
  * @return     The heuristic.
  */
-double computeHeuristic(const StatePtrType& state_ptr)
+double computeHeuristic(const StateVarsType& state_vars)
 {
 
 }
@@ -19,12 +19,12 @@ double computeHeuristic(const StatePtrType& state_ptr)
 /**
  * @brief      Calculates the heuristic state to state.
  *
- * @param[in]  state_ptr_1  The state pointer 1
- * @param[in]  state_ptr_2  The state pointer 2
+ * @param[in]  state_vars_1  The state variables 1
+ * @param[in]  state_vars_2  The state variables 2
  *
  * @return     The heuristic state to state.
  */
-double computeHeuristicStateToState(const StatePtrType& state_ptr_1, const StatePtrType& state_ptr_2)
+double computeHeuristicStateToState(const StateVarsType& state_vars_1, const StateVarsType& state_vars_2)
 {
 
 }
@@ -32,11 +32,11 @@ double computeHeuristicStateToState(const StatePtrType& state_ptr_1, const State
 /**
  * @brief      Determines whether the specified state pointer is goal state.
  *
- * @param[in]  state_ptr  The state pointer
+ * @param[in]  state_ptr  The state variables
  *
  * @return     True if the specified state pointer is goal state, False otherwise.
  */
-bool isGoalState(const StatePtrType& state_ptr)
+bool isGoalState(const StateVarsType& state_vars)
 {
 
 }

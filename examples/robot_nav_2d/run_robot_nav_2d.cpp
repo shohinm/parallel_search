@@ -87,9 +87,8 @@ vector<vector<int>> loadMap(const char *fname, cv::Mat& img, int &width, int &he
     return scaled_map;
 
 }
-double computeHeuristic(const StatePtrType& state_ptr, double dist_thresh)
+double computeHeuristic(const StateVarsType& state_vars, double dist_thresh)
 {
-    auto state_vars = state_ptr->GetStateVars();
     double dist_to_goal_region = pow(pow((state_vars[0] - goal[0]), 2) + pow((state_vars[1] - goal[1]), 2), 0.5);
 
     if (dist_to_goal_region < dist_thresh)
@@ -97,19 +96,17 @@ double computeHeuristic(const StatePtrType& state_ptr, double dist_thresh)
     return dist_to_goal_region;
 }
 
-double computeHeuristicStateToState(const StatePtrType& state_ptr_1, const StatePtrType& state_ptr_2)
+double computeHeuristicStateToState(const StateVarsType& state_vars_1, const StateVarsType& state_vars_2)
 {
-    auto state_vars_1 = state_ptr_1->GetStateVars();
-    auto state_vars_2 = state_ptr_2->GetStateVars();
     double dist = pow(pow((state_vars_1[0] - state_vars_2[0]), 2) + pow((state_vars_1[1] - state_vars_2[1]), 2), 0.5);
     if (dist < 0)
         dist = 0;
     return dist;
 }
 
-bool isGoalState(const StatePtrType& state_ptr, double dist_thresh)
+bool isGoalState(const StateVarsType& state_vars, double dist_thresh)
 {
-    return (computeHeuristic(state_ptr, dist_thresh) <= 0);
+    return (computeHeuristic(state_vars, dist_thresh) < 0);
 }
 
 size_t StateKeyGenerator(const StateVarsType& state_vars)
@@ -178,27 +175,27 @@ void constructActions(vector<shared_ptr<Action>>& action_ptrs, ParamsType& actio
     action_params["cache_footprint"] = 1;
 
     ParamsType expensive_action_params = action_params;
-    expensive_action_params["cache_footprint"] = 1;
+    expensive_action_params["cache_footprint"] = 0;
     
-    auto move_up_controller_ptr = make_shared<MoveUpAction>("MoveUp", action_params, map);
+    auto move_up_controller_ptr = make_shared<MoveUpAction>("MoveUp", action_params, map, 0);
     action_ptrs.emplace_back(move_up_controller_ptr);
 
     auto move_up_right_controller_ptr = make_shared<MoveUpRightAction>("MoveUpRight", expensive_action_params, map);
     action_ptrs.emplace_back(move_up_right_controller_ptr);
 
-    auto move_right_controller_ptr = make_shared<MoveRightAction>("MoveRight", action_params, map);
+    auto move_right_controller_ptr = make_shared<MoveRightAction>("MoveRight", action_params, map, 0);
     action_ptrs.emplace_back(move_right_controller_ptr);
 
     auto move_right_down_controller_ptr = make_shared<MoveRightDownAction>("MoveRightDown", expensive_action_params, map);
     action_ptrs.emplace_back(move_right_down_controller_ptr);
 
-    auto move_down_controller_ptr = make_shared<MoveDownAction>("MoveDown", action_params, map);
+    auto move_down_controller_ptr = make_shared<MoveDownAction>("MoveDown", action_params, map, 0);
     action_ptrs.emplace_back(move_down_controller_ptr);
 
     auto move_down_left_controller_ptr = make_shared<MoveDownLeftAction>("MoveDownLeft", expensive_action_params, map);
     action_ptrs.emplace_back(move_down_left_controller_ptr);
 
-    auto move_left_controller_ptr = make_shared<MoveLeftAction>("MoveLeft", action_params, map);
+    auto move_left_controller_ptr = make_shared<MoveLeftAction>("MoveLeft", action_params, map, 0);
     action_ptrs.emplace_back(move_left_controller_ptr);
 
     auto move_left_up_controller_ptr = make_shared<MoveLeftUpAction>("MoveLeftUp", expensive_action_params, map);
