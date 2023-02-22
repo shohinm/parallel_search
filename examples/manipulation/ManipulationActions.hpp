@@ -37,7 +37,7 @@
 
 #include <common/Types.hpp>
 #include <common/insat/InsatAction.hpp>
-#include "planners/insat/opt/DummyOpt.hpp"
+#include "planners/insat/opt/BSplineOpt.hpp"
 
 // MuJoCo
 #include <mujoco/mujoco.h>
@@ -51,7 +51,7 @@ namespace ps
   public:
 
     typedef std::shared_ptr<ManipulationAction> Ptr;
-    typedef DummyOpt OptType;
+    typedef BSplineOpt OptType;
     typedef std::vector<OptType> OptVecType;
     typedef std::shared_ptr<OptVecType> OptVecPtrType;
 
@@ -76,7 +76,7 @@ namespace ps
     VecDf contToDisc(const VecDf & cont_state, int thread_id=0);
 
     /// MuJoCo
-    std::vector<VecDf> GetSuccessor(const VecDf& state, int thread_id=0);
+    VecDf GetSuccessor(const VecDf& state, int thread_id=0);
     bool isFeasible(const StateVarsType& state_vars, int thread_id=0);
     bool isCollisionFree(const VecDf& state, int thread_id=0) const;
     bool isCollisionFree(const StateVarsType& state_vars, int thread_id=0) const;
@@ -89,13 +89,15 @@ namespace ps
 
     /// INSAT
     void setOpt(OptVecPtrType& opt);
-    bool isFeasible(TrajType& traj) const;
+    bool isFeasible(MatDf& traj) const;
     TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id=0) const;
     TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0) const;
     double getCost(const TrajType& traj, int thread_id=0) const;
 
   protected:
     LockType lock_;
+
+    VecDf goal_;
 
     /// Discretization stuff
     MatDf mprims_;
@@ -120,6 +122,7 @@ namespace ps
                     std::string& mj_modelpath,
                     VecDf ang_discretization,
                     OptVecPtrType opt,
+                    StateVarsType& goal,
                     int num_threads=1,
                     bool is_expensive = true):
             ManipulationAction(type,
@@ -144,16 +147,20 @@ namespace ps
       }
       mprims_.block(m_[0]->nq,0,m_[0]->nq,m_[0]->nq) =
               -1*mprims_.block(0,0,m_[0]->nq,m_[0]->nq);
+
+      goal_.resize(m_[0]->nq);
+      goal_.Map(&goal[0], goal.size());
     };
 
     void setOpt(OptVecPtrType& opt) {ManipulationAction::setOpt(opt);};
-    bool isFeasible(TrajType& traj) const {return ManipulationAction::isFeasible(traj);};
+    bool isFeasible(MatDf& traj) const {return ManipulationAction::isFeasible(traj);};
     TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id=0) const
     {return ManipulationAction::optimize(s1, s2, thread_id);}
     TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0) const
     {return ManipulationAction::warmOptimize(t1, t2, thread_id);}
     double getCost(const TrajType& traj, int thread_id=0) const
     {return ManipulationAction::getCost(traj, thread_id);}
+
   };
 
 

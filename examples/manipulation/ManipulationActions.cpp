@@ -34,7 +34,7 @@
 
 #include "ManipulationActions.hpp"
 #include <common/GlorifiedAngles.h>
-
+#include <cstdlib>
 
 namespace ps
 {
@@ -72,21 +72,21 @@ namespace ps
   ActionSuccessor ManipulationAction::GetSuccessor(StateVarsType state_vars, int thread_id)
   {
     Eigen::Map<const VecDf> state(&state_vars[0], state_vars.size());
-    std::vector<VecDf> successors = GetSuccessor(state);
+    VecDf successor = GetSuccessor(state, thread_id);
 
-    std::vector<std::pair<StateVarsType, double>> action_successors;
-    for (auto s : successors)
+    if (successor.size()==0)
     {
-      StateVarsType succ;
-      succ.resize(m_[thread_id]->nq);
-      VecDf::Map(&succ[0], s.size()) = s;
-
-      double cost = getCostToSuccessor(state, s);
-
-      action_successors.emplace_back(succ, cost);
+        return ActionSuccessor(false, {make_pair(StateVarsType(), -DINF)});
     }
-
-    return ActionSuccessor(true, action_successors);
+    else
+    {
+        std::vector<std::pair<StateVarsType, double>> action_successors;
+        StateVarsType succ;
+        succ.resize(m_[thread_id]->nq);
+        VecDf::Map(&succ[0], successor.size()) = successor;
+        double cost = getCostToSuccessor(state, successor);
+        return ActionSuccessor(true, {std::make_pair(succ, cost)});
+    }
   }
 
   ActionSuccessor ManipulationAction::GetSuccessorLazy(StateVarsType state_vars, int thread_id)
@@ -114,7 +114,7 @@ namespace ps
       // One of the indexes of the bin (idx1)
       int idx1 = static_cast<int>(cont_state(i)/discretization_(i)) + offset;
       // The idx1 should not exceed bounds
-      assert(idx1>=0 && idx1<config_->discrete_angles_[i].size());
+      assert(idx1>=0 && idx1<discrete_angles_[i].size());
       // The second index (idx2) based on idx1
       int idx2 = cont_state(i)>discrete_angles_[i](idx1)?idx1+1:idx1-1;
       idx2 = (idx2<0)?discrete_angles_[i].size()-1:idx2;
@@ -131,49 +131,48 @@ namespace ps
   }
 
   /// MuJoCo
-  std::vector<VecDf> ManipulationAction::GetSuccessor(const VecDf &state, int thread_id)
+  VecDf ManipulationAction::GetSuccessor(const VecDf &state, int thread_id)
   {
-    std::vector<VecDf> successors;
-    for (int i=0; i<2*m_[thread_id]->nq; ++i)
+    int prim_id = std::stoi(Action::type_);
+    if (prim_id < 2*m_[thread_id]->nq)
     {
-      VecDf succ(m_[thread_id]->nq);
-      for (int j=0; j<m_[thread_id]->nq; ++j)
-      {
-        succ(j) = state(j) + mprims_(i,j)*discretization_(j);
-        succ(j) = angles::normalize_angle(succ(j));
-      }
-      succ = contToDisc(succ);
-
-      if (!validateJointLimits(succ))
-      {
-        continue;
-      }
-
-      VecDf free_state(m_[thread_id]->nq), con_state(m_[thread_id]->nq);
-
-      // state coll check
-      if (isCollisionFree(succ))
-      {
-        // edge check only if state check passes
-        if (isCollisionFree(state, succ, free_state))
+        VecDf succ(m_[thread_id]->nq);
+        for (int j=0; j<m_[thread_id]->nq; ++j)
         {
-          successors.push_back(succ);
+            succ(j) = state(j) + mprims_(prim_id,j)*discretization_(j);
+            succ(j) = angles::normalize_angle(succ(j));
         }
+        succ = contToDisc(succ);
+
+        if (!validateJointLimits(succ))
+        {
+            VecDf empty;
+            return empty;
+        }
+
+        VecDf free_state(m_[thread_id]->nq), con_state(m_[thread_id]->nq);
+
+        // state coll check
+        if (isCollisionFree(succ))
+        {
+            // edge check only if state check passes
+            if (isCollisionFree(state, succ, free_state))
+            {
+                return succ;
+            }
+            VecDf empty;
+            return empty;
+        }
+    }
+    else
+    {
+        /// Direct edge to goal
+      VecDf free_state(m_[thread_id]->nq);
+      if (isCollisionFree(state, goal_, free_state))
+      {
+        return goal_;
       }
     }
-
-    /// Direct edge to goal
-//    VecDf free_state(m_->nq);
-//    if (isCollisionFree(state, goal, free_state))
-//    {
-//      successors.push_back(goal);
-//    }
-//    else
-//    {
-//      successors.push_back(free_state);
-//    }
-
-    return successors;
   }
 
   bool ManipulationAction::isFeasible(const StateVarsType& state_vars, int thread_id)
@@ -262,7 +261,7 @@ namespace ps
     opt_ = opt;
   }
 
-  bool ManipulationAction::isFeasible(TrajType &traj) const
+  bool ManipulationAction::isFeasible(MatDf &traj) const
   {
     bool feas = true;
     for (int i=0; i<traj.cols(); ++i)
