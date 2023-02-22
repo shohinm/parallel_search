@@ -178,27 +178,27 @@ void constructActions(vector<shared_ptr<Action>>& action_ptrs, ParamsType& actio
     action_params["cache_footprint"] = 1;
 
     ParamsType expensive_action_params = action_params;
-    expensive_action_params["cache_footprint"] = 0;
+    expensive_action_params["cache_footprint"] = 1;
     
-    auto move_up_controller_ptr = make_shared<MoveUpAction>("MoveUp", action_params, map, 0);
+    auto move_up_controller_ptr = make_shared<MoveUpAction>("MoveUp", action_params, map);
     action_ptrs.emplace_back(move_up_controller_ptr);
 
     auto move_up_right_controller_ptr = make_shared<MoveUpRightAction>("MoveUpRight", expensive_action_params, map);
     action_ptrs.emplace_back(move_up_right_controller_ptr);
 
-    auto move_right_controller_ptr = make_shared<MoveRightAction>("MoveRight", action_params, map, 0);
+    auto move_right_controller_ptr = make_shared<MoveRightAction>("MoveRight", action_params, map);
     action_ptrs.emplace_back(move_right_controller_ptr);
 
     auto move_right_down_controller_ptr = make_shared<MoveRightDownAction>("MoveRightDown", expensive_action_params, map);
     action_ptrs.emplace_back(move_right_down_controller_ptr);
 
-    auto move_down_controller_ptr = make_shared<MoveDownAction>("MoveDown", action_params, map, 0);
+    auto move_down_controller_ptr = make_shared<MoveDownAction>("MoveDown", action_params, map);
     action_ptrs.emplace_back(move_down_controller_ptr);
 
     auto move_down_left_controller_ptr = make_shared<MoveDownLeftAction>("MoveDownLeft", expensive_action_params, map);
     action_ptrs.emplace_back(move_down_left_controller_ptr);
 
-    auto move_left_controller_ptr = make_shared<MoveLeftAction>("MoveLeft", action_params, map, 0);
+    auto move_left_controller_ptr = make_shared<MoveLeftAction>("MoveLeft", action_params, map);
     action_ptrs.emplace_back(move_left_controller_ptr);
 
     auto move_left_up_controller_ptr = make_shared<MoveLeftUpAction>("MoveLeftUp", expensive_action_params, map);
@@ -333,8 +333,7 @@ int main(int argc, char* argv[])
     vector<int> all_maps_num_edges_vec;
     unordered_map<string, vector<double>> all_action_eval_times;
 
-    // for (int m_idx = 0; m_idx < map_vec.size(); ++m_idx)
-    for (int m_idx = 0; m_idx <  1; ++m_idx)
+    for (int m_idx = 0; m_idx < map_vec.size(); ++m_idx)
     {
         auto map = map_vec[m_idx];
         auto img = img_vec[m_idx];
@@ -378,8 +377,7 @@ int main(int argc, char* argv[])
         if (visualize_plan) cv::namedWindow("Plan", cv::WINDOW_AUTOSIZE );// Create a window for display.
         
         int num_success = 0;
-        // for (int exp_idx = 0; exp_idx < num_runs; ++exp_idx )
-        for (int exp_idx = 0; exp_idx < 1; ++exp_idx )
+        for (int exp_idx = 0; exp_idx < num_runs; ++exp_idx )
         {
             cout << "Experiment: " << exp_idx;
 
