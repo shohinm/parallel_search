@@ -39,12 +39,13 @@ namespace ps
         {
             assert(N>=2);
 
+            TrajType traj;
             if (intp_ == InterpMode::LINEAR)
             {
-                TrajType soln_traj = linInterp(s1, s2, N);
-                if (act->isFeasible(soln_traj))
+                traj.disc_traj_ = linInterp(s1, s2, N);
+                if (act->isFeasible(traj.disc_traj_))
                 {
-                    return soln_traj;
+                    return traj;
                 }
                 else
                 {
@@ -56,13 +57,13 @@ namespace ps
 
         virtual TrajType warmOptimize(const InsatAction* act, const TrajType& traj1, const TrajType & traj2)
         {
-            int N = traj1.cols()+traj2.cols();
-            TrajType init_traj(traj1.rows(), N);
-            TrajType opt_traj(traj1.rows(), N);
-            TrajType soln_traj(traj1.rows(), N);
+            int N = traj1.disc_traj_.cols()+traj2.disc_traj_.cols();
+            MatDf init_traj(traj1.disc_traj_.rows(), N);
+            MatDf opt_traj(traj1.disc_traj_.rows(), N);
+            MatDf soln_traj(traj1.disc_traj_.rows(), N);
 
-            init_traj << traj1, traj2;
-            opt_traj = linInterp(traj1.leftCols(1), traj2.rightCols(1), N);
+            init_traj << traj1.disc_traj_, traj2.disc_traj_;
+            opt_traj = linInterp(traj1.disc_traj_.leftCols(1), traj2.disc_traj_.rightCols(1), N);
 
             for (double i=0.0; i<=1.0; i+=1.0/conv_delta_)
             {
@@ -72,24 +73,27 @@ namespace ps
                 break;
               }
             }
-            return soln_traj;
+            TrajType traj;
+            traj.disc_traj_ = soln_traj;
+            return traj;
         }
 
         virtual double calculateCost(const TrajType& traj)
         {
+            auto& disc_traj = traj.disc_traj_;
             double cost = 0;
-            for (int i=0; i<traj.cols()-1; ++i)
+            for (int i=0; i<disc_traj.cols()-1; ++i)
             {
-                cost += (traj.col(i+1)-traj.col(i)).norm();
+                cost += (disc_traj.col(i+1)-disc_traj.col(i)).norm();
             }
             return cost;
         }
 
         protected:
 
-        TrajType linInterp(const VecDf& p1, const VecDf& p2, int N)
+        MatDf linInterp(const VecDf& p1, const VecDf& p2, int N)
         {
-            TrajType traj(p1.size(), N);
+            MatDf traj(p1.size(), N);
 
             for (int i=0.0; i<N; ++i)
             {
