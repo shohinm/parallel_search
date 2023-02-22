@@ -4,8 +4,8 @@ project (epase)
 add_compile_options(-std=c++17)
 
 list(APPEND CMAKE_PREFIX_PATH /opt/drake)
-set(MUJOCO_INCLUDE_DIR "third_party/mujoco-2.3.2/include")
-set(MUJOCO_LIB_DIR "third_party/mujoco-2.3.2/lib")
+set(MUJOCO_INCLUDE_DIR "/home/gaussian/cmu_ri_phd/phd_research/parallel_search/third_party/mujoco-2.3.2/include")
+set(MUJOCO_LIB_DIR "/home/gaussian/cmu_ri_phd/phd_research/parallel_search/third_party/mujoco-2.3.2/lib")
 
 find_package(OpenCV REQUIRED)
 find_package(SBPL REQUIRED)
@@ -48,15 +48,6 @@ set(SOURCES
     src/planners/insat/PinsatPlanner.cpp
 )
 
-# LIBRARIES
-add_library(run_maninpulation
-        examples/manipulation/ManipulationActions.cpp
-        ${SOURCES})
-
-target_link_libraries(run_maninpulation
-        mujoco
-        pthread)
-
 # EXECUTABLES
 add_executable(run_robot_nav_2d
         examples/robot_nav_2d/run_robot_nav_2d.cpp
@@ -77,12 +68,24 @@ add_executable(run_insat_nav_2d
 target_link_libraries(run_insat_nav_2d
         ${OpenCV_LIBRARIES}
         ${SBPL_LIBRARIES}
+        ${drake_LIBRARIES}
+        pthread)
+
+add_executable(run_maninpulation
+        examples/manipulation/run_manipulation.cpp
+        examples/manipulation/ManipulationActions.cpp
+        ${SOURCES})
+
+target_link_libraries(run_maninpulation
+        mujoco
+        ${drake_LIBRARIES}
         pthread)
 
 add_executable(drake_test
         examples/insat/opt/DrakeTest.cpp)
 
 target_link_libraries(drake_test
+        mujoco
         ${drake_LIBRARIES})
 
 add_executable(domain_template
