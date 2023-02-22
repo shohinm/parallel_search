@@ -36,6 +36,7 @@ link_directories(${MUJOCO_LIB_DIR})
 set(SOURCES
     src/common/State.cpp 
     src/common/Edge.cpp
+    src/common/insat/InsatEdge.cpp
     src/planners/Planner.cpp
     src/planners/WastarPlanner.cpp
     src/planners/PwastarPlanner.cpp
@@ -57,11 +58,11 @@ add_executable(run_robot_nav_2d
 target_link_libraries(run_robot_nav_2d
         ${OpenCV_LIBRARIES}
         ${SBPL_LIBRARIES}
+        ${drake_LIBRARIES}
         pthread)
 
 add_executable(run_insat_nav_2d
         examples/insat/robot_nav_2d/run_insat_nav_2d.cpp
-        examples/robot_nav_2d/RobotNav2dActions.cpp
         examples/insat/robot_nav_2d/InsatNav2dActions.cpp
         ${SOURCES})
 
@@ -94,4 +95,5 @@ add_executable(domain_template
         ${SOURCES} include/common/insat/InsatTypes.hpp)
 
 target_link_libraries(domain_template
+        ${drake_LIBRARIES}
         pthread)
