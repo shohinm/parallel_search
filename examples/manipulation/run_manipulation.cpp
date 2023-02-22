@@ -244,7 +244,7 @@ int main()
     std::string planner_name = "insat";
 
     /// Load MuJoCo model
-    std::string modelpath = "/home/gaussian/cmu_ri_phd/phd_research/parallel_search/third_party/mujoco-2.3.2/model/abb/irb_1600/irb1600_6_12.xml";
+    std::string modelpath = "../third_party/mujoco-2.3.2/model/abb/irb_1600/irb1600_6_12.xml";
     mjModel *m = nullptr;
     mjData *d = nullptr;
 

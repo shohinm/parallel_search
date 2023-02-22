@@ -72,12 +72,12 @@ target_link_libraries(run_insat_nav_2d
         ${drake_LIBRARIES}
         pthread)
 
-add_executable(run_maninpulation
+add_executable(run_manipulation
         examples/manipulation/run_manipulation.cpp
         examples/manipulation/ManipulationActions.cpp
         ${SOURCES})
 
-target_link_libraries(run_maninpulation
+target_link_libraries(run_manipulation
         mujoco
         ${drake_LIBRARIES}
         pthread)
