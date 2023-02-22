@@ -106,7 +106,7 @@ double computeHeuristicStateToState(const StateVarsType& state_vars_1, const Sta
 
 bool isGoalState(const StateVarsType& state_vars, double dist_thresh)
 {
-    return (computeHeuristic(state_vars, dist_thresh) < 0);
+    return (computeHeuristic(state_vars, dist_thresh) <= 0);
 }
 
 size_t StateKeyGenerator(const StateVarsType& state_vars)
