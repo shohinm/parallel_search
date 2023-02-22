@@ -127,6 +127,7 @@ void AgepasePlanner::improvePath()
                     {
                         // Construct path
                         auto goal_state_ptr = goal_state_ptr_;
+                        plan_.clear();
                         constructPlan(goal_state_ptr);
                         auto t_end = chrono::steady_clock::now();
                         double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
