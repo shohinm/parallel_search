@@ -14,10 +14,10 @@ public:
     Action(const std::string& type, ParamsType params = ParamsType(), bool is_expensive = true)
     : type_(type), params_(params), is_expensive_(is_expensive){};
     virtual ~Action(){};
-    virtual bool CheckPreconditions(StateVarsType state)=0; 
-    virtual ActionSuccessor GetSuccessor(StateVarsType state_vars, int thread_id=0)=0; 
-    virtual ActionSuccessor GetSuccessorLazy(StateVarsType state_vars, int thread_id=0){}; 
-    virtual ActionSuccessor Evaluate(StateVarsType parent_state_vars, StateVarsType child_state_vars, int thread_id=0){}; 
+    virtual bool CheckPreconditions(const StateVarsType& state)=0; 
+    virtual ActionSuccessor GetSuccessor(const StateVarsType& state_vars, int thread_id=0)=0; 
+    virtual ActionSuccessor GetSuccessorLazy(const StateVarsType& state_vars, int thread_id=0){}; 
+    virtual ActionSuccessor Evaluate(const StateVarsType& parent_state_vars, const StateVarsType& child_state_vars, int thread_id=0){}; 
     std::string GetType() const {return type_;};
     bool IsExpensive() const {return is_expensive_;};
     bool operator==(const Action& other_action) const

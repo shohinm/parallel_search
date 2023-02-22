@@ -13,7 +13,7 @@ planner_params_(planner_params)
 
 Planner::~Planner()
 {
-	cleanUp();
+    cleanUp();
 }
 
 void Planner::SetActions(vector<shared_ptr<Action>> actions_ptrs)
@@ -23,32 +23,32 @@ void Planner::SetActions(vector<shared_ptr<Action>> actions_ptrs)
 
 void Planner::SetStartState(const StateVarsType& state_vars)
 {
-	start_state_ptr_ = constructState(state_vars);
+    start_state_ptr_ = constructState(state_vars);
 }
 
-void Planner::SetGoalChecker(function<bool(const StatePtrType&)> callback)
+void Planner::SetGoalChecker(function<bool(const StateVarsType&)> callback)
 {
     goal_checker_ = callback;
 }
 
 void Planner::SetStateMapKeyGenerator(function<size_t(const StateVarsType&)> callback)
 {
-	state_key_generator_ = callback;
+    state_key_generator_ = callback;
 }
 
 void Planner::SetEdgeKeyGenerator(function<size_t(const EdgePtrType&)> callback)
 {
-	edge_key_generator_ = callback;
+    edge_key_generator_ = callback;
 }
 
-void Planner::SetHeuristicGenerator(function<double(const StatePtrType&)> callback)
+void Planner::SetHeuristicGenerator(function<double(const StateVarsType&)> callback)
 {
-	unary_heuristic_generator_ = callback;
+    unary_heuristic_generator_ = callback;
 }
 
-void Planner::SetStateToStateHeuristicGenerator(function<double(const StatePtrType&, const StatePtrType&)> callback)
+void Planner::SetStateToStateHeuristicGenerator(function<double(const StateVarsType&, const StateVarsType&)> callback)
 {
-	binary_heuristic_generator_ = callback;
+    binary_heuristic_generator_ = callback;
 }
 
 std::vector<PlanElement> Planner::GetPlan() const
@@ -74,9 +74,6 @@ void Planner::initialize()
     
     // Reset goal state
     goal_state_ptr_ = NULL;
-
-    // Reset state
-    planner_stats_ = PlannerStats();
 
     // Reset h_min
     h_val_min_ = DINF;
@@ -143,35 +140,35 @@ StatePtrType Planner::constructState(const StateVarsType& state)
 
 double Planner::computeHeuristic(const StatePtrType& state_ptr)
 {
-    return roundOff(unary_heuristic_generator_(state_ptr));
+    return roundOff(unary_heuristic_generator_(state_ptr->GetStateVars()));
 }
 
 double Planner::computeHeuristic(const StatePtrType& state_ptr_1, const StatePtrType& state_ptr_2)
 {
-    return roundOff(binary_heuristic_generator_(state_ptr_1, state_ptr_2));
+    return roundOff(binary_heuristic_generator_(state_ptr_1->GetStateVars(), state_ptr_2->GetStateVars()));
 }
 
 bool Planner::isGoalState(const StatePtrType& state_ptr)
 {
-    return goal_checker_(state_ptr);
+    return goal_checker_(state_ptr->GetStateVars());
 }
 
 void Planner::constructPlan(StatePtrType& state_ptr)
 {
     double cost = 0;
-    plan_.clear();
     while(state_ptr->GetIncomingEdgePtr())
     {
         if (state_ptr->GetIncomingEdgePtr()) // For start state_ptr, there is no incoming edge
             plan_.insert(plan_.begin(), PlanElement(state_ptr->GetStateVars(), state_ptr->GetIncomingEdgePtr()->action_ptr_, state_ptr->GetIncomingEdgePtr()->GetCost()));        
         else
             plan_.insert(plan_.begin(), PlanElement(state_ptr->GetStateVars(), NULL, 0));        
+
         cost += state_ptr->GetIncomingEdgePtr()->GetCost();
         state_ptr = state_ptr->GetIncomingEdgePtr()->parent_state_ptr_;     
     }
 
+    planner_stats_.path_cost_= cost;
     planner_stats_.path_length_ = plan_.size();
-    planner_stats_.path_cost_ = cost;
 }
 
 double Planner::roundOff(double value, int prec)
@@ -190,7 +187,7 @@ void Planner::cleanUp()
             state_it.second = NULL;
         }
     }
-	state_map_.clear();
+    state_map_.clear();
 
     for (auto& edge_it : edge_map_)
     {

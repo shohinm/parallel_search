@@ -11,8 +11,8 @@ class ActionTemplate : public Action
 
 public:
     ActionTemplate(const std::string& type, ParamsType params);
-    ActionSuccessor GetSuccessor(StateVarsType state_vars, int thread_id); 
-    bool CheckPreconditions(StateVarsType state); 
+    ActionSuccessor GetSuccessor(const StateVarsType& state_vars, int thread_id); 
+    bool CheckPreconditions(const StateVarsType& state); 
 };
 
 }
