@@ -5,6 +5,9 @@
 #include <drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h>
 #include <drake/solvers/solve.h>
 
+// MuJoCo
+#include <mujoco/mujoco.h>
+
 namespace ps_drake
 {
     struct InsatParams
@@ -132,6 +135,11 @@ namespace ps_drake
             opt_->AddVelocityBounds(robot_params_.min_dq_, robot_params_.max_dq_);
 
             opt_->AddDurationConstraint(2, 2);
+
+            std::string mj_modelpath = "/home/gaussian/cmu_ri_phd/phd_research/parallel_search/third_party/mujoco-2.3.2/model/abb/irb_1600/irb1600_6_12.xml";
+            m_ = mj_loadXML(mj_modelpath.c_str(), nullptr, nullptr, 0);
+            d_ = mj_makeData(m_);
+
         }
 
         OptResult optimize(const VecDf& s1, const VecDf& s2)
@@ -201,6 +209,51 @@ namespace ps_drake
             }
         }
 
+        /// Mj
+        bool isCollisionFree(const VecDf &state) const
+        {
+            if (!validateJointLimits(state))
+            {
+                return false;
+            }
+            // Set curr configuration
+            mju_copy(d_->qpos, state.data(), m_->nq);
+            mju_zero(d_->qvel, m_->nv);
+            mju_zero(d_->qacc, m_->nv);
+            mj_fwdPosition(m_, d_);
+
+            return d_->ncon>0? false: true;
+        }
+
+        bool validateJointLimits(const VecDf &state) const
+        {
+            bool valid = true;
+            for (int i=0; i<m_->njnt; ++i)
+            {
+                if (state(i) >= m_->jnt_range[2*i] && state(i) <= m_->jnt_range[2*i+1])
+                {
+                    continue;
+                }
+                valid = false;
+                break;
+            }
+            return valid;
+        }
+
+        bool isFeasible(MatDf &traj) const
+        {
+            bool feas = true;
+            for (int i=0; i<traj.cols(); ++i)
+            {
+                if (!isCollisionFree(traj.col(i)))
+                {
+                    feas = false;
+                    break;
+                }
+            }
+            return feas;
+        }
+
         /// Optimizer
         std::shared_ptr<OptType> opt_;
         drake::solvers::MathematicalProgram& prog_;
@@ -210,6 +263,11 @@ namespace ps_drake
 
         std::vector<CostType> costs_;
         std::vector<ConstraintType> constraints_;
+
+        /// MJ
+        mjModel* m_;
+        mjData* d_= nullptr;
+
     };
 
 }
@@ -218,17 +276,49 @@ namespace ps_drake
 #include <chrono>
 #include <numeric>
 #include <iostream>
+#include <fstream>
 
+//https://eigen.tuxfamily.org/dox/structEigen_1_1IOFormat.html
+const static Eigen::IOFormat CSVFormat(Eigen::FullPrecision, Eigen::DontAlignCols, ", ", "\n");
+void writeToCSVfile(std::string& fname, const MatDf& matrix)
+{
+    std::ofstream file(fname);
+    if (file.is_open())
+    {
+        file << matrix.format(CSVFormat);
+        file.close();
+    }
+}
+
+std::random_device rd;
+std::mt19937 gen(rd());  //here you could set the seed, but std::random_device already does that
+std::uniform_real_distribution<float> dis(-1.0, 1.0);
 VecDf genRandomVector(VecDf& low, VecDf& high, int size)
 {
     VecDf range = high-low;
-    VecDf randvec = VecDf::Random(size);
+//    VecDf randvec = VecDf::Random(size);
+    VecDf randvec = VecDf::NullaryExpr(size,1,[&](){return dis(gen);});
     randvec += VecDf::Constant(size, 1, 1.0);
     randvec /= 2.0;
     randvec = randvec.cwiseProduct(range);
     randvec += low;
 
     return randvec;
+}
+
+void printControlPts(ps_drake::BSplineOpt& opt)
+{
+    std::cout << "control pts:\n " << opt.opt_->control_points() << std::endl;
+    drake::solvers::MatrixXDecisionVariable control_points = opt.opt_->control_points();
+    Eigen::Map<drake::solvers::VectorXDecisionVariable> control_vec(control_points.data(), control_points.size());
+    std::cout << "control pts:\n " << control_vec << std::endl;
+
+    int r = opt.opt_->control_points().rows();
+    int c = opt.opt_->control_points().cols();
+    drake::solvers::MatrixXDecisionVariable control_matix(r, c);
+    control_matix << control_vec;
+
+    std::cout << "control matrix:\n " << control_matix << std::endl;
 }
 
 void printTraj(drake::trajectories::BsplineTrajectory<double> traj, double dt)
@@ -243,7 +333,23 @@ void printTraj(drake::trajectories::BsplineTrajectory<double> traj, double dt)
     std::cout << "num_basis_functions: " << traj.basis().num_basis_functions() << std::endl;
 }
 
-void runBVPTest(std::vector<double>& time_log, int test_size=1)
+MatDf sampleTrajectory(const drake::trajectories::BsplineTrajectory<double>& traj, double dt=1e-1)
+{
+    ps_drake::InsatParams insat_params;
+
+    MatDf sampled_traj;
+    int i=0;
+    for (double t=0.0; t<=traj.end_time(); t+=dt)
+    {
+        sampled_traj.conservativeResize(insat_params.lowD_dims_, sampled_traj.cols()+1);
+        sampled_traj.col(i) = traj.value(t);
+        ++i;
+    }
+    return sampled_traj;
+}
+
+
+void runBVPTest(std::vector<double>& time_log, bool save=false, int test_size=1)
 {
     typedef std::chrono::high_resolution_clock Clock;
     using namespace std::chrono;
@@ -251,9 +357,12 @@ void runBVPTest(std::vector<double>& time_log, int test_size=1)
     ps_drake::InsatParams insat_params;
     ps_drake::ABBParams robot_params;
 
+    MatDf all_traj;
+    MatDf starts;
+    MatDf goals;
     for (int i=0; i<test_size; ++i)
     {
-        ps_drake::BSplineOpt opt(insat_params.lowD_dims_, 7);
+        ps_drake::BSplineOpt opt(insat_params.lowD_dims_, 8);
         VecDf st(insat_params.fullD_dims_), go(insat_params.fullD_dims_);
         st.setZero();
         go.setZero();
@@ -262,6 +371,9 @@ void runBVPTest(std::vector<double>& time_log, int test_size=1)
         st.topRows(insat_params.lowD_dims_) = r1;
         go.topRows(insat_params.lowD_dims_) = r2;
 
+        if (!opt.isCollisionFree(st) || !opt.isCollisionFree(go))
+        { continue;}
+
         std::cout << "---- TRIAL " << i+1 << "------" << "\nst: " << r1.transpose() << "\ngo: " << r2.transpose() << std::endl;
 
         auto start_time = Clock::now();
@@ -269,17 +381,49 @@ void runBVPTest(std::vector<double>& time_log, int test_size=1)
         auto end_time = Clock::now();
         if (result.is_success())
         {
-            std::cout << "SUCCESS" << std::endl;
-            double time_elapsed = duration_cast<duration<double> >(end_time - start_time).count();
-            time_log.emplace_back(time_elapsed);
+            auto traj = sampleTrajectory(opt.opt_->ReconstructTrajectory(result), 6e-3);
+            if (opt.isCollisionFree(traj))
+            {
+                std::cout << "SUCCESS" << " traj rows: " << traj.rows() << " cols: " << traj.cols() << std::endl;
+                double time_elapsed = duration_cast<duration<double> >(end_time - start_time).count();
+                time_log.emplace_back(time_elapsed);
 
-            printTraj(opt.opt_->ReconstructTrajectory(result), 1e-1);
+                starts.conservativeResize(starts.rows()+1, insat_params.lowD_dims_);
+                goals.conservativeResize(goals.rows()+1, insat_params.lowD_dims_);
+                starts.bottomRows(1) = r1;
+                goals.bottomRows(1) = r2;
+
+                all_traj.conservativeResize(insat_params.lowD_dims_, all_traj.cols()+traj.cols());
+                all_traj.rightCols(traj.cols()) = traj;
+            }
+            else
+            {
+                continue;
+            }
+//            printTraj(opt.opt_->ReconstructTrajectory(result), 1e-1);
+//            printControlPts(opt);
 //            opt.opt_->SetInitialGuess(opt.opt_->ReconstructTrajectory())
         }
     }
+    if (save)
+    {
+        std::string write_path ="/home/gaussian/cmu_ri_phd/phd_research/parallel_search/logs/abb_traj.txt";
+        std::string starts_path ="/home/gaussian/cmu_ri_phd/phd_research/parallel_search/logs/abb_starts.txt";
+        std::string goals_path ="/home/gaussian/cmu_ri_phd/phd_research/parallel_search/logs/abb_goals.txt";
+
+        std::cout << "starts:\n" << starts << std::endl;
+        std::cout << "goals:\n" << goals << std::endl;
+//        std::cout << "alltraj:\n" << starts << std::endl;
+
+        all_traj.transposeInPlace();
+        writeToCSVfile(write_path, all_traj);
+        writeToCSVfile(starts_path, starts);
+        writeToCSVfile(goals_path, goals);
+    }
+
 }
 
-void runBVPwithWPTest(std::vector<double>& time_log, int test_size=1)
+void runBVPwithWPTest(std::vector<double>& time_log, bool save=false, int test_size=1)
 {
     typedef std::chrono::high_resolution_clock Clock;
     using namespace std::chrono;
@@ -323,6 +467,8 @@ void runBVPwithWPTest(std::vector<double>& time_log, int test_size=1)
 
 int main()
 {
+//    std::srand(time(NULL));
+
     typedef std::chrono::high_resolution_clock Clock;
     using namespace std::chrono;
     using drake::planning::trajectory_optimization::KinematicTrajectoryOptimization;
@@ -330,12 +476,12 @@ int main()
     ps_drake::InsatParams insat_params;
     ps_drake::ABBParams robot_params;
 
-    int test_size = 1;
+    int test_size = 100;
 
     std::vector<double> time_log;
     std::vector<double> init_time_log;
 
-    runBVPTest(time_log, test_size);
+    runBVPTest(time_log, true, test_size);
 
     double mean = accumulate( time_log.begin(), time_log.end(), 0.0)/time_log.size();
     for (auto i: time_log)
