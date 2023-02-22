@@ -179,7 +179,7 @@ namespace ps
         opt_ = opt;
     }
 
-  bool InsatNav2dAction::isFeasible(TrajType &traj) const
+  bool InsatNav2dAction::isFeasible(MatDf &traj) const
   {
     bool feas = true;
     for (int i=0; i<traj.cols(); ++i)

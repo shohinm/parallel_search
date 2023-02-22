@@ -36,7 +36,7 @@ namespace ps
 
         // INSAT
         void setOpt(OptVecPtrType& opt);
-        bool isFeasible(TrajType& traj) const;
+        bool isFeasible(MatDf& traj) const;
         TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id=0) const;
         TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0) const;
         double getCost(const TrajType& traj, int thread_id=0) const;
@@ -62,7 +62,7 @@ namespace ps
         };
 
       void setOpt(OptVecPtrType& opt) {InsatNav2dAction::setOpt(opt);};
-      bool isFeasible(TrajType& traj) const {return InsatNav2dAction::isFeasible(traj);};
+      bool isFeasible(MatDf& traj) const {return InsatNav2dAction::isFeasible(traj);};
       TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id=0) const
       {return InsatNav2dAction::optimize(s1, s2, thread_id);}
       TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0) const
@@ -82,7 +82,7 @@ namespace ps
         };
 
       void setOpt(OptVecPtrType& opt) {InsatNav2dAction::setOpt(opt);};
-      bool isFeasible(TrajType& traj) const {return InsatNav2dAction::isFeasible(traj);};
+      bool isFeasible(MatDf& traj) const {return InsatNav2dAction::isFeasible(traj);};
       TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id=0) const
       {return InsatNav2dAction::optimize(s1, s2, thread_id);}
       TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0) const
@@ -102,7 +102,7 @@ namespace ps
         };
 
       void setOpt(OptVecPtrType& opt) {InsatNav2dAction::setOpt(opt);};
-      bool isFeasible(TrajType& traj) const {return InsatNav2dAction::isFeasible(traj);};
+      bool isFeasible(MatDf& traj) const {return InsatNav2dAction::isFeasible(traj);};
       TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id=0) const
       {return InsatNav2dAction::optimize(s1, s2, thread_id);}
       TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0) const
@@ -122,7 +122,7 @@ namespace ps
         };
 
       void setOpt(OptVecPtrType& opt) {InsatNav2dAction::setOpt(opt);};
-      bool isFeasible(TrajType& traj) const {return InsatNav2dAction::isFeasible(traj);};
+      bool isFeasible(MatDf& traj) const {return InsatNav2dAction::isFeasible(traj);};
       TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id=0) const
       {return InsatNav2dAction::optimize(s1, s2, thread_id);}
       TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0) const
@@ -143,7 +143,7 @@ namespace ps
         };
 
       void setOpt(OptVecPtrType& opt) {InsatNav2dAction::setOpt(opt);};
-      bool isFeasible(TrajType& traj) const {return InsatNav2dAction::isFeasible(traj);};
+      bool isFeasible(MatDf& traj) const {return InsatNav2dAction::isFeasible(traj);};
       TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id=0) const
       {return InsatNav2dAction::optimize(s1, s2, thread_id);}
       TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0) const
@@ -163,7 +163,7 @@ namespace ps
         };
 
       void setOpt(OptVecPtrType& opt) {InsatNav2dAction::setOpt(opt);};
-      bool isFeasible(TrajType& traj) const {return InsatNav2dAction::isFeasible(traj);};
+      bool isFeasible(MatDf& traj) const {return InsatNav2dAction::isFeasible(traj);};
       TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id=0) const
       {return InsatNav2dAction::optimize(s1, s2, thread_id);}
       TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0) const
@@ -184,7 +184,7 @@ namespace ps
         };
 
       void setOpt(OptVecPtrType& opt) {InsatNav2dAction::setOpt(opt);};
-      bool isFeasible(TrajType& traj) const {return InsatNav2dAction::isFeasible(traj);};
+      bool isFeasible(MatDf& traj) const {return InsatNav2dAction::isFeasible(traj);};
       TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id=0) const
       {return InsatNav2dAction::optimize(s1, s2, thread_id);}
       TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0) const
@@ -205,7 +205,7 @@ namespace ps
         };
 
       void setOpt(OptVecPtrType& opt) {InsatNav2dAction::setOpt(opt);};
-      bool isFeasible(TrajType& traj) const {return InsatNav2dAction::isFeasible(traj);};
+      bool isFeasible(MatDf& traj) const {return InsatNav2dAction::isFeasible(traj);};
       TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id=0) const
       {return InsatNav2dAction::optimize(s1, s2, thread_id);}
       TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0) const
