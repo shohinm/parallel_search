@@ -152,6 +152,7 @@ namespace ps
         if (!validateJointLimits(succ))
         {
             VecDf empty;
+            assert(empty.size() == 0);
             return empty;
         }
 
@@ -166,6 +167,7 @@ namespace ps
                 return succ;
             }
             VecDf empty;
+            assert(empty.size() == 0);
             return empty;
         }
     }
@@ -178,6 +180,9 @@ namespace ps
         return goal_;
       }
     }
+    VecDf empty;
+    assert(empty.size() == 0);
+    return empty;
   }
 
   bool ManipulationAction::isFeasible(const StateVarsType& state_vars, int thread_id)

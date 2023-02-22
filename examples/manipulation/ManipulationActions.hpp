@@ -153,7 +153,7 @@ namespace ps
               -1*mprims_.block(0,0,m_[0]->nq,m_[0]->nq);
 
       goal_.resize(m_[0]->nq);
-      goal_.Map(&goal[0], goal.size());
+      for (int i=0; i<goal.size(); ++i) { goal_(i) = goal[i]; }
     };
 
     void setOpt(OptVecPtrType& opt) {ManipulationAction::setOpt(opt);};

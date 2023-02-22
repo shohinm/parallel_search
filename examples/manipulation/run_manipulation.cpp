@@ -122,9 +122,18 @@ void constructActions(vector<shared_ptr<Action>>& action_ptrs,
                       ManipulationAction::MjDataVecType d_vec,
                       int num_threads)
 {
+//    OneJointAtATime(const std::string& type,
+//    ParamsType params,
+//    std::string& mj_modelpath,
+//    VecDf ang_discretization,
+//    OptVecPtrType opt,
+//    MjModelVecType& m_vec, MjDataVecType& d_vec,
+//            StateVarsType& goal,
+//            int num_threads=1,
+//            bool is_expensive = true):
 
 
-    for (int i=0; i<=dof; ++i)
+    for (int i=0; i<=2*dof; ++i)
     {
         auto one_joint_action = std::make_shared<OneJointAtATime>(std::to_string(i), action_params, mj_modelpath, ang_discretization, opt, m_vec, d_vec, goal, num_threads);
         action_ptrs.emplace_back(one_joint_action);
@@ -287,6 +296,11 @@ int main()
 
     for (int run = 0; run < num_runs; ++run)
     {
+        int start_goal_idx = 0;
+        // Set goal conditions
+        goal.clear();
+        goal = goals[run];
+
         // create opt
         auto opt = BSplineOpt(insat_params, robot_params, spline_params);
         std::vector<BSplineOpt> opt_vec(num_threads, opt);
@@ -302,7 +316,6 @@ int main()
         constructPlanner(planner_name, planner_ptr, action_ptrs, planner_params, action_params);
 
         // Run experiments
-        int start_goal_idx = 0;
         vector<double> time_vec, cost_vec;
         vector<int> num_edges_vec, threads_used_vec;
         vector<int> jobs_per_thread(planner_params["num_threads"], 0);
@@ -316,68 +329,62 @@ int main()
         cout <<  "---------------------------------------------------" << endl;
 
         int num_success = 0;
-        for (int exp_idx = 0; exp_idx < num_runs; ++exp_idx )
-        {
-            cout << "Experiment: " << exp_idx << endl;
+        cout << "Experiment: " << run << endl;
 
 //            if (start_goal_idx >= starts.size())
 //                start_goal_idx = 0;
 
-            // Set start state
-            planner_ptr->SetStartState(starts[start_goal_idx]);
+        // Set start state
+        planner_ptr->SetStartState(starts[start_goal_idx]);
 
-            // Set goal conditions
-            goal.clear();
-            goal = goals[start_goal_idx];
 
-            double t=0, cost=0;
-            int num_edges=0;
+        double t=0, cost=0;
+        int num_edges=0;
 
-            bool plan_found = planner_ptr->Plan();
+        bool plan_found = planner_ptr->Plan();
 
-            if (plan_found)
+        if (plan_found)
+        {
+            auto planner_stats = planner_ptr->GetStats();
+
+            time_vec.emplace_back(planner_stats.total_time_);
+            all_maps_time_vec.emplace_back(planner_stats.total_time_);
+            cost_vec.emplace_back(planner_stats.path_cost_);
+            all_maps_cost_vec.emplace_back(planner_stats.path_cost_);
+            num_edges_vec.emplace_back(planner_stats.num_evaluated_edges_);
+            all_maps_num_edges_vec.emplace_back(planner_stats.num_evaluated_edges_);
+
+            for (auto& [action, times] : planner_stats.action_eval_times_)
             {
-                auto planner_stats = planner_ptr->GetStats();
-
-                time_vec.emplace_back(planner_stats.total_time_);
-                all_maps_time_vec.emplace_back(planner_stats.total_time_);
-                cost_vec.emplace_back(planner_stats.path_cost_);
-                all_maps_cost_vec.emplace_back(planner_stats.path_cost_);
-                num_edges_vec.emplace_back(planner_stats.num_evaluated_edges_);
-                all_maps_num_edges_vec.emplace_back(planner_stats.num_evaluated_edges_);
-
-                for (auto& [action, times] : planner_stats.action_eval_times_)
-                {
-                    action_eval_times[action].insert(action_eval_times[action].end(), times.begin(), times.end());
-                    all_action_eval_times[action].insert(all_action_eval_times[action].end(), times.begin(), times.end());
-                }
-
-                threads_used_vec.emplace_back(planner_stats.num_threads_spawned_);
-                cout << " | Time (s): " << planner_stats.total_time_
-                     << " | Cost: " << planner_stats.path_cost_
-                     << " | Length: " << planner_stats.path_length_
-                     << " | State expansions: " << planner_stats.num_state_expansions_
-                     << " | Threads used: " << planner_stats.num_threads_spawned_ << "/" << planner_params["num_threads"]
-                     << " | Lock time: " <<  planner_stats.lock_time_
-                     << " | Expand time: " << planner_stats.cumulative_expansions_time_
-                     << " | Threads: " << planner_stats.num_threads_spawned_ << "/" << planner_params["num_threads"] << endl;
-
-                // cout << endl << "------------- Jobs per thread -------------" << endl;
-                // for (int tidx = 0; tidx < planner_params["num_threads"]; ++tidx)
-                // cout << "thread: " << tidx << " jobs: " << planner_stats.num_jobs_per_thread_[tidx] << endl;
-                for (int tidx = 0; tidx < planner_params["num_threads"]; ++tidx)
-                    jobs_per_thread[tidx] += planner_stats.num_jobs_per_thread_[tidx];
-
-                num_success++;
+                action_eval_times[action].insert(action_eval_times[action].end(), times.begin(), times.end());
+                all_action_eval_times[action].insert(all_action_eval_times[action].end(), times.begin(), times.end());
             }
-            else
-                cout << " | Plan not found!" << endl;
 
-            ++start_goal_idx;
+            threads_used_vec.emplace_back(planner_stats.num_threads_spawned_);
+            cout << " | Time (s): " << planner_stats.total_time_
+                 << " | Cost: " << planner_stats.path_cost_
+                 << " | Length: " << planner_stats.path_length_
+                 << " | State expansions: " << planner_stats.num_state_expansions_
+                 << " | Threads used: " << planner_stats.num_threads_spawned_ << "/" << planner_params["num_threads"]
+                 << " | Lock time: " <<  planner_stats.lock_time_
+                 << " | Expand time: " << planner_stats.cumulative_expansions_time_
+                 << " | Threads: " << planner_stats.num_threads_spawned_ << "/" << planner_params["num_threads"] << endl;
 
-            if (visualize_plan)
-            {
-            }
+            // cout << endl << "------------- Jobs per thread -------------" << endl;
+            // for (int tidx = 0; tidx < planner_params["num_threads"]; ++tidx)
+            // cout << "thread: " << tidx << " jobs: " << planner_stats.num_jobs_per_thread_[tidx] << endl;
+            for (int tidx = 0; tidx < planner_params["num_threads"]; ++tidx)
+                jobs_per_thread[tidx] += planner_stats.num_jobs_per_thread_[tidx];
+
+            num_success++;
+        }
+        else
+            cout << " | Plan not found!" << endl;
+
+        ++start_goal_idx;
+
+        if (visualize_plan)
+        {
         }
 
         cout << endl << "************************" << endl;

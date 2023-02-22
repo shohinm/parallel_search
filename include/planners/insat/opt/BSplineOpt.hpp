@@ -7,7 +7,7 @@
 
 // PS
 #include <common/Types.hpp>
-
+#include <iostream>
 
 namespace ps
 {
@@ -118,7 +118,7 @@ namespace ps
 
         BSplineTraj optimize(const InsatAction* act, const VecDf& s1, const VecDf& s2)
         {
-            MatDf dummy_traj(insat_params_.fullD_dims_, 2);
+            MatDf dummy_traj(insat_params_.lowD_dims_, 2);
             dummy_traj << s1, s2;
             BSplineTraj traj;
             traj.disc_traj_ = dummy_traj;
@@ -192,6 +192,8 @@ namespace ps
                     }
                 }
             }
+
+            std::cout << "Generated trajectory sampled at length: " << traj.disc_traj_.size() << std::endl;
 
             return traj;
         }
