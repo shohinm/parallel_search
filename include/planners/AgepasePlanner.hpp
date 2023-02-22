@@ -25,7 +25,6 @@ class AgepasePlanner : public GepasePlanner
 
         std::vector<EdgePtrType> edge_incon_list_;
         double time_budget_;
-        bool wait_;
 };
 
 }

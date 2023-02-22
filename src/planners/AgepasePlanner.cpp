@@ -91,7 +91,6 @@ void AgepasePlanner::initialize()
 {
     GepasePlanner::initialize();
     edge_incon_list_.clear();
-    wait_ = false;
 }
 
 void AgepasePlanner::improvePath() 
