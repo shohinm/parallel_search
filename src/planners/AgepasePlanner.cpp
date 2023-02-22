@@ -53,29 +53,8 @@ bool AgepasePlanner::Plan()
             edge_open_list_.push(*it_edge);
         }
         edge_incon_list_.clear();
-        // EdgeQueueMinType edge_open_list;
-        // cout << "wtf \n";
-        // getchar();
-        // cout << "Original Eopen size: " << edge_open_list_.size() << endl;
-        // for(auto it_edge = edge_open_list_.begin(); it_edge != edge_open_list_.end(); it_edge++)
-        // {
-        //     // cout << "SFDJKHFKJDNFKJDSHFN" << endl;
-        //     // Pruning actual edge
-        //     if ((*it_edge) == NULL)
-        //     {
-        //         cout << "Pushing NULL !!\n";
-        //         cin.get();
-        //     }
-        //     if ((*it_edge)->action_ptr_ != dummy_action_ptr_)
-        //         continue;
-        //     // Recompute the f-value/priority of the state/edge
-        //     auto temp_state_ptr = (*it_edge)->parent_state_ptr_;
-        //     temp_state_ptr->SetFValue(temp_state_ptr->GetGValue() + heuristic_w_*temp_state_ptr->GetHValue());
-        //     (*it_edge)->expansion_priority_ = temp_state_ptr->GetGValue() + heuristic_w_*temp_state_ptr->GetHValue();
-        //     edge_open_list.push(*it_edge);
-        // }
-        // vector<EdgePtrType> edge_open_list;
-        EdgePtrMapType edge_map_temp;
+        
+        EdgeQueueMinType edge_open_list;
         while (!edge_open_list_.empty())
         {
             auto edge = edge_open_list_.min();
@@ -91,16 +70,44 @@ bool AgepasePlanner::Plan()
                 edge = edge_map_.find(edge_key)->second;
             }
 
-            edge_map_temp[getEdgeKey(edge)] = edge;
+            if (edge_open_list.contains(edge))
+            {
+                edge_open_list.decrease(edge);
+            }
+            else
+            {
+                edge_open_list.push(edge);
+            }
         }
+        edge_open_list_ = move(edge_open_list);
+       
 
-        for(auto [k, v] : edge_map_temp)
-        {
-            edge_open_list_.push(v);
-        }
-        // edge_open_list_ = move(edge_open_list);
-        // cout << "New Eopen size: " << edge_open_list_.size() << endl;
-        // getchar();
+        // EdgePtrMapType edge_map_temp;
+        // while (!edge_open_list_.empty())
+        // {
+        //     auto edge = edge_open_list_.min();
+        //     edge_open_list_.pop();
+
+        //     edge->parent_state_ptr_->SetFValue(edge->parent_state_ptr_->GetGValue() + heuristic_w_*edge->parent_state_ptr_->GetHValue());
+        //     edge->expansion_priority_ = edge->parent_state_ptr_->GetFValue();
+            
+        //     if (edge->action_ptr_ != dummy_action_ptr_)
+        //     {
+        //         auto edge_temp = Edge(edge->parent_state_ptr_, dummy_action_ptr_);
+        //         auto edge_key = getEdgeKey(&edge_temp);
+        //         edge = edge_map_.find(edge_key)->second;
+        //     }
+
+        //     edge_map_temp[getEdgeKey(edge)] = edge;
+        // }
+
+        // for(auto [k, v] : edge_map_temp)
+        // {
+        //     edge_open_list_.push(v);
+        // }
+
+
+
     }
     terminate_ = true;
     // Reset heuristic weight & time budget
