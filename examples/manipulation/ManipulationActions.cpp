@@ -43,16 +43,21 @@ namespace ps
                                          std::string& mj_modelpath,
                                          VecDf ang_discretization,
                                          OptVecPtrType& opt,
+                                         MjModelVecType& m_vec, MjDataVecType& d_vec,
                                          int num_threads,
                                          bool is_expensive) : InsatAction(type, params, is_expensive),
                                                           discretization_(ang_discretization),
-                                                          opt_(opt)
+                                                          opt_(opt), m_(m_vec), d_(d_vec)
   {
 
     for (int i=0; i<num_threads; ++i)
     {
-      m_.emplace_back(mj_loadXML(mj_modelpath.c_str(), nullptr, nullptr, 0));
-      d_.emplace_back(mj_makeData(m_[i]));
+      mjModel* mod = mj_loadXML(mj_modelpath.c_str(), nullptr, nullptr, 0);
+      mjData* dat = mj_makeData(mod);
+      m_.push_back(mod);
+      d_.push_back(dat);
+//      m_.emplace_back(std::make_shared<mjModel>());
+//      d_.emplace_back(mj_makeData(m_[i]));
     }
 
     // Caching discrete angles per DOF in the range -M_PI to M_PI

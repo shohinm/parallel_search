@@ -117,11 +117,16 @@ size_t EdgeKeyGenerator(const EdgePtrType& edge_ptr)
 void constructActions(vector<shared_ptr<Action>>& action_ptrs,
                       ParamsType& action_params, std::string& mj_modelpath,
                       VecDf& ang_discretization,
-                      ManipulationAction::OptVecPtrType& opt, int num_threads)
+                      ManipulationAction::OptVecPtrType& opt,
+                      ManipulationAction::MjModelVecType m_vec,
+                      ManipulationAction::MjDataVecType d_vec,
+                      int num_threads)
 {
+
+
     for (int i=0; i<=dof; ++i)
     {
-        auto one_joint_action = std::make_shared<OneJointAtATime>(std::to_string(i), action_params, mj_modelpath, ang_discretization, opt, goal, num_threads);
+        auto one_joint_action = std::make_shared<OneJointAtATime>(std::to_string(i), action_params, mj_modelpath, ang_discretization, opt, m_vec, d_vec, goal, num_threads);
         action_ptrs.emplace_back(one_joint_action);
     }
 }
@@ -140,7 +145,7 @@ void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vec
     planner_ptr->SetEdgeKeyGenerator(bind(EdgeKeyGenerator, placeholders::_1));
     planner_ptr->SetHeuristicGenerator(bind(computeHeuristic, placeholders::_1));
     planner_ptr->SetStateToStateHeuristicGenerator(bind(computeHeuristicStateToState, placeholders::_1, placeholders::_2));
-    planner_ptr->SetGoalChecker(bind(isGoalState, placeholders::_1, action_params["length"]));
+    planner_ptr->SetGoalChecker(bind(isGoalState, placeholders::_1, 2.0));
 }
 
 std::random_device rd;
@@ -186,6 +191,24 @@ void generateStartsAndGoals(vector<vector<double>>& starts, vector<vector<double
     }
 }
 
+void setupMujoco(mjModel **m, mjData **d, std::string modelpath)
+{
+    *m = nullptr;
+    if (std::strlen(modelpath.c_str()) > 4 && !strcmp(modelpath.c_str() + std::strlen(modelpath.c_str()) - 4, ".mjb"))
+    {
+        *m = mj_loadModel(modelpath.c_str(), nullptr);
+    }
+    else
+    {
+        *m = mj_loadXML(modelpath.c_str(), nullptr, nullptr, 0);
+    }
+    if (!m)
+    {
+        mju_error("Cannot load the model");
+    }
+    *d = mj_makeData(*m);
+}
+
 //int main(int argc, char* argv[])
 int main()
 {
@@ -214,20 +237,23 @@ int main()
     /// Load MuJoCo model
     std::string modelpath = "/home/gaussian/cmu_ri_phd/phd_research/parallel_search/third_party/mujoco-2.3.2/model/abb/irb_1600/irb1600_6_12.xml";
     mjModel *m = nullptr;
-    if (std::strlen(modelpath.c_str()) > 4 && !strcmp(modelpath.c_str() + std::strlen(modelpath.c_str()) - 4, ".mjb"))
-    {
-        m = mj_loadModel(modelpath.c_str(), nullptr);
-    }
-    else
-    {
-        m = mj_loadXML(modelpath.c_str(), nullptr, nullptr, 0);
-    }
-    if (!m)
-    {
-        mju_error("Cannot load the model");
-    }
-    mjData* d = mj_makeData(m);
+    mjData *d = nullptr;
+
+    setupMujoco(&m,&d,modelpath);
     dof = m->nq;
+
+    ManipulationAction::MjModelVecType m_vec;
+    ManipulationAction::MjDataVecType d_vec;
+
+    for (int i=0; i<num_threads; ++i)
+    {
+        mjModel* act_m= nullptr;
+        mjData * act_d= nullptr;
+        setupMujoco(&act_m, &act_d, modelpath);
+        m_vec.push_back(act_m);
+        d_vec.push_back(act_d);
+    }
+
 
     // Experiment parameters
     int num_runs = 50;
@@ -269,7 +295,7 @@ int main()
         // Construct actions
         ParamsType action_params;
         vector<shared_ptr<Action>> action_ptrs;
-        constructActions(action_ptrs, action_params, modelpath, discretization, opt_vec_ptr, num_threads);
+        constructActions(action_ptrs, action_params, modelpath, discretization, opt_vec_ptr, m_vec, d_vec, num_threads);
 
         // Construct planner
         shared_ptr<Planner> planner_ptr;

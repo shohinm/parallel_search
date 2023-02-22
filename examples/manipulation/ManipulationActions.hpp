@@ -58,12 +58,15 @@ namespace ps
     /// Mujoco
     typedef std::vector<mjModel*> MjModelVecType;
     typedef std::vector<mjData*> MjDataVecType;
+//    typedef std::vector<std::shared_ptr<mjModel>> MjModelVecType;
+//    typedef std::vector<std::shared_ptr<mjData>> MjDataVecType;
 
     ManipulationAction(const std::string& type,
                      ParamsType params,
                      std::string& mj_modelpath,
                      VecDf ang_discretization,
                      OptVecPtrType& opt,
+                     MjModelVecType& m_vec, MjDataVecType& d_vec,
                      int num_threads=1,
                      bool is_expensive = true);
 
@@ -122,6 +125,7 @@ namespace ps
                     std::string& mj_modelpath,
                     VecDf ang_discretization,
                     OptVecPtrType opt,
+                    MjModelVecType& m_vec, MjDataVecType& d_vec,
                     StateVarsType& goal,
                     int num_threads=1,
                     bool is_expensive = true):
@@ -129,7 +133,7 @@ namespace ps
                                params,
                                mj_modelpath,
                                ang_discretization,
-                               opt,
+                               opt, m_vec, d_vec,
                                num_threads,
                                is_expensive)
     {
