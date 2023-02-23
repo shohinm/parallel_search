@@ -58,7 +58,7 @@ void RrtConnectPlanner::rrtThread(int thread_id)
 
         if (start_goal_flag_[thread_id] == 0)
         {
-            auto sampled_state = sampleState(start_state_ptr_);
+            auto sampled_state = sampleState(start_state_ptr_, thread_id);
             auto nearest_neighbor = getNearestNeighbor(sampled_state, state_map_);
             state_ptr = extend(nearest_neighbor, sampled_state, is_collision, state_map_, thread_id);
             addEdge(nearest_neighbor, state_ptr, edge_map_);
@@ -73,7 +73,7 @@ void RrtConnectPlanner::rrtThread(int thread_id)
         }
         else
         {
-            auto sampled_state = sampleState(goal_state_ptr_);
+            auto sampled_state = sampleState(goal_state_ptr_, thread_id);
             auto nearest_neighbor = getNearestNeighbor(sampled_state, state_map_goal_);
             state_ptr = extend(nearest_neighbor, sampled_state, is_collision, state_map_goal_, thread_id);            
             addEdge(nearest_neighbor, state_ptr, edge_map_goal_);

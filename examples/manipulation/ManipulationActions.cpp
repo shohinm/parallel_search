@@ -67,6 +67,10 @@ namespace ps
       int num_angles = 1+(2*static_cast<int>(M_PI/discretization_(i)));
       discrete_angles_[i] = VecDf::LinSpaced(num_angles, -ang_lim, ang_lim);
     }
+
+    joint_limits_ = getJointLimits(0);
+    gen_ = std::mt19937(1);
+
   }
 
   bool ManipulationAction::CheckPreconditions(StateVarsType state)
@@ -230,6 +234,41 @@ namespace ps
       free_state = interp;
     }
     return coll_free;
+  }
+
+  double getRandomNumberBetween(double min, double max, std::mt19937& gen)
+  {
+      std::uniform_real_distribution<double> distr(min, max);
+      return distr(gen);
+  }
+
+  StateVarsType ManipulationAction::SampleFeasibleState(int thread_id)
+  {
+    std::vector<double> sampled_joints(m_[thread_id]->njnt);
+    bool is_feasible = false;
+    while (!is_feasible)
+    {
+
+      for (int i=0; i<m_[thread_id]->njnt; ++i)
+      {
+        sampled_joints[i] = getRandomNumberBetween(joint_limits_[i].first, joint_limits_[i].second, gen_);
+      }
+
+      is_feasible = validateJointLimits(sampled_joints, thread_id);
+    }
+
+    return sampled_joints;
+
+  }
+
+  std::vector<std::pair<double, double>> ManipulationAction::getJointLimits(int thread_id) const
+  {
+    std::vector<std::pair<double, double>> joint_limits(m_[thread_id]->njnt);
+    for (int i=0; i<m_[thread_id]->njnt; ++i)
+    {
+      joint_limits[i] = std::make_pair(m_[thread_id]->jnt_range[2*i], m_[thread_id]->jnt_range[2*i+1]);
+    }
+    return joint_limits;
   }
 
   bool ManipulationAction::validateJointLimits(const VecDf &state, int thread_id) const

@@ -108,7 +108,7 @@ void RrtPlanner::rrtThread(int thread_id)
 {
     while (!terminate_)
     {
-        auto sampled_state = sampleState(goal_state_ptr_);
+        auto sampled_state = sampleState(goal_state_ptr_, thread_id);
         auto nearest_neighbor = getNearestNeighbor(sampled_state, state_map_);
         bool is_collision;
         auto state_ptr = extend(nearest_neighbor, sampled_state, is_collision, state_map_, thread_id);
@@ -132,12 +132,12 @@ double RrtPlanner::getRandomNumberBetween(double min, double max)
     return distr(gen);
 }
 
-StateVarsType RrtPlanner::sampleSateUniform()
+StateVarsType RrtPlanner::sampleFeasibleState(int thread_id)
 {
-
+    return actions_ptrs_[0]->SampleFeasibleState(thread_id);
 }
 
-StateVarsType RrtPlanner::sampleState(StatePtrType goal_state_ptr)
+StateVarsType RrtPlanner::sampleState(StatePtrType goal_state_ptr, int thread_id)
 {
     double r = getRandomNumberBetween(0,1);
 
@@ -148,7 +148,7 @@ StateVarsType RrtPlanner::sampleState(StatePtrType goal_state_ptr)
     }
     else
     {           
-        sampled_state = sampleSateUniform();
+        sampled_state = sampleFeasibleState(thread_id);
     }
 
     return sampled_state;

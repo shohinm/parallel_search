@@ -22,8 +22,8 @@ class RrtPlanner : public Planner
         EdgePtrType addEdge(StatePtrType parent_state, StatePtrType child_state, EdgePtrMapType& edge_map);
         void rrtThread(int thread_id);
         double getRandomNumberBetween(double min, double max);
-        StateVarsType sampleSateUniform();
-        StateVarsType sampleState(StatePtrType goal_state_ptr);
+        StateVarsType sampleFeasibleState(int thread_id);
+        StateVarsType sampleState(StatePtrType goal_state_ptr, int thread_id);
         double wrapAngle(double angle);
         double angleDifference(double angle1, double angle2);
         double calculateDistance(const StateVarsType& state_1, const StateVarsType& state_2);

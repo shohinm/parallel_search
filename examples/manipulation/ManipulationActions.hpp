@@ -35,6 +35,7 @@
 #ifndef MANIPULATIONACTIONS_HPP
 #define MANIPULATIONACTIONS_HPP
 
+#include <random>
 #include <common/Types.hpp>
 #include <common/insat/InsatAction.hpp>
 #include "planners/insat/opt/BSplineOpt.hpp"
@@ -86,7 +87,9 @@ namespace ps
     bool isCollisionFree(const VecDf& curr,
                          const VecDf& succ,
                          VecDf& free_state, int thread_id) const; /// Edge collision check and return the last free state
+    StateVarsType SampleFeasibleState(int thread_id);
     bool validateJointLimits(const VecDf& state, int thread_id) const;
+    std::vector<std::pair<double,double>> getJointLimits(int thread_id) const;
     bool validateJointLimits(const StateVarsType& state_vars, int thread_id) const;
     double getCostToSuccessor(const VecDf& current_state, const VecDf& successor_state, int thread_id);
 
@@ -114,6 +117,8 @@ namespace ps
     MjModelVecType m_;
     MjDataVecType d_;
 
+    std::vector<std::pair<double, double>> joint_limits_;
+    std::mt19937 gen_;
   };
 
   class OneJointAtATime : public ManipulationAction
