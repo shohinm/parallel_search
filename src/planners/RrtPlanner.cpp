@@ -151,13 +151,18 @@ void RrtPlanner::rrtThread(int thread_id)
         
         min_d = (dist_to_goal < min_d) ? dist_to_goal : min_d;
 
-        if ((!terminate_) && (dist_to_goal < planner_params_["termination_distance"]))
+        if ((dist_to_goal < planner_params_["termination_distance"]))
         {            
             // Reconstruct and return path
-            if (VERBOSE) state_ptr->Print("Goal reached | State: ");
-            constructPlan(state_ptr);   
-            terminate_ = true;
-            plan_found_ = true;
+            lock_.lock();
+            if (!terminate_)
+            {
+                if (VERBOSE) state_ptr->Print("Goal reached | State: ");
+                constructPlan(state_ptr);   
+                terminate_ = true;
+                plan_found_ = true;                
+            }
+            lock_.unlock();
             return;
         }        
     }

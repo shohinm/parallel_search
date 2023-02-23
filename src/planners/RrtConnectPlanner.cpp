@@ -97,13 +97,18 @@ void RrtConnectPlanner::rrtThread(int thread_id)
             state_ptr->SetIncomingEdgePtr(edge);
 
             StatePtrType connected_state;
-            if ((!terminate_) && connect(state_ptr, state_map_goal_, edge_map_, thread_id, connected_state))
+            if (connect(state_ptr, state_map_goal_, edge_map_, thread_id, connected_state))
             {            
                 // Reconstruct and return path
-                if (VERBOSE) cout << "Connect succeeded from start_graph to goal_graph" << endl;
-                constructPlan(state_ptr, connected_state);   
-                terminate_ = true;
-                plan_found_ = true;
+                lock_.lock();
+                if (!terminate_)
+                {
+                     if (VERBOSE) cout << "Connect succeeded from start_graph to goal_graph" << endl;
+                    constructPlan(state_ptr, connected_state);   
+                    terminate_ = true;
+                    plan_found_ = true;
+                }
+                lock_.unlock();                    
                 return;
             }
         }
@@ -117,13 +122,18 @@ void RrtConnectPlanner::rrtThread(int thread_id)
             state_ptr->SetIncomingEdgePtr(edge);
 
             StatePtrType connected_state;
-            if ((!terminate_) && connect(state_ptr, state_map_, edge_map_goal_, thread_id, connected_state))
+            if (connect(state_ptr, state_map_, edge_map_goal_, thread_id, connected_state))
             {            
                 // Reconstruct and return path
-                if (VERBOSE) cout << "Connect succeeded from goal_graph to start_graph" << endl;
-                constructPlan(connected_state, state_ptr);   
-                terminate_ = true;
-                plan_found_ = true;
+                lock_.lock();
+                if (!terminate_)
+                {
+                    if (VERBOSE) cout << "Connect succeeded from goal_graph to start_graph" << endl;
+                    constructPlan(connected_state, state_ptr);   
+                    terminate_ = true;
+                    plan_found_ = true;
+                }
+                lock_.unlock();                    
                 return;
             }
         }
