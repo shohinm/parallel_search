@@ -158,7 +158,8 @@ void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vec
 }
 
 std::random_device rd;
-std::mt19937 gen(rd());  //here you could set the seed, but std::random_device already does that
+//std::mt19937 gen(rd());
+std::mt19937 gen(0);  //here you could set the seed, but std::random_device already does that
 std::uniform_real_distribution<float> dis(-1.0, 1.0);
 VecDf genRandomVector(VecDf& low, VecDf& high, int size)
 {
@@ -188,6 +189,11 @@ void generateStartsAndGoals(vector<vector<double>>& starts, vector<vector<double
     {
         VecDf st = genRandomVector(lo, hi, dof);
         VecDf go = genRandomVector(lo, hi, dof);
+        for (int i=0; i<dof; ++i)
+        {
+            st(i) = angles::normalize_angle(st(i));
+            go(i) = angles::normalize_angle(go(i));
+        }
 
         std::vector<double> v_st, v_go;
         v_st.resize(dof);
@@ -301,6 +307,17 @@ int main()
         goal.clear();
         goal = goals[run];
 
+        // print start and goal
+        std::cout << "start: ";
+        for (double i: starts[run])
+            std::cout << i << ' ';
+        std::cout << std::endl;
+        std::cout << "goal: ";
+        for (double i: goals[run])
+            std::cout << i << ' ';
+        std::cout << std::endl;
+
+
         // create opt
         auto opt = BSplineOpt(insat_params, robot_params, spline_params);
         std::vector<BSplineOpt> opt_vec(num_threads, opt);
@@ -396,7 +413,7 @@ int main()
         cout << endl << "------------- Mean jobs per thread -------------" << endl;
         for (int tidx = 0; tidx < planner_params["num_threads"]; ++tidx)
         {
-            cout << "thread: " << tidx << " jobs: " << jobs_per_thread[tidx]/num_success << endl;
+            cout << "thread: " << tidx << " jobs: " << jobs_per_thread[tidx]/(num_success+1) << endl;
         }
         cout << "************************" << endl;
 
