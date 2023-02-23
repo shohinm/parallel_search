@@ -40,6 +40,8 @@
 #include <boost/functional/hash.hpp>
 #include <planners/insat/InsatPlanner.hpp>
 #include <planners/insat/PinsatPlanner.hpp>
+#include <planners/RrtPlanner.hpp>
+#include <planners/RrtConnectPlanner.hpp>
 #include "ManipulationActions.hpp"
 #include <mujoco/mujoco.h>
 #include <planners/insat/opt/BSplineOpt.hpp>
@@ -146,6 +148,10 @@ void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vec
         planner_ptr = std::make_shared<InsatPlanner>(planner_params);
     else if (planner_name == "pinsat")
         planner_ptr = std::make_shared<PinsatPlanner>(planner_params);
+    else if (planner_name == "rrt")
+        planner_ptr = std::make_shared<RrtPlanner>(planner_params);
+    else if (planner_name == "rrtconnect")
+        planner_ptr = std::make_shared<RrtConnectPlanner>(planner_params);
     else
         throw runtime_error("Planner type not identified!");
 
@@ -218,7 +224,7 @@ void setupMujoco(mjModel **m, mjData **d, std::string modelpath)
     *d = mj_makeData(*m);
 }
 
-int main(int argc, char* argv[])
+ int main(int argc, char* argv[])
 {
     int num_threads;
 
@@ -293,22 +299,23 @@ int main(int argc, char* argv[])
     vector<int> all_maps_num_edges_vec;
     unordered_map<string, vector<double>> all_action_eval_times;
 
+    // create opt
+    auto opt = BSplineOpt(insat_params, robot_params, spline_params);
+    std::vector<BSplineOpt> opt_vec(num_threads, opt);
+    auto opt_vec_ptr = std::make_shared<ManipulationAction::OptVecType>(opt_vec);
+
+    // Construct actions
+    ParamsType action_params;
+    vector<shared_ptr<Action>> action_ptrs;
+    constructActions(action_ptrs, action_params, modelpath, discretization, opt_vec_ptr, m_vec, d_vec, num_threads);
+
+
+    int num_success = 0;
     for (int run = 0; run < num_runs; ++run)
     {
-        int start_goal_idx = 0;
         // Set goal conditions
-        goal.clear();
         goal = goals[run];
-
-        // create opt
-        auto opt = BSplineOpt(insat_params, robot_params, spline_params);
-        std::vector<BSplineOpt> opt_vec(num_threads, opt);
-        auto opt_vec_ptr = std::make_shared<ManipulationAction::OptVecType>(opt_vec);
-
-        // Construct actions
-        ParamsType action_params;
-        vector<shared_ptr<Action>> action_ptrs;
-        constructActions(action_ptrs, action_params, modelpath, discretization, opt_vec_ptr, m_vec, d_vec, num_threads);
+        auto start = starts[run];
 
         // Construct planner
         shared_ptr<Planner> planner_ptr;
@@ -327,14 +334,11 @@ int main(int argc, char* argv[])
              << endl;
         cout <<  "---------------------------------------------------" << endl;
 
-        int num_success = 0;
         cout << "Experiment: " << run << endl;
 
-//            if (start_goal_idx >= starts.size())
-//                start_goal_idx = 0;
-
         // Set start state
-        planner_ptr->SetStartState(starts[start_goal_idx]);
+        planner_ptr->SetStartState(start);
+        // planner_ptr->SetGoalState(goal);
 
 
         double t=0, cost=0;
@@ -376,38 +380,43 @@ int main(int argc, char* argv[])
                 jobs_per_thread[tidx] += planner_stats.num_jobs_per_thread_[tidx];
 
             num_success++;
+    
+            cout << endl << "************************" << endl;
+            cout << "Number of runs: " << num_runs << endl;
+            cout << "Mean time: " << accumulate(time_vec.begin(), time_vec.end(), 0.0)/time_vec.size() << endl;
+            cout << "Mean cost: " << accumulate(cost_vec.begin(), cost_vec.end(), 0.0)/cost_vec.size() << endl;
+            cout << "Mean threads used: " << accumulate(threads_used_vec.begin(), threads_used_vec.end(), 0.0)/threads_used_vec.size() << "/" << planner_params["num_threads"] << endl;
+            cout << "Mean evaluated edges: " << roundOff(accumulate(num_edges_vec.begin(), num_edges_vec.end(), 0.0)/double(num_edges_vec.size()), 2) << endl;
+            cout << endl << "------------- Mean jobs per thread -------------" << endl;
+            for (int tidx = 0; tidx < planner_params["num_threads"]; ++tidx)
+            {
+                cout << "thread: " << tidx << " jobs: " << jobs_per_thread[tidx]/num_success << endl;
+            }
+            cout << "************************" << endl;
+
+            cout << endl << "------------- Mean action eval times -------------" << endl;
+            for (auto [action, times] : action_eval_times)
+            {
+                cout << action << ": " << accumulate(times.begin(), times.end(), 0.0)/times.size() << endl;
+            }
+            cout << "************************" << endl;
+    
+            if (visualize_plan)
+            {
+            }
+    
         }
         else
+        {
             cout << " | Plan not found!" << endl;
-
-        ++start_goal_idx;
-
-        if (visualize_plan)
-        {
         }
 
-        cout << endl << "************************" << endl;
-        cout << "Number of runs: " << num_runs << endl;
-        cout << "Mean time: " << accumulate(time_vec.begin(), time_vec.end(), 0.0)/time_vec.size() << endl;
-        cout << "Mean cost: " << accumulate(cost_vec.begin(), cost_vec.end(), 0.0)/cost_vec.size() << endl;
-        cout << "Mean threads used: " << accumulate(threads_used_vec.begin(), threads_used_vec.end(), 0.0)/threads_used_vec.size() << "/" << planner_params["num_threads"] << endl;
-        cout << "Mean evaluated edges: " << roundOff(accumulate(num_edges_vec.begin(), num_edges_vec.end(), 0.0)/double(num_edges_vec.size()), 2) << endl;
-        cout << endl << "------------- Mean jobs per thread -------------" << endl;
-        for (int tidx = 0; tidx < planner_params["num_threads"]; ++tidx)
-        {
-            cout << "thread: " << tidx << " jobs: " << jobs_per_thread[tidx]/num_success << endl;
-        }
-        cout << "************************" << endl;
 
-        cout << endl << "------------- Mean action eval times -------------" << endl;
-        for (auto [action, times] : action_eval_times)
-        {
-            cout << action << ": " << accumulate(times.begin(), times.end(), 0.0)/times.size() << endl;
-        }
-        cout << "************************" << endl;
+
     }
 
     cout << endl << "************ Global Stats ************" << endl;
+    cout << "Success rate: " << double(num_success)/num_runs << endl;
     cout << "Mean time: " << accumulate(all_maps_time_vec.begin(), all_maps_time_vec.end(), 0.0)/all_maps_time_vec.size() << endl;
     cout << "Mean cost: " << accumulate(all_maps_cost_vec.begin(), all_maps_cost_vec.end(), 0.0)/all_maps_cost_vec.size() << endl;
     cout << "Mean evaluated edges: " << roundOff(accumulate(all_maps_num_edges_vec.begin(), all_maps_num_edges_vec.end(), 0.0)/double(all_maps_num_edges_vec.size()), 2) << endl;
