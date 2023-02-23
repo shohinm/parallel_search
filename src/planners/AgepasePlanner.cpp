@@ -19,10 +19,10 @@ AgepasePlanner::~AgepasePlanner()
 
 bool AgepasePlanner::Plan()
 {
-    initialize();    
+    initialize();
+    auto t_start = chrono::steady_clock::now();
     double heuristic_w = heuristic_w_;
     double time_budget = time_budget_;
-    auto t_start = chrono::steady_clock::now();
     while (heuristic_w_>=1 && time_budget_>0) {
         terminate_ = false;
 
