@@ -390,8 +390,8 @@ void runBVPTest(std::vector<double>& time_log, bool save=false, int test_size=1)
 
                 starts.conservativeResize(starts.rows()+1, insat_params.lowD_dims_);
                 goals.conservativeResize(goals.rows()+1, insat_params.lowD_dims_);
-                starts.bottomRows(1) = r1;
-                goals.bottomRows(1) = r2;
+                starts.bottomRows(1) = r1.transpose();
+                goals.bottomRows(1) = r2.transpose();
 
                 all_traj.conservativeResize(insat_params.lowD_dims_, all_traj.cols()+traj.cols());
                 all_traj.rightCols(traj.cols()) = traj;
