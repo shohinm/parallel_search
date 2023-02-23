@@ -94,13 +94,21 @@ namespace ps
             {
                 int r = opt.control_points().rows();
                 int c = opt.control_points().cols();
-                MatDf control_matix(r, c);
-                control_matix << control_vec;
+//                MatDf control_matix(r, c);
+//                control_matrix << control_vec;
+                MatDf control_matrix(r,c);
+                for (int i=0; i<r; ++i)
+                {
+                    for (int j=0; j<c; ++j)
+                    {
+                        control_matrix(i,j) = control_vec(i*r+j);
+                    }
+                }
 
                 std::vector<MatDf> control_points;
-                for (int i=0; i<control_matix.cols(); ++i)
+                for (int i=0; i<control_matrix.cols(); ++i)
                 {
-                    control_points.emplace_back(control_matix.col(i));
+                    control_points.emplace_back(control_matrix.col(i));
                 }
 
                 BSplineTraj::TrajInstanceType traj = BSplineTraj::TrajInstanceType(opt.basis(), control_points);
@@ -165,38 +173,55 @@ namespace ps
 
             if (traj1.result_.is_success())
             {
-                opt.SetInitialGuess(opt.ReconstructTrajectory(traj1.result_));
+//                opt.SetInitialGuess(opt.ReconstructTrajectory(traj1.result_));
+                opt.SetInitialGuess(traj1.traj_);
             }
 
             /// Solve
             BSplineTraj traj;
             traj.result_ = drake::solvers::Solve(prog);
-            traj.traj_ = opt.ReconstructTrajectory(traj1.result_);
 
-            auto disc_traj = sampleTrajectory(traj);
-            if (act->isFeasible(disc_traj))
+            if (traj.result_.is_success())
             {
-                traj.disc_traj_ = disc_traj;
-            }
-            else
-            {
-                std::vector<BSplineTraj::TrajInstanceType> traj_trace = optimizeWithCallback(opt, prog);
-                for (int i=traj_trace.size()-1; i>=0; --i)
+                traj.traj_ = opt.ReconstructTrajectory(traj.result_);
+
+                auto disc_traj = sampleTrajectory(traj);
+                if (act->isFeasible(disc_traj))
                 {
-                    auto samp_traj = sampleTrajectory(traj_trace[i]);
-                    if (act->isFeasible(samp_traj))
+                    traj.disc_traj_ = disc_traj;
+                }
+                else
+                {
+                    std::vector<BSplineTraj::TrajInstanceType> traj_trace = optimizeWithCallback(opt, prog);
+                    for (int i=traj_trace.size()-1; i>=0; --i)
                     {
-                        traj.traj_ = traj_trace[i];
-                        traj.disc_traj_ = samp_traj;
-                        break;
+                        auto samp_traj = sampleTrajectory(traj_trace[i]);
+                        if (act->isFeasible(samp_traj))
+                        {
+                            traj.traj_ = traj_trace[i];
+                            traj.disc_traj_ = samp_traj;
+                            break;
+                        }
                     }
                 }
             }
 
-            std::cout << "Generated trajectory sampled at length: " << traj.disc_traj_.size() << std::endl;
+//            std::cout << "Generated trajectory sampled at length: " << traj.disc_traj_.size() << std::endl;
 
             return traj;
         }
+
+        BSplineTraj warmOptimize(const InsatAction* act, const TrajType& traj)
+        {
+            assert(traj.disc_traj_.cols() >= 2);
+
+            TrajType t1, t2;
+            t1.disc_traj_ = traj.disc_traj_.leftCols(1);
+            t2.disc_traj_ = traj.disc_traj_.rightCols(1);
+
+            return warmOptimize(act, t1, t2);
+        }
+
 
         virtual double calculateCost(const TrajType& traj)
         {
