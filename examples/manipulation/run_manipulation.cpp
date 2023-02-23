@@ -154,7 +154,7 @@ void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vec
     planner_ptr->SetEdgeKeyGenerator(bind(EdgeKeyGenerator, placeholders::_1));
     planner_ptr->SetHeuristicGenerator(bind(computeHeuristic, placeholders::_1));
     planner_ptr->SetStateToStateHeuristicGenerator(bind(computeHeuristicStateToState, placeholders::_1, placeholders::_2));
-    planner_ptr->SetGoalChecker(bind(isGoalState, placeholders::_1, 2.0));
+    planner_ptr->SetGoalChecker(bind(isGoalState, placeholders::_1, 3.0));
 }
 
 std::random_device rd;
