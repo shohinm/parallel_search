@@ -17,7 +17,8 @@ class RrtConnectPlanner : public RrtPlanner
 
     protected:
         void initialize();
-        bool connect(StatePtrType state_ptr, StatePtrMapType& state_map, EdgePtrMapType& edge_map, int thread_id);
+        void constructPlan(StatePtrType& connected_state_start, StatePtrType& connected_state_goal);
+        bool connect(StatePtrType state_ptr, StatePtrMapType& state_map, EdgePtrMapType& edge_map, int thread_id, StatePtrType& connected_state);
         void rrtThread(int thread_id);
         void exit();
     

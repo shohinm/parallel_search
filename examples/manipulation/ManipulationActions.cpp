@@ -66,6 +66,10 @@ namespace ps
       int num_angles = 1+(2*static_cast<int>(M_PI/discretization_(i)));
       discrete_angles_[i] = VecDf::LinSpaced(num_angles, -ang_lim, ang_lim);
     }
+
+    joint_limits_ = getJointLimits(0);
+    gen_ = std::mt19937(1);
+
   }
 
   bool ManipulationAction::CheckPreconditions(StateVarsType state)
@@ -184,7 +188,7 @@ namespace ps
     return empty;
   }
 
-  bool ManipulationAction::isFeasible(const StateVarsType& state_vars, int thread_id)
+  bool ManipulationAction::IsFeasible(const StateVarsType& state_vars, int thread_id)
   {
     return isCollisionFree(state_vars, thread_id);
   }
@@ -231,6 +235,41 @@ namespace ps
     return coll_free;
   }
 
+  double getRandomNumberBetween(double min, double max, std::mt19937& gen)
+  {
+      std::uniform_real_distribution<double> distr(min, max);
+      return distr(gen);
+  }
+
+  StateVarsType ManipulationAction::SampleFeasibleState(int thread_id)
+  {
+    std::vector<double> sampled_joints(m_[thread_id]->njnt);
+    bool is_feasible = false;
+    while (!is_feasible)
+    {
+
+      for (int i=0; i<m_[thread_id]->njnt; ++i)
+      {
+        sampled_joints[i] = getRandomNumberBetween(joint_limits_[i].first, joint_limits_[i].second, gen_);
+      }
+
+      is_feasible = validateJointLimits(sampled_joints, thread_id);
+    }
+
+    return sampled_joints;
+
+  }
+
+  std::vector<std::pair<double, double>> ManipulationAction::getJointLimits(int thread_id) const
+  {
+    std::vector<std::pair<double, double>> joint_limits(m_[thread_id]->njnt);
+    for (int i=0; i<m_[thread_id]->njnt; ++i)
+    {
+      joint_limits[i] = std::make_pair(m_[thread_id]->jnt_range[2*i], m_[thread_id]->jnt_range[2*i+1]);
+    }
+    return joint_limits;
+  }
+
   bool ManipulationAction::validateJointLimits(const VecDf &state, int thread_id) const
   {
     bool valid = true;
@@ -250,6 +289,14 @@ namespace ps
   {
     Eigen::Map<const VecDf> state(&state_vars[0], state_vars.size());
     return validateJointLimits(state, thread_id);
+  }
+
+
+  double ManipulationAction::GetCostToSuccessor(const StateVarsType &current_state, const StateVarsType &successor_state, int thread_id)
+  {
+    Eigen::Map<const VecDf> current_state_eig(&current_state[0], current_state.size());
+    Eigen::Map<const VecDf> successor_state_eig(&successor_state[0], successor_state.size());
+    return getCostToSuccessor(current_state_eig, successor_state_eig, thread_id);
   }
 
   double ManipulationAction::getCostToSuccessor(const VecDf &current_state, const VecDf &successor_state, int thread_id)

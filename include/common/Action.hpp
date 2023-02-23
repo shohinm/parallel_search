@@ -17,6 +17,10 @@ public:
     virtual bool CheckPreconditions(StateVarsType state)=0; 
     virtual bool IsFeasible(const StateVarsType& state, int thread_id=0)
     {throw std::runtime_error("IsFeasible not implemented!");};
+    virtual StateVarsType SampleFeasibleState(int thread_id=0)
+    {throw std::runtime_error("SampleFeasibleState not implemented!");};
+    virtual double GetCostToSuccessor(const StateVarsType& current_state, const StateVarsType& successor_state, int thread_id)
+    {throw std::runtime_error("GetCostToSuccessor not implemented!");};
     virtual ActionSuccessor GetSuccessor(StateVarsType state_vars, int thread_id=0)=0; 
     virtual ActionSuccessor GetSuccessorLazy(StateVarsType state_vars, int thread_id=0)
     {throw std::runtime_error("GetSuccessorLazy not implemented!");};
