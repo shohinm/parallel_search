@@ -124,17 +124,6 @@ void constructActions(vector<shared_ptr<Action>>& action_ptrs,
                       ManipulationAction::MjDataVecType d_vec,
                       int num_threads)
 {
-//    OneJointAtATime(const std::string& type,
-//    ParamsType params,
-//    std::string& mj_modelpath,
-//    VecDf ang_discretization,
-//    OptVecPtrType opt,
-//    MjModelVecType& m_vec, MjDataVecType& d_vec,
-//            StateVarsType& goal,
-//            int num_threads=1,
-//            bool is_expensive = true):
-
-
     for (int i=0; i<=2*dof; ++i)
     {
         auto one_joint_action = std::make_shared<OneJointAtATime>(std::to_string(i), action_params, mj_modelpath, ang_discretization, opt, m_vec, d_vec, goal, num_threads);
