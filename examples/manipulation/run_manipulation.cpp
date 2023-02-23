@@ -317,10 +317,6 @@ int main(int argc, char* argv[])
     std::vector<BSplineOpt> opt_vec(num_threads, opt);
     auto opt_vec_ptr = std::make_shared<ManipulationAction::OptVecType>(opt_vec);
 
-    // Construct actions
-    ParamsType action_params;
-    vector<shared_ptr<Action>> action_ptrs;
-    constructActions(action_ptrs, action_params, modelpath, discretization, opt_vec_ptr, m_vec, d_vec, num_threads);
 
 
     int num_success = 0;
@@ -330,7 +326,7 @@ int main(int argc, char* argv[])
         goal = goals[run];
         auto start = starts[run];
         
-	// print start and goal
+	   // print start and goal
         std::cout << "start: ";
         for (double i: starts[run])
             std::cout << i << ' ';
@@ -339,6 +335,11 @@ int main(int argc, char* argv[])
         for (double i: goals[run])
             std::cout << i << ' ';
         std::cout << std::endl;
+
+        // Construct actions
+        ParamsType action_params;
+        vector<shared_ptr<Action>> action_ptrs;
+        constructActions(action_ptrs, action_params, modelpath, discretization, opt_vec_ptr, m_vec, d_vec, num_threads);
 
         // Construct planner
         shared_ptr<Planner> planner_ptr;
