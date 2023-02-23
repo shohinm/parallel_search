@@ -4,6 +4,7 @@ project (epase)
 add_compile_options(-std=c++17)
 
 list(APPEND CMAKE_PREFIX_PATH /opt/drake)
+list(APPEND CMAKE_PREFIX_PATH /opt/ros/noetic)
 set(MUJOCO_INCLUDE_DIR "/home/gaussian/cmu_ri_phd/phd_research/parallel_search/third_party/mujoco-2.3.2/include")
 set(MUJOCO_LIB_DIR "/home/gaussian/cmu_ri_phd/phd_research/parallel_search/third_party/mujoco-2.3.2/lib")
 
@@ -92,7 +93,7 @@ target_link_libraries(drake_test
 add_executable(domain_template
         examples/domain_template/domain_template.cpp
         examples/domain_template/ActionsTemplate.cpp
-        ${SOURCES} include/common/insat/InsatTypes.hpp)
+        ${SOURCES})
 
 target_link_libraries(domain_template
         ${drake_LIBRARIES}
