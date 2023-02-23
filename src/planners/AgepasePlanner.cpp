@@ -107,19 +107,9 @@ void AgepasePlanner::improvePath()
 
         while (!curr_edge_ptr && !terminate_)
         {
-            if (edge_open_list_.empty() && being_expanded_states_.empty())
+            if (goal_state_ptr_ != NULL)
             {
-                auto t_end = chrono::steady_clock::now();
-                double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
-                time_budget_ -= 1e-9*t_elapsed;
-                lock_.unlock();
-                exitMultiThread();
-                return;
-            }
-
-            if (!edge_open_list_.empty())
-            {
-                if (goal_state_ptr_ != NULL)
+                if (!edge_open_list_.empty())
                 {
                     // Terminate condition: no state in open/be has f-value < goal's g-value
                     if (goal_state_ptr_->GetFValue() < edge_open_list_.min()->expansion_priority_)
@@ -136,6 +126,29 @@ void AgepasePlanner::improvePath()
                         return;
                     }
                 }
+                else // Edge case: when open is empty but goal_state just got set
+                {
+                    // Construct path
+                    auto goal_state_ptr = goal_state_ptr_;
+                    plan_.clear();
+                    constructPlan(goal_state_ptr);
+                    auto t_end = chrono::steady_clock::now();
+                    double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
+                    time_budget_ -= 1e-9*t_elapsed;
+                    lock_.unlock();
+                    exitMultiThread();
+                    return;
+                }
+            }
+
+            if (edge_open_list_.empty() && being_expanded_states_.empty())
+            {
+                auto t_end = chrono::steady_clock::now();
+                double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
+                time_budget_ -= 1e-9*t_elapsed;
+                lock_.unlock();
+                exitMultiThread();
+                return;
             }
 
             while(!curr_edge_ptr && !edge_open_list_.empty())
