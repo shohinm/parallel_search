@@ -89,7 +89,7 @@ namespace ps
         StateVarsType succ;
         succ.resize(m_[thread_id]->nq);
         VecDf::Map(&succ[0], successor.size()) = successor;
-        double cost = getCostToSuccessor(state, successor);
+        double cost = getCostToSuccessor(state, successor, thread_id);
         return ActionSuccessor(true, {std::make_pair(succ, cost)});
     }
   }
@@ -147,9 +147,9 @@ namespace ps
             succ(j) = state(j) + mprims_(prim_id,j)*discretization_(j);
             succ(j) = angles::normalize_angle(succ(j));
         }
-        succ = contToDisc(succ);
+        succ = contToDisc(succ, thread_id);
 
-        if (!validateJointLimits(succ))
+        if (!validateJointLimits(succ, thread_id))
         {
             VecDf empty;
             assert(empty.size() == 0);
@@ -159,10 +159,10 @@ namespace ps
         VecDf free_state(m_[thread_id]->nq), con_state(m_[thread_id]->nq);
 
         // state coll check
-        if (isCollisionFree(succ))
+        if (isCollisionFree(succ, thread_id))
         {
             // edge check only if state check passes
-            if (isCollisionFree(state, succ, free_state))
+            if (isCollisionFree(state, succ, free_state, thread_id))
             {
                 return succ;
             }
@@ -175,7 +175,7 @@ namespace ps
     {
         /// Direct edge to goal
       VecDf free_state(m_[thread_id]->nq);
-      if (isCollisionFree(state, goal_, free_state))
+      if (isCollisionFree(state, goal_, free_state, thread_id))
       {
         return goal_;
       }
@@ -271,12 +271,12 @@ namespace ps
     opt_ = opt;
   }
 
-  bool ManipulationAction::isFeasible(MatDf &traj) const
+  bool ManipulationAction::isFeasible(MatDf &traj, int thread_id) const
   {
     bool feas = true;
     for (int i=0; i<traj.cols(); ++i)
     {
-      if (!isCollisionFree(traj.col(i)))
+      if (!isCollisionFree(traj.col(i), thread_id))
       {
         feas = false;
         break;
@@ -292,14 +292,14 @@ namespace ps
     Eigen::Map<const VecDf> p1(&s1[0], s1.size());
     Eigen::Map<const VecDf> p2(&s2[0], s2.size());
 
-    return (*opt_)[thread_id].optimize(this, p1, p2);
+    return (*opt_)[thread_id].optimize(this, p1, p2, thread_id);
   }
 
   TrajType ManipulationAction::warmOptimize(const TrajType &t1,
                                           const TrajType &t2,
                                           int thread_id) const
   {
-    return (*opt_)[thread_id].warmOptimize(this, t1, t2);
+    return (*opt_)[thread_id].warmOptimize(this, t1, t2, thread_id);
   }
 
   double ManipulationAction::getCost(const TrajType &traj, int thread_id) const

@@ -116,7 +116,7 @@ namespace ps
             return traj_trace;
         }
 
-        BSplineTraj optimize(const InsatAction* act, const VecDf& s1, const VecDf& s2)
+        BSplineTraj optimize(const InsatAction* act, const VecDf& s1, const VecDf& s2, int thread_id)
         {
             MatDf dummy_traj(insat_params_.lowD_dims_, 2);
             dummy_traj << s1, s2;
@@ -125,7 +125,7 @@ namespace ps
             return traj;
         }
 
-        BSplineTraj warmOptimize(const InsatAction* act, const TrajType& traj1, const TrajType & traj2)
+        BSplineTraj warmOptimize(const InsatAction* act, const TrajType& traj1, const TrajType & traj2, int thread_id)
         {
             int N = traj1.disc_traj_.cols()+traj2.disc_traj_.cols();
             MatDf init_traj(traj1.disc_traj_.rows(), N);
@@ -174,7 +174,7 @@ namespace ps
             traj.traj_ = opt.ReconstructTrajectory(traj1.result_);
 
             auto disc_traj = sampleTrajectory(traj);
-            if (act->isFeasible(disc_traj))
+            if (act->isFeasible(disc_traj, thread_id))
             {
                 traj.disc_traj_ = disc_traj;
             }
@@ -184,7 +184,7 @@ namespace ps
                 for (int i=traj_trace.size()-1; i>=0; --i)
                 {
                     auto samp_traj = sampleTrajectory(traj_trace[i]);
-                    if (act->isFeasible(samp_traj))
+                    if (act->isFeasible(samp_traj, thread_id))
                     {
                         traj.traj_ = traj_trace[i];
                         traj.disc_traj_ = samp_traj;

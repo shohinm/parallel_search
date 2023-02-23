@@ -73,29 +73,29 @@ namespace ps
     virtual bool CheckPreconditions(StateVarsType state);
     ActionSuccessor GetSuccessor(StateVarsType state_vars, int thread_id);
     ActionSuccessor GetSuccessorLazy(StateVarsType state_vars, int thread_id);
-    ActionSuccessor Evaluate(StateVarsType parent_state_vars, StateVarsType child_state_vars, int thread_id=0);
+    ActionSuccessor Evaluate(StateVarsType parent_state_vars, StateVarsType child_state_vars, int thread_id);
 
     /// Snap to Grid
-    VecDf contToDisc(const VecDf & cont_state, int thread_id=0);
+    VecDf contToDisc(const VecDf & cont_state, int thread_id);
 
     /// MuJoCo
-    VecDf GetSuccessor(const VecDf& state, int thread_id=0);
-    bool isFeasible(const StateVarsType& state_vars, int thread_id=0);
-    bool isCollisionFree(const VecDf& state, int thread_id=0) const;
-    bool isCollisionFree(const StateVarsType& state_vars, int thread_id=0) const;
+    VecDf GetSuccessor(const VecDf& state, int thread_id);
+    bool isFeasible(const StateVarsType& state_vars, int thread_id);
+    bool isCollisionFree(const VecDf& state, int thread_id) const;
+    bool isCollisionFree(const StateVarsType& state_vars, int thread_id) const;
     bool isCollisionFree(const VecDf& curr,
                          const VecDf& succ,
-                         VecDf& free_state, int thread_id=0) const; /// Edge collision check and return the last free state
-    bool validateJointLimits(const VecDf& state, int thread_id=0) const;
-    bool validateJointLimits(const StateVarsType& state_vars, int thread_id=0) const;
-    double getCostToSuccessor(const VecDf& current_state, const VecDf& successor_state, int thread_id=0);
+                         VecDf& free_state, int thread_id) const; /// Edge collision check and return the last free state
+    bool validateJointLimits(const VecDf& state, int thread_id) const;
+    bool validateJointLimits(const StateVarsType& state_vars, int thread_id) const;
+    double getCostToSuccessor(const VecDf& current_state, const VecDf& successor_state, int thread_id);
 
     /// INSAT
     void setOpt(OptVecPtrType& opt);
-    bool isFeasible(MatDf& traj) const;
-    TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id=0) const;
-    TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0) const;
-    double getCost(const TrajType& traj, int thread_id=0) const;
+    bool isFeasible(MatDf& traj, int thread_id) const;
+    TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id) const;
+    TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id) const;
+    double getCost(const TrajType& traj, int thread_id) const;
 
   protected:
     LockType lock_;
@@ -155,16 +155,6 @@ namespace ps
       goal_.resize(m_[0]->nq);
       for (int i=0; i<goal.size(); ++i) { goal_(i) = goal[i]; }
     };
-
-    void setOpt(OptVecPtrType& opt) {ManipulationAction::setOpt(opt);};
-    bool isFeasible(MatDf& traj) const {return ManipulationAction::isFeasible(traj);};
-    TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id=0) const
-    {return ManipulationAction::optimize(s1, s2, thread_id);}
-    TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0) const
-    {return ManipulationAction::warmOptimize(t1, t2, thread_id);}
-    double getCost(const TrajType& traj, int thread_id=0) const
-    {return ManipulationAction::getCost(traj, thread_id);}
-
   };
 
 

@@ -179,7 +179,7 @@ namespace ps
         opt_ = opt;
     }
 
-  bool InsatNav2dAction::isFeasible(MatDf &traj) const
+  bool InsatNav2dAction::isFeasible(MatDf &traj, int thread_id) const
   {
     bool feas = true;
     for (int i=0; i<traj.cols(); ++i)
@@ -203,14 +203,14 @@ namespace ps
     Eigen::Map<const VecDf> p1(&s1[0], s1.size());
     Eigen::Map<const VecDf> p2(&s2[0], s2.size());
 
-    return (*opt_)[thread_id].optimize(this, p1, p2);
+    return (*opt_)[thread_id].optimize(this, p1, p2, thread_id);
   }
 
   TrajType InsatNav2dAction::warmOptimize(const TrajType &t1,
                                                             const TrajType &t2,
                                                             int thread_id) const
   {
-    return (*opt_)[thread_id].warmOptimize(this, t1, t2);
+    return (*opt_)[thread_id].warmOptimize(this, t1, t2, thread_id);
   }
 
   double InsatNav2dAction::getCost(const TrajType &traj, int thread_id) const
