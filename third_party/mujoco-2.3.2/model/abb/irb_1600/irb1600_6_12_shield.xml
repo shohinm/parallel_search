@@ -29,12 +29,12 @@
 
 
         <!-- obstacles -->
-        <body name="cage" pos="0.65 -0.7 0" quat="0.707 0 0 -0.707">
+<!--         <body name="cage" pos="0.65 -0.7 0" quat="0.707 0 0 -0.707">
             <geom name="c1" size="0.03 0.03 1" pos="0.6 0.5 1" type="box" rgba="0.7 0.7 0.7 1" contype="3" conaffinity="3"/>
             <geom name="c2" size="0.03 0.03 1" pos="-0.6 0.5 1" type="box" rgba="0.7 0.7 0.7 1" contype="3" conaffinity="3"/>
             <geom name="c3" size="0.03 0.03 1" pos="0.6 -0.6 1" type="box" rgba="0.7 0.7 0.7 1" contype="3" conaffinity="3"/>
             <geom name="c4" size="0.03 0.03 1" pos="-0.6 -0.6 1" type="box" rgba="0.7 0.7 0.7 1" contype="3" conaffinity="3"/>            
-        </body>
+        </body> -->
 
         <body name="pedestal" pos="0.0 0.0 0.0">
             <geom type="mesh" rgba="0 0 1 1" mesh="pedestal" euler="1.57 0 0" contype="1" conaffinity="1"/>
@@ -74,4 +74,9 @@
         </body>
 
     </worldbody>
+
+    <keyframe>
+        <!-- <key qpos='-0.521366 1.9113 -0.455649 3.01977 -2.00664 1.09084'/> -->
+        <key qpos='-1.24198 1.9169 2.92448 -1.84242 -1.63643 -1.444'/>
+    </keyframe>
 </mujoco>
