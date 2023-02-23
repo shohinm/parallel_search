@@ -97,11 +97,12 @@ namespace ps
 //                MatDf control_matix(r, c);
 //                control_matrix << control_vec;
                 MatDf control_matrix(r,c);
-                for (int i=0; i<r; ++i)
+                /// The control vector transformed to control matrix (this MUST BE DONE IN COLUMN MAJOR ORDER)
+                for (int j=0; j<c; ++j)
                 {
-                    for (int j=0; j<c; ++j)
+                    for (int i=0; i<r; ++i)
                     {
-                        control_matrix(i,j) = control_vec(i*r+j);
+                        control_matrix(i,j) = control_vec(j*r+i);
                     }
                 }
 
@@ -192,6 +193,7 @@ namespace ps
                 }
                 else
                 {
+                    opt.SetInitialGuess(traj1.traj_);
                     std::vector<BSplineTraj::TrajInstanceType> traj_trace = optimizeWithCallback(opt, prog);
                     for (int i=traj_trace.size()-1; i>=0; --i)
                     {
