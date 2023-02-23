@@ -353,7 +353,7 @@ namespace angles
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-  double interpolateAngle(double from, double to, double amount, bool in_degrees=false)
+  static inline double interpolateAngle(double from, double to, double amount, bool in_degrees=false)
   {
     // convert to radians if not
     double from_rad = in_degrees? from_degrees(from): from;
@@ -375,7 +375,7 @@ namespace angles
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-  VecDf interpolateAngle(const VecDf & from, const VecDf & to, double amount, bool in_degrees=false)
+  static inline VecDf interpolateAngle(const VecDf & from, const VecDf & to, double amount, bool in_degrees=false)
   {
     VecDf result(from.size());
     for (int j=0; j<from.size(); ++j)
@@ -387,7 +387,7 @@ namespace angles
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-  double calcAngDist(const VecDf & from, const VecDf & to)
+  static inline double calcAngDist(const VecDf & from, const VecDf & to)
   {
     VecDf  del_ang(from.size());
     for (int j=0; j<from.size(); ++j)
@@ -399,7 +399,7 @@ namespace angles
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-  void angLinearize(VecDf& q1, VecDf& q2)
+  static inline void angLinearize(VecDf& q1, VecDf& q2)
   {
     double diff;
     for (int i=0; i<q1.size(); ++i)
