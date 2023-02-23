@@ -36,10 +36,10 @@ namespace ps
 
         // INSAT
         void setOpt(OptVecPtrType& opt);
-        bool isFeasible(MatDf& traj) const;
-        TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id=0) const;
-        TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0) const;
-        TrajType warmOptimize(const TrajType& t, int thread_id=0) const;
+        bool isFeasible(MatDf& traj, int thread_id) const;
+        TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id) const;
+        TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id) const;
+        TrajType warmOptimize(const TrajType& t, int thread_id) const;
         double getCost(const TrajType& traj, int thread_id=0) const;
 
     protected:
@@ -61,17 +61,6 @@ namespace ps
         {
             move_dir_ = {0, 1};
         };
-
-      void setOpt(OptVecPtrType& opt) {InsatNav2dAction::setOpt(opt);};
-      bool isFeasible(MatDf& traj) const {return InsatNav2dAction::isFeasible(traj);};
-      TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id=0) const
-      {return InsatNav2dAction::optimize(s1, s2, thread_id);}
-      TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0) const
-      {return InsatNav2dAction::warmOptimize(t1, t2, thread_id);}
-        TrajType warmOptimize(const TrajType& t, int thread_id=0) const
-        {return InsatNav2dAction::warmOptimize(t, thread_id);}
-      double getCost(const TrajType& traj, int thread_id=0) const
-      {return InsatNav2dAction::getCost(traj, thread_id);}
     };
 
     class IMoveUpRightAction : public InsatNav2dAction
@@ -83,17 +72,6 @@ namespace ps
         {
             move_dir_ = {1, 1};
         };
-
-      void setOpt(OptVecPtrType& opt) {InsatNav2dAction::setOpt(opt);};
-      bool isFeasible(MatDf& traj) const {return InsatNav2dAction::isFeasible(traj);};
-      TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id=0) const
-      {return InsatNav2dAction::optimize(s1, s2, thread_id);}
-      TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0) const
-      {return InsatNav2dAction::warmOptimize(t1, t2, thread_id);}
-        TrajType warmOptimize(const TrajType& t, int thread_id=0) const
-        {return InsatNav2dAction::warmOptimize(t, thread_id);}
-      double getCost(const TrajType& traj, int thread_id=0) const
-      {return InsatNav2dAction::getCost(traj, thread_id);}
     };
 
     class IMoveRightAction : public InsatNav2dAction
@@ -105,17 +83,6 @@ namespace ps
         {
             move_dir_ = {1, 0};
         };
-
-      void setOpt(OptVecPtrType& opt) {InsatNav2dAction::setOpt(opt);};
-      bool isFeasible(MatDf& traj) const {return InsatNav2dAction::isFeasible(traj);};
-      TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id=0) const
-      {return InsatNav2dAction::optimize(s1, s2, thread_id);}
-      TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0) const
-      {return InsatNav2dAction::warmOptimize(t1, t2, thread_id);}
-        TrajType warmOptimize(const TrajType& t, int thread_id=0) const
-        {return InsatNav2dAction::warmOptimize(t, thread_id);}
-      double getCost(const TrajType& traj, int thread_id=0) const
-      {return InsatNav2dAction::getCost(traj, thread_id);}
     };
 
     class IMoveRightDownAction : public InsatNav2dAction
@@ -127,17 +94,6 @@ namespace ps
         {
             move_dir_ = {1, -1};
         };
-
-      void setOpt(OptVecPtrType& opt) {InsatNav2dAction::setOpt(opt);};
-      bool isFeasible(MatDf& traj) const {return InsatNav2dAction::isFeasible(traj);};
-      TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id=0) const
-      {return InsatNav2dAction::optimize(s1, s2, thread_id);}
-      TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0) const
-      {return InsatNav2dAction::warmOptimize(t1, t2, thread_id);}
-        TrajType warmOptimize(const TrajType& t, int thread_id=0) const
-        {return InsatNav2dAction::warmOptimize(t, thread_id);}
-      double getCost(const TrajType& traj, int thread_id=0) const
-      {return InsatNav2dAction::getCost(traj, thread_id);}
     };
 
 
@@ -150,17 +106,6 @@ namespace ps
         {
             move_dir_ = {0, -1};
         };
-
-      void setOpt(OptVecPtrType& opt) {InsatNav2dAction::setOpt(opt);};
-      bool isFeasible(MatDf& traj) const {return InsatNav2dAction::isFeasible(traj);};
-      TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id=0) const
-      {return InsatNav2dAction::optimize(s1, s2, thread_id);}
-      TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0) const
-      {return InsatNav2dAction::warmOptimize(t1, t2, thread_id);}
-        TrajType warmOptimize(const TrajType& t, int thread_id=0) const
-        {return InsatNav2dAction::warmOptimize(t, thread_id);}
-      double getCost(const TrajType& traj, int thread_id=0) const
-      {return InsatNav2dAction::getCost(traj, thread_id);}
     };
 
     class IMoveDownLeftAction : public InsatNav2dAction
@@ -172,17 +117,6 @@ namespace ps
         {
             move_dir_ = {-1, -1};
         };
-
-      void setOpt(OptVecPtrType& opt) {InsatNav2dAction::setOpt(opt);};
-      bool isFeasible(MatDf& traj) const {return InsatNav2dAction::isFeasible(traj);};
-      TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id=0) const
-      {return InsatNav2dAction::optimize(s1, s2, thread_id);}
-      TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0) const
-      {return InsatNav2dAction::warmOptimize(t1, t2, thread_id);}
-        TrajType warmOptimize(const TrajType& t, int thread_id=0) const
-        {return InsatNav2dAction::warmOptimize(t, thread_id);}
-      double getCost(const TrajType& traj, int thread_id=0) const
-      {return InsatNav2dAction::getCost(traj, thread_id);}
     };
 
 
@@ -195,17 +129,6 @@ namespace ps
         {
             move_dir_ = {-1, 0};
         };
-
-      void setOpt(OptVecPtrType& opt) {InsatNav2dAction::setOpt(opt);};
-      bool isFeasible(MatDf& traj) const {return InsatNav2dAction::isFeasible(traj);};
-      TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id=0) const
-      {return InsatNav2dAction::optimize(s1, s2, thread_id);}
-      TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0) const
-      {return InsatNav2dAction::warmOptimize(t1, t2, thread_id);}
-        TrajType warmOptimize(const TrajType& t, int thread_id=0) const
-        {return InsatNav2dAction::warmOptimize(t, thread_id);}
-      double getCost(const TrajType& traj, int thread_id=0) const
-      {return InsatNav2dAction::getCost(traj, thread_id);}
     };
 
 
@@ -218,17 +141,6 @@ namespace ps
         {
             move_dir_ = {-1, 1};
         };
-
-      void setOpt(OptVecPtrType& opt) {InsatNav2dAction::setOpt(opt);};
-      bool isFeasible(MatDf& traj) const {return InsatNav2dAction::isFeasible(traj);};
-      TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id=0) const
-      {return InsatNav2dAction::optimize(s1, s2, thread_id);}
-      TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0) const
-      {return InsatNav2dAction::warmOptimize(t1, t2, thread_id);}
-        TrajType warmOptimize(const TrajType& t, int thread_id=0) const
-        {return InsatNav2dAction::warmOptimize(t, thread_id);}
-      double getCost(const TrajType& traj, int thread_id=0) const
-      {return InsatNav2dAction::getCost(traj, thread_id);}
     };
 
 }

@@ -28,14 +28,14 @@ namespace ps
 
         virtual ~DummyOpt() {}
 
-        virtual TrajType optimize(const InsatAction* act, const VecDf& s1, const VecDf& s2)
+        virtual TrajType optimize(const InsatAction* act, const VecDf& s1, const VecDf& s2, int thread_id)
         {
             double dist = (s2-s1).norm();
             int N = ceil(dist/wp_delta_)+1;
-            return optimize(act, s1, s2, N);
+            return optimize(act, s1, s2, N, thread_id);
         }
 
-        virtual TrajType optimize(const InsatAction* act, const VecDf& s1, const VecDf& s2, int N)
+        virtual TrajType optimize(const InsatAction* act, const VecDf& s1, const VecDf& s2, int N, int thread_id)
         {
             assert(N>=2);
 
@@ -43,7 +43,7 @@ namespace ps
             if (intp_ == InterpMode::LINEAR)
             {
                 traj.disc_traj_ = linInterp(s1, s2, N);
-                if (act->isFeasible(traj.disc_traj_))
+                if (act->isFeasible(traj.disc_traj_, thread_id))
                 {
                     return traj;
                 }
@@ -55,7 +55,7 @@ namespace ps
             }
         }
 
-        virtual TrajType warmOptimize(const InsatAction* act, const TrajType& traj1, const TrajType & traj2)
+        virtual TrajType warmOptimize(const InsatAction* act, const TrajType& traj1, const TrajType & traj2, int thread_id)
         {
             int N = traj1.disc_traj_.cols()+traj2.disc_traj_.cols();
             MatDf init_traj(traj1.disc_traj_.rows(), N);
@@ -68,7 +68,7 @@ namespace ps
             for (double i=0.0; i<=1.0; i+=1.0/conv_delta_)
             {
               soln_traj = (1-i)*init_traj + i*opt_traj;
-              if (!act->isFeasible(soln_traj))
+              if (!act->isFeasible(soln_traj, thread_id))
               {
                 break;
               }

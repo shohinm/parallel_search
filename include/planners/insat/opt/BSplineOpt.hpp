@@ -124,7 +124,7 @@ namespace ps
             return traj_trace;
         }
 
-        BSplineTraj optimize(const InsatAction* act, const VecDf& s1, const VecDf& s2)
+        BSplineTraj optimize(const InsatAction* act, const VecDf& s1, const VecDf& s2, int thread_id)
         {
             MatDf dummy_traj(insat_params_.lowD_dims_, 2);
             dummy_traj << s1, s2;
@@ -133,7 +133,7 @@ namespace ps
             return traj;
         }
 
-        BSplineTraj warmOptimize(const InsatAction* act, const TrajType& traj1, const TrajType & traj2)
+        BSplineTraj warmOptimize(const InsatAction* act, const TrajType& traj1, const TrajType & traj2, int thread_id)
         {
             int N = traj1.disc_traj_.cols()+traj2.disc_traj_.cols();
             MatDf init_traj(traj1.disc_traj_.rows(), N);
@@ -186,7 +186,7 @@ namespace ps
                 traj.traj_ = opt.ReconstructTrajectory(traj.result_);
 
                 auto disc_traj = sampleTrajectory(traj);
-                if (act->isFeasible(disc_traj))
+                if (act->isFeasible(disc_traj, thread_id))
                 {
                     traj.disc_traj_ = disc_traj;
                 }
@@ -196,7 +196,7 @@ namespace ps
                     for (int i=traj_trace.size()-1; i>=0; --i)
                     {
                         auto samp_traj = sampleTrajectory(traj_trace[i]);
-                        if (act->isFeasible(samp_traj))
+                        if (act->isFeasible(samp_traj, thread_id))
                         {
                             traj.traj_ = traj_trace[i];
                             traj.disc_traj_ = samp_traj;
@@ -211,7 +211,7 @@ namespace ps
             return traj;
         }
 
-        BSplineTraj warmOptimize(const InsatAction* act, const TrajType& traj)
+        BSplineTraj warmOptimize(const InsatAction* act, const TrajType& traj, int thread_id)
         {
             assert(traj.disc_traj_.cols() >= 2);
 
@@ -219,7 +219,7 @@ namespace ps
             t1.disc_traj_ = traj.disc_traj_.leftCols(1);
             t2.disc_traj_ = traj.disc_traj_.rightCols(1);
 
-            return warmOptimize(act, t1, t2);
+            return warmOptimize(act, t1, t2, thread_id);
         }
 
 
