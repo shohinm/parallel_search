@@ -112,6 +112,7 @@ namespace ps_drake
         typedef drake::solvers::Binding<drake::solvers::Cost> CostType;
         typedef drake::solvers::Binding<drake::solvers::Constraint> ConstraintType;
         typedef drake::solvers::MathematicalProgramResult OptResult;
+        typedef drake::trajectories::BsplineTrajectory<double> TrajInstanceType;
 
         // Robot
         typedef ABBParams RobotParamsType;
@@ -142,7 +143,53 @@ namespace ps_drake
 
         }
 
-        OptResult optimize(const VecDf& s1, const VecDf& s2)
+        OptResult optimizeWithCallback()
+        {
+            traj_trace_.clear();
+            auto convergenceCallback = [&](const Eigen::Ref<const Eigen::VectorXd>& control_vec)
+            {
+                int r = opt_->control_points().rows();
+                int c = opt_->control_points().cols();
+//                MatDf control_matix(r, c);
+//                control_matrix << control_vec;
+                MatDf control_matrix(r,c);
+//                for (int i=0; i<r; ++i)
+//                {
+//                    for (int j=0; j<c; ++j)
+//                    {
+//                        control_matrix(i,j) = control_vec(i*c+j);
+//                    }
+//                }
+
+                for (int j=0; j<c; ++j)
+                {
+                    for (int i=0; i<r; ++i)
+                    {
+                        control_matrix(i,j) = control_vec(j*r+i);
+                    }
+                }
+
+                std::vector<MatDf> control_points;
+                for (int i=0; i<control_matrix.cols(); ++i)
+                {
+                    control_points.emplace_back(control_matrix.col(i));
+                }
+
+                TrajInstanceType traj = TrajInstanceType(opt_->basis(), control_points);
+                traj_trace_.emplace_back(traj);
+            };
+
+            drake::solvers::MatrixXDecisionVariable control_points = opt_->control_points();
+            Eigen::Map<drake::solvers::VectorXDecisionVariable> control_vec(control_points.data(), control_points.size());
+
+            prog_.AddVisualizationCallback(convergenceCallback, control_vec);
+            drake::solvers::Solve(prog_);
+
+            return drake::solvers::Solve(prog_);
+        }
+
+
+        OptResult optimize(const VecDf& s1, const VecDf& s2, bool log_trace=false)
         {
             const VecDf& q0 = s1.topRows(insat_params_.lowD_dims_);
             const VecDf& qF = s2.topRows(insat_params_.lowD_dims_);
@@ -165,14 +212,20 @@ namespace ps_drake
             costs_.emplace_back(c1);
             costs_.emplace_back(c2);
 
-
             /// Solve
+            if (log_trace)
+            {
+                return optimizeWithCallback();
+
+            }
             return drake::solvers::Solve(prog_);
         }
 
         void optimize(const VecDf& s1, const VecDf& s2, int N)
         {
         }
+
+        std::vector<TrajInstanceType> getTrace() {return traj_trace_;}
 
 //        void warmOptimize(const InsatAction* act, const TrajType& traj1, const TrajType & traj2)
 //        {
@@ -257,6 +310,7 @@ namespace ps_drake
         /// Optimizer
         std::shared_ptr<OptType> opt_;
         drake::solvers::MathematicalProgram& prog_;
+        std::vector<TrajInstanceType> traj_trace_;
 
         InsatParams insat_params_;
         ABBParams robot_params_;
@@ -358,9 +412,12 @@ void runBVPTest(std::vector<double>& time_log, bool save=false, int test_size=1)
     ps_drake::ABBParams robot_params;
 
     MatDf all_traj;
+    MatDf trace_log;
     MatDf starts;
     MatDf goals;
-    for (int i=0; i<test_size; ++i)
+//    for (int i=0; i<test_size; ++i)
+    int i=0;
+    while(i < test_size)
     {
         ps_drake::BSplineOpt opt(insat_params.lowD_dims_, 8);
         VecDf st(insat_params.fullD_dims_), go(insat_params.fullD_dims_);
@@ -377,13 +434,14 @@ void runBVPTest(std::vector<double>& time_log, bool save=false, int test_size=1)
         std::cout << "---- TRIAL " << i+1 << "------" << "\nst: " << r1.transpose() << "\ngo: " << r2.transpose() << std::endl;
 
         auto start_time = Clock::now();
-        auto result = opt.optimize(st, go);
+        auto result = opt.optimize(st, go, true);
         auto end_time = Clock::now();
         if (result.is_success())
         {
             auto traj = sampleTrajectory(opt.opt_->ReconstructTrajectory(result), 6e-3);
-            if (opt.isCollisionFree(traj))
+            if (opt.isFeasible(traj))
             {
+                ++i;
                 std::cout << "SUCCESS" << " traj rows: " << traj.rows() << " cols: " << traj.cols() << std::endl;
                 double time_elapsed = duration_cast<duration<double> >(end_time - start_time).count();
                 time_log.emplace_back(time_elapsed);
@@ -400,6 +458,16 @@ void runBVPTest(std::vector<double>& time_log, bool save=false, int test_size=1)
             {
                 continue;
             }
+
+            /// save trace
+            auto traj_trace = opt.getTrace();
+            for (auto& t : traj_trace)
+            {
+                auto samp_t = sampleTrajectory(t, 6e-3);
+                trace_log.conservativeResize(insat_params.lowD_dims_, trace_log.cols()+samp_t.cols());
+                trace_log.rightCols(samp_t.cols()) = samp_t;
+            }
+
 //            printTraj(opt.opt_->ReconstructTrajectory(result), 1e-1);
 //            printControlPts(opt);
 //            opt.opt_->SetInitialGuess(opt.opt_->ReconstructTrajectory())
@@ -407,18 +475,23 @@ void runBVPTest(std::vector<double>& time_log, bool save=false, int test_size=1)
     }
     if (save)
     {
-        std::string write_path ="/home/gaussian/cmu_ri_phd/phd_research/parallel_search/logs/abb_traj.txt";
+        std::string traj_path ="/home/gaussian/cmu_ri_phd/phd_research/parallel_search/logs/abb_traj.txt";
+        std::string traj_trace_path ="/home/gaussian/cmu_ri_phd/phd_research/parallel_search/logs/abb_traj_trace.txt";
         std::string starts_path ="/home/gaussian/cmu_ri_phd/phd_research/parallel_search/logs/abb_starts.txt";
         std::string goals_path ="/home/gaussian/cmu_ri_phd/phd_research/parallel_search/logs/abb_goals.txt";
+
+        all_traj.transposeInPlace();
+        writeToCSVfile(traj_path, all_traj);
+        trace_log.transposeInPlace();
+        writeToCSVfile(traj_trace_path, trace_log);
+        writeToCSVfile(starts_path, starts);
+        writeToCSVfile(goals_path, goals);
 
         std::cout << "starts:\n" << starts << std::endl;
         std::cout << "goals:\n" << goals << std::endl;
 //        std::cout << "alltraj:\n" << starts << std::endl;
+        std::cout << "tracelog:\n" << trace_log << std::endl;
 
-        all_traj.transposeInPlace();
-        writeToCSVfile(write_path, all_traj);
-        writeToCSVfile(starts_path, starts);
-        writeToCSVfile(goals_path, goals);
     }
 
 }
@@ -476,7 +549,7 @@ int main()
     ps_drake::InsatParams insat_params;
     ps_drake::ABBParams robot_params;
 
-    int test_size = 100;
+    int test_size = 1;
 
     std::vector<double> time_log;
     std::vector<double> init_time_log;
