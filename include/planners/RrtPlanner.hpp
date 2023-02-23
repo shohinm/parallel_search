@@ -18,12 +18,13 @@ class RrtPlanner : public Planner
 
     protected:
         void initialize();
+        double getCost(const StateVarsType& current_state, const StateVarsType& successor_state, int thread_id);
         StatePtrType constructState(const StateVarsType& state, StatePtrMapType& state_map);
         EdgePtrType addEdge(StatePtrType parent_state, StatePtrType child_state, EdgePtrMapType& edge_map);
-        void rrtThread(int thread_id);
+        virtual void rrtThread(int thread_id);
         double getRandomNumberBetween(double min, double max);
-        StateVarsType sampleSateUniform();
-        StateVarsType sampleState(StatePtrType goal_state_ptr);
+        StateVarsType sampleFeasibleState(int thread_id);
+        StateVarsType sampleState(StatePtrType goal_state_ptr, int thread_id, double goal_prob);
         double wrapAngle(double angle);
         double angleDifference(double angle1, double angle2);
         double calculateDistance(const StateVarsType& state_1, const StateVarsType& state_2);
@@ -36,11 +37,12 @@ class RrtPlanner : public Planner
             bool& is_collision, StatePtrMapType& state_map, int thread_id);
         void exit();
 
-        std::vector<std::shared_ptr<Action>> actions_ptrs_;
-        int num_threads_;
         std::random_device random_device_;
         mutable LockType lock_;
+        size_t state_key_ = 0;
+        StateVarsType goal_state_vars_;
         std::atomic<bool> terminate_;
+        std::atomic<bool> plan_found_;
         std::vector<std::future<void>> rrt_futures_;
 };
 

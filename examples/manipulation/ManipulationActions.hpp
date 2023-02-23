@@ -35,6 +35,7 @@
 #ifndef MANIPULATIONACTIONS_HPP
 #define MANIPULATIONACTIONS_HPP
 
+#include <random>
 #include <common/Types.hpp>
 #include <common/insat/InsatAction.hpp>
 #include <common/GlorifiedAngles.h>
@@ -81,14 +82,17 @@ namespace ps
 
     /// MuJoCo
     VecDf GetSuccessor(const VecDf& state, int thread_id);
-    bool isFeasible(const StateVarsType& state_vars, int thread_id);
+    bool IsFeasible(const StateVarsType& state_vars, int thread_id);
     bool isCollisionFree(const VecDf& state, int thread_id) const;
     bool isCollisionFree(const StateVarsType& state_vars, int thread_id) const;
     bool isCollisionFree(const VecDf& curr,
                          const VecDf& succ,
                          VecDf& free_state, int thread_id) const; /// Edge collision check and return the last free state
+    StateVarsType SampleFeasibleState(int thread_id);
     bool validateJointLimits(const VecDf& state, int thread_id) const;
+    std::vector<std::pair<double,double>> getJointLimits(int thread_id) const;
     bool validateJointLimits(const StateVarsType& state_vars, int thread_id) const;
+    double GetCostToSuccessor(const StateVarsType& current_state, const StateVarsType& successor_state, int thread_id);
     double getCostToSuccessor(const VecDf& current_state, const VecDf& successor_state, int thread_id);
 
     /// INSAT
@@ -116,6 +120,8 @@ namespace ps
     MjModelVecType m_;
     MjDataVecType d_;
 
+    std::vector<std::pair<double, double>> joint_limits_;
+    std::mt19937 gen_;
   };
 
   class OneJointAtATime : public ManipulationAction
