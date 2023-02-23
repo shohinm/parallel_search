@@ -213,7 +213,12 @@ namespace ps
     return (*opt_)[thread_id].warmOptimize(this, t1, t2);
   }
 
-  double InsatNav2dAction::getCost(const TrajType &traj, int thread_id) const
+    TrajType InsatNav2dAction::warmOptimize(const TrajType& t, int thread_id) const
+    {
+        return (*opt_)[thread_id].warmOptimize(this, t);
+    }
+
+    double InsatNav2dAction::getCost(const TrajType &traj, int thread_id) const
   {
     return (*opt_)[thread_id].calculateCost(traj);
   }

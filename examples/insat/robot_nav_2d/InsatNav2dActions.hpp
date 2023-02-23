@@ -39,6 +39,7 @@ namespace ps
         bool isFeasible(MatDf& traj) const;
         TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id=0) const;
         TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0) const;
+        TrajType warmOptimize(const TrajType& t, int thread_id=0) const;
         double getCost(const TrajType& traj, int thread_id=0) const;
 
     protected:
@@ -67,6 +68,8 @@ namespace ps
       {return InsatNav2dAction::optimize(s1, s2, thread_id);}
       TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0) const
       {return InsatNav2dAction::warmOptimize(t1, t2, thread_id);}
+        TrajType warmOptimize(const TrajType& t, int thread_id=0) const
+        {return InsatNav2dAction::warmOptimize(t, thread_id);}
       double getCost(const TrajType& traj, int thread_id=0) const
       {return InsatNav2dAction::getCost(traj, thread_id);}
     };
@@ -87,6 +90,8 @@ namespace ps
       {return InsatNav2dAction::optimize(s1, s2, thread_id);}
       TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0) const
       {return InsatNav2dAction::warmOptimize(t1, t2, thread_id);}
+        TrajType warmOptimize(const TrajType& t, int thread_id=0) const
+        {return InsatNav2dAction::warmOptimize(t, thread_id);}
       double getCost(const TrajType& traj, int thread_id=0) const
       {return InsatNav2dAction::getCost(traj, thread_id);}
     };
@@ -107,6 +112,8 @@ namespace ps
       {return InsatNav2dAction::optimize(s1, s2, thread_id);}
       TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0) const
       {return InsatNav2dAction::warmOptimize(t1, t2, thread_id);}
+        TrajType warmOptimize(const TrajType& t, int thread_id=0) const
+        {return InsatNav2dAction::warmOptimize(t, thread_id);}
       double getCost(const TrajType& traj, int thread_id=0) const
       {return InsatNav2dAction::getCost(traj, thread_id);}
     };
@@ -127,6 +134,8 @@ namespace ps
       {return InsatNav2dAction::optimize(s1, s2, thread_id);}
       TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0) const
       {return InsatNav2dAction::warmOptimize(t1, t2, thread_id);}
+        TrajType warmOptimize(const TrajType& t, int thread_id=0) const
+        {return InsatNav2dAction::warmOptimize(t, thread_id);}
       double getCost(const TrajType& traj, int thread_id=0) const
       {return InsatNav2dAction::getCost(traj, thread_id);}
     };
@@ -148,6 +157,8 @@ namespace ps
       {return InsatNav2dAction::optimize(s1, s2, thread_id);}
       TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0) const
       {return InsatNav2dAction::warmOptimize(t1, t2, thread_id);}
+        TrajType warmOptimize(const TrajType& t, int thread_id=0) const
+        {return InsatNav2dAction::warmOptimize(t, thread_id);}
       double getCost(const TrajType& traj, int thread_id=0) const
       {return InsatNav2dAction::getCost(traj, thread_id);}
     };
@@ -168,6 +179,8 @@ namespace ps
       {return InsatNav2dAction::optimize(s1, s2, thread_id);}
       TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0) const
       {return InsatNav2dAction::warmOptimize(t1, t2, thread_id);}
+        TrajType warmOptimize(const TrajType& t, int thread_id=0) const
+        {return InsatNav2dAction::warmOptimize(t, thread_id);}
       double getCost(const TrajType& traj, int thread_id=0) const
       {return InsatNav2dAction::getCost(traj, thread_id);}
     };
@@ -189,6 +202,8 @@ namespace ps
       {return InsatNav2dAction::optimize(s1, s2, thread_id);}
       TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0) const
       {return InsatNav2dAction::warmOptimize(t1, t2, thread_id);}
+        TrajType warmOptimize(const TrajType& t, int thread_id=0) const
+        {return InsatNav2dAction::warmOptimize(t, thread_id);}
       double getCost(const TrajType& traj, int thread_id=0) const
       {return InsatNav2dAction::getCost(traj, thread_id);}
     };
@@ -210,6 +225,8 @@ namespace ps
       {return InsatNav2dAction::optimize(s1, s2, thread_id);}
       TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0) const
       {return InsatNav2dAction::warmOptimize(t1, t2, thread_id);}
+        TrajType warmOptimize(const TrajType& t, int thread_id=0) const
+        {return InsatNav2dAction::warmOptimize(t, thread_id);}
       double getCost(const TrajType& traj, int thread_id=0) const
       {return InsatNav2dAction::getCost(traj, thread_id);}
     };

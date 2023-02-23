@@ -28,6 +28,8 @@ namespace ps
     struct DummyTraj
     {
         MatDf disc_traj_;
+
+        inline bool isValid() {return disc_traj_.size()>=2;}
     };
 
     struct BSplineTraj
@@ -36,6 +38,7 @@ namespace ps
         typedef drake::trajectories::BsplineTrajectory<double> TrajInstanceType;
 
         inline long size() {return disc_traj_.size();}
+        inline bool isValid() {return result_.is_success();}
 
         OptResultType result_;
         TrajInstanceType traj_;

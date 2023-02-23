@@ -37,6 +37,7 @@
 
 #include <common/Types.hpp>
 #include <common/insat/InsatAction.hpp>
+#include <common/GlorifiedAngles.h>
 #include "planners/insat/opt/BSplineOpt.hpp"
 
 // MuJoCo
@@ -95,6 +96,7 @@ namespace ps
     bool isFeasible(MatDf& traj) const;
     TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id=0) const;
     TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id=0) const;
+    TrajType warmOptimize(const TrajType& t, int thread_id=0) const;
     double getCost(const TrajType& traj, int thread_id=0) const;
 
   protected:
@@ -154,6 +156,7 @@ namespace ps
 
       goal_.resize(m_[0]->nq);
       for (int i=0; i<goal.size(); ++i) { goal_(i) = goal[i]; }
+      goal_ = contToDisc(goal_);
     };
 
     void setOpt(OptVecPtrType& opt) {ManipulationAction::setOpt(opt);};

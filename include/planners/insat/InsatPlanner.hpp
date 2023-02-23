@@ -95,7 +95,7 @@ namespace ps
             constructInsatActions();
         }
 
-        std::vector<InsatStatePtrType> getStateAncestors(const InsatStatePtrType state_ptr) const
+        std::vector<InsatStatePtrType> getStateAncestors(const InsatStatePtrType state_ptr, bool reverse=false) const
         {
             // Get ancestors
             std::vector<InsatStatePtrType> ancestors;
@@ -106,7 +106,11 @@ namespace ps
                 ancestors.push_back(bp->lowD_parent_state_ptr_);
                 bp = bp->lowD_parent_state_ptr_->GetIncomingEdgePtr();
             }
-            std::reverse(ancestors.begin(), ancestors.end());            return ancestors;
+            if (reverse)
+            {
+                std::reverse(ancestors.begin(), ancestors.end());
+            }
+            return ancestors;
         }
 
         void expandState(InsatStatePtrType state_ptr)
@@ -151,30 +155,53 @@ namespace ps
                     for (auto& anc: ancestors)
                     {
                         TrajType inc_traj = action_ptr->optimize(anc->GetStateVars(), successor_state_ptr->GetStateVars());
-                        if (root && inc_traj.size() > 0)
+                        if (inc_traj.size() > 0)
                         {
-                            root = false;
                             inc_cost = action_ptr->getCost(inc_traj);
-                            traj = inc_traj;
-                            best_anc = anc;
-                            break;
-                        }
-                        else if (root && inc_traj.size() == 0)
-                        {
-                            root = false;
-                            continue;
-                        }
-                        else if (inc_traj.size() == 0)
-                        {
-                            continue;
+                            if (anc->GetIncomingEdgePtr()) /// When anc is not start
+                            {
+                                traj = action_ptr->warmOptimize(anc->GetIncomingEdgePtr()->traj_, inc_traj);
+                            }
+                            else
+                            {
+                                traj = action_ptr->warmOptimize(inc_traj);
+                            }
+
+                            if (traj.isValid())
+                            {
+                                best_anc = anc;
+                                break;
+                            }
                         }
                         else
                         {
-                            inc_cost = action_ptr->getCost(inc_traj);
-                            traj = action_ptr->warmOptimize(anc->GetIncomingEdgePtr()->traj_, inc_traj);
-                            best_anc = anc;
-                            break;
+                            continue;
                         }
+
+//                        if (root && inc_traj.size() > 0)
+//                        {
+//                            root = false;
+//                            inc_cost = action_ptr->getCost(inc_traj);
+//                            traj = inc_traj;
+//                            best_anc = anc;
+//                            break;
+//                        }
+//                        else if (root && inc_traj.size() == 0)
+//                        {
+//                            root = false;
+//                            continue;
+//                        }
+//                        else if (inc_traj.size() == 0)
+//                        {
+//                            continue;
+//                        }
+//                        else
+//                        {
+//                            inc_cost = action_ptr->getCost(inc_traj);
+//                            traj = action_ptr->warmOptimize(anc->GetIncomingEdgePtr()->traj_, inc_traj);
+//                            best_anc = anc;
+//                            break;
+//                        }
                     }
 
                     if (traj.size()==0)

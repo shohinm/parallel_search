@@ -32,9 +32,8 @@
  * \date   2/19/23
  */
 
-#include "ManipulationActions.hpp"
-#include <common/GlorifiedAngles.h>
 #include <cstdlib>
+#include "ManipulationActions.hpp"
 
 namespace ps
 {
@@ -111,7 +110,7 @@ namespace ps
     for (int i=0; i<m_[thread_id]->nq; ++i)
     {
       // Normalize angle to -pi to pi. Should already be in that range.
-      // cont_state(i) = angles::normalize_angle(cont_state(i));
+//       cont_state(i) = angles::normalize_angle(cont_state(i));
       // Number of discrete angles in the DOF i
       int n_disc = discrete_angles_[i].size();
       // The offset to be added to find the bin because of negative to positive range
@@ -214,7 +213,7 @@ namespace ps
   bool ManipulationAction::isCollisionFree(const VecDf &curr, const VecDf &succ, VecDf &free_state, int thread_id) const
   {
     double ang_dist = angles::calcAngDist(curr, succ);
-    int n = static_cast<int>(ceil(ang_dist/(1.5*2e-3)));
+    int n = static_cast<int>(ceil(ang_dist/(5e-2)));
     double rho = 1.0/n;
 
     double coll_free = true;
@@ -300,6 +299,11 @@ namespace ps
                                           int thread_id) const
   {
     return (*opt_)[thread_id].warmOptimize(this, t1, t2);
+  }
+
+  TrajType ManipulationAction::warmOptimize(const TrajType& t, int thread_id) const
+  {
+      return (*opt_)[thread_id].warmOptimize(this, t);
   }
 
   double ManipulationAction::getCost(const TrajType &traj, int thread_id) const
