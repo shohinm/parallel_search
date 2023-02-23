@@ -78,7 +78,7 @@ namespace ps
             return traj;
         }
 
-        virtual TrajType warmOptimize(const InsatAction* act, const TrajType& traj)
+        virtual TrajType warmOptimize(const InsatAction* act, const TrajType& traj, int thread_id)
         {
             assert(traj.disc_traj_.cols() >= 2);
 
@@ -86,7 +86,7 @@ namespace ps
             t1.disc_traj_ = traj.disc_traj_.col(1);
             t2.disc_traj_ = traj.disc_traj_.rightCols(1);
 
-            return warmOptimize(act, t1, t2);
+            return warmOptimize(act, t1, t2, thread_id);
         }
 
         virtual double calculateCost(const TrajType& traj)
