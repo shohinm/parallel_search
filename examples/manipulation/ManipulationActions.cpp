@@ -303,7 +303,7 @@ namespace ps
 
   TrajType ManipulationAction::warmOptimize(const TrajType& t, int thread_id) const
   {
-      return (*opt_)[thread_id].warmOptimize(this, t);
+      return (*opt_)[thread_id].warmOptimize(this, t, thread_id);
   }
 
   double ManipulationAction::getCost(const TrajType &traj, int thread_id) const
