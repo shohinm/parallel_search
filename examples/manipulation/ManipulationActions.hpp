@@ -91,6 +91,7 @@ namespace ps
     bool validateJointLimits(const VecDf& state, int thread_id) const;
     std::vector<std::pair<double,double>> getJointLimits(int thread_id) const;
     bool validateJointLimits(const StateVarsType& state_vars, int thread_id) const;
+    double GetCostToSuccessor(const StateVarsType& current_state, const StateVarsType& successor_state, int thread_id);
     double getCostToSuccessor(const VecDf& current_state, const VecDf& successor_state, int thread_id);
 
     /// INSAT

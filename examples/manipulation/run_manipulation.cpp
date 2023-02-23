@@ -92,7 +92,7 @@ size_t StateKeyGenerator(const StateVarsType& state_vars)
     size_t seed = 0;
     for (int i=0; i<dof; ++i)
     {
-        boost::hash_combine(seed, state_vars[i]);
+        boost::hash_combine(seed, state_vars[i]* M_PI / 180);
     }
     return seed;
 }
@@ -270,7 +270,7 @@ void setupMujoco(mjModel **m, mjData **d, std::string modelpath)
 
 
     // Experiment parameters
-    int num_runs = 10;
+    int num_runs = 1;
     vector<int> scale_vec = {5, 5, 5, 10, 5};
     bool visualize_plan = true;
     bool load_starts_goals_from_file = true;

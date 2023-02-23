@@ -292,6 +292,14 @@ namespace ps
     return validateJointLimits(state, thread_id);
   }
 
+
+  double ManipulationAction::GetCostToSuccessor(const StateVarsType &current_state, const StateVarsType &successor_state, int thread_id)
+  {
+    Eigen::Map<const VecDf> current_state_eig(&current_state[0], current_state.size());
+    Eigen::Map<const VecDf> successor_state_eig(&successor_state[0], successor_state.size());
+    return getCostToSuccessor(current_state_eig, successor_state_eig, thread_id);
+  }
+
   double ManipulationAction::getCostToSuccessor(const VecDf &current_state, const VecDf &successor_state, int thread_id)
   {
     VecDf angle_dist(m_[thread_id]->nq);

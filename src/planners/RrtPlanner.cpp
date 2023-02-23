@@ -62,6 +62,8 @@ bool RrtPlanner::Plan()
     double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
     planner_stats_.total_time_ = 1e-9*t_elapsed;
     exit();
+
+    return plan_found_;
 }
 
 void RrtPlanner::initialize()
@@ -71,12 +73,20 @@ void RrtPlanner::initialize()
     planner_stats_.num_jobs_per_thread_.resize(planner_params_["num_threads"], 0);
     planner_stats_.num_threads_spawned_ = 2;
     terminate_ = false;
+    plan_found_ = false;
+}
+
+double RrtPlanner::getCost(const StateVarsType& current_state, const StateVarsType& successor_state, int thread_id)
+{
+    return actions_ptrs_[0]->GetCostToSuccessor(current_state, successor_state, thread_id);
 }
 
 StatePtrType RrtPlanner::constructState(const StateVarsType& state, StatePtrMapType& state_map)
 {
     lock_.lock();
-    size_t key = state_key_generator_(state);
+    // size_t key = state_key_generator_(state);
+    size_t key = state_key_++;
+
     StatePtrMapType::iterator it = state_map.find(key);
     StatePtrType state_ptr;
     
@@ -124,37 +134,35 @@ void RrtPlanner::rrtThread(int thread_id)
     double min_d = DINF;
     while (!terminate_)
     {
-        auto sampled_state = sampleState(goal_state_ptr_, thread_id);
-        if (VERBOSE) PrintStateVars(sampled_state, "sampled state:");
+        auto sampled_state = sampleState(goal_state_ptr_, thread_id, planner_params_["goal_bias_probability"]);
+        if (VERBOSE) PrintStateVars(sampled_state, "Sampled state:");
         auto nearest_neighbor = getNearestNeighbor(sampled_state, state_map_);
         if (VERBOSE) nearest_neighbor->Print("NN in graph: ");
         bool is_collision;
         auto state_ptr = extend(nearest_neighbor, sampled_state, is_collision, state_map_, thread_id);
         if (VERBOSE) state_ptr->Print("New state: ");
-        addEdge(nearest_neighbor, state_ptr, edge_map_);
-
+        auto edge = addEdge(nearest_neighbor, state_ptr, edge_map_);
+        edge->SetCost(getCost(nearest_neighbor->GetStateVars(), state_ptr->GetStateVars(), thread_id));
+        state_ptr->SetIncomingEdgePtr(edge);
 
         if (VERBOSE)  cout << "Graph size: " <<  state_map_.size() << endl;   
-        // getchar();
 
         auto dist_to_goal = calculateDistance(state_ptr->GetStateVars(), goal_state_vars_);
         
         min_d = (dist_to_goal < min_d) ? dist_to_goal : min_d;
 
-        cout << "dist_to_goal: " << dist_to_goal 
-        << " termination_distance: " << planner_params_["termination_distance"] 
-        << " min_d: " << min_d
-        << endl; 
         if ((!terminate_) && (dist_to_goal < planner_params_["termination_distance"]))
         {            
             // Reconstruct and return path
+            if (VERBOSE) state_ptr->Print("Goal reached | State: ");
             constructPlan(state_ptr);   
             terminate_ = true;
-            if (VERBOSE) cout << "Goal reached!" << endl;
-            getchar();
+            plan_found_ = true;
             return;
         }        
     }
+
+
 }
 
 double RrtPlanner::getRandomNumberBetween(double min, double max)
@@ -169,12 +177,12 @@ StateVarsType RrtPlanner::sampleFeasibleState(int thread_id)
     return actions_ptrs_[0]->SampleFeasibleState(thread_id);
 }
 
-StateVarsType RrtPlanner::sampleState(StatePtrType goal_state_ptr, int thread_id)
+StateVarsType RrtPlanner::sampleState(StatePtrType goal_state_ptr, int thread_id, double goal_prob)
 {
     double r = getRandomNumberBetween(0,1);
 
     StateVarsType sampled_state;
-    if (r < planner_params_["goal_bias_probability"])
+    if (r < goal_prob)
     {
         sampled_state = goal_state_vars_;
         if (VERBOSE) cout << "Sampling goal" << endl;
@@ -289,11 +297,11 @@ StatePtrType RrtPlanner::extend(const StatePtrType& nearest_neighbor, const Stat
     int ndof = nearest_neighbor->GetStateVars().size();
     auto nearest_state_vars = nearest_neighbor->GetStateVars();
     // if sampledNode is closer than m_eps, return that 
-    // if (calculateDistance(sampled_state, nearest_state_vars) < planner_params_["eps"])
-    // {
-    //     if (VERBOSE) cout << "Sampled state closer than " << planner_params_["eps"] << " to NN!" << endl;
-    //     return constructState(sampled_state, state_map);
-    // }
+    if (calculateDistance(sampled_state, nearest_state_vars) < planner_params_["eps"])
+    {
+        if (VERBOSE) cout << "Sampled state closer than " << planner_params_["eps"] << " to NN!" << endl;
+        return constructState(sampled_state, state_map);
+    }
 
     double angle_diff_norm = 0;
     for (int i = 0; i < ndof; ++i)
