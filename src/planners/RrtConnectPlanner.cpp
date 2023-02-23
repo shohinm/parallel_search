@@ -24,7 +24,7 @@ void RrtConnectPlanner::SetGoalState(const StateVarsType& state_vars)
 void RrtConnectPlanner::initialize()
 {
     RrtPlanner::initialize();
-    start_goal_flag_.resize(num_threads_, 0);
+    start_goal_flag_.resize(planner_params_["num_threads"], 0);
 }
 
 bool RrtConnectPlanner::connect(StatePtrType state_ptr, StatePtrMapType& state_map, EdgePtrMapType& edge_map, int thread_id)

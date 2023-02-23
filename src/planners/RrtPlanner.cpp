@@ -5,6 +5,16 @@
 using namespace std;
 using namespace ps;
 
+void PrintStateVars(const StateVarsType& state_vars, const string& prefix="")
+{
+    if (prefix.size())
+        cout << prefix << " ";
+
+    for (auto& s : state_vars)
+        cout << s << " ";
+    cout << endl;
+}
+
 RrtPlanner::RrtPlanner(ParamsType planner_params):
 Planner(planner_params)
 {    
@@ -18,22 +28,25 @@ RrtPlanner::~RrtPlanner()
 
 void RrtPlanner::SetGoalState(const StateVarsType& state_vars)
 {
-    goal_state_ptr_ = constructState(state_vars, state_map_);
+    goal_state_vars_ = state_vars;
 }
 
 bool RrtPlanner::Plan()
 {
     initialize();
 
+    if (VERBOSE) start_state_ptr_->Print("Start: ");
+    if (VERBOSE) PrintStateVars(goal_state_vars_, "Goal:");
+
     auto t_start = chrono::steady_clock::now();
 
-    if (num_threads_ == 1)
+    if (planner_params_["num_threads"] == 1)
     {
         rrtThread(0);
     }
     else
     {
-        for (int thread_id = 0; thread_id < num_threads_-1; ++thread_id)
+        for (int thread_id = 0; thread_id < planner_params_["num_threads"]-1; ++thread_id)
         {
             if (VERBOSE) cout << "Spawining state expansion thread " << thread_id << endl;
             rrt_futures_.emplace_back(async(launch::async, &RrtPlanner::rrtThread, this, thread_id));
@@ -55,8 +68,9 @@ void RrtPlanner::initialize()
 {
     // Initialize planner stats
     planner_stats_ = PlannerStats();
-    planner_stats_.num_jobs_per_thread_.resize(num_threads_, 0);
+    planner_stats_.num_jobs_per_thread_.resize(planner_params_["num_threads"], 0);
     planner_stats_.num_threads_spawned_ = 2;
+    terminate_ = false;
 }
 
 StatePtrType RrtPlanner::constructState(const StateVarsType& state, StatePtrMapType& state_map)
@@ -93,6 +107,7 @@ EdgePtrType RrtPlanner::addEdge(StatePtrType parent_state, StatePtrType child_st
     if (it_edge == edge_map.end())
     {
         edge_ptr = new Edge(parent_state, actions_ptrs_[0], child_state);
+        if (VERBOSE) edge_ptr->Print("Adding edge ");
         edge_map.insert(make_pair(edge_key, edge_ptr));
     }
     else
@@ -106,20 +121,37 @@ EdgePtrType RrtPlanner::addEdge(StatePtrType parent_state, StatePtrType child_st
 
 void RrtPlanner::rrtThread(int thread_id)
 {
+    double min_d = DINF;
     while (!terminate_)
     {
         auto sampled_state = sampleState(goal_state_ptr_, thread_id);
+        if (VERBOSE) PrintStateVars(sampled_state, "sampled state:");
         auto nearest_neighbor = getNearestNeighbor(sampled_state, state_map_);
+        if (VERBOSE) nearest_neighbor->Print("NN in graph: ");
         bool is_collision;
         auto state_ptr = extend(nearest_neighbor, sampled_state, is_collision, state_map_, thread_id);
+        if (VERBOSE) state_ptr->Print("New state: ");
         addEdge(nearest_neighbor, state_ptr, edge_map_);
 
-        auto dist_to_goal = calculateDistance(state_ptr->GetStateVars(), goal_state_ptr_->GetStateVars());
+
+        if (VERBOSE)  cout << "Graph size: " <<  state_map_.size() << endl;   
+        // getchar();
+
+        auto dist_to_goal = calculateDistance(state_ptr->GetStateVars(), goal_state_vars_);
+        
+        min_d = (dist_to_goal < min_d) ? dist_to_goal : min_d;
+
+        cout << "dist_to_goal: " << dist_to_goal 
+        << " termination_distance: " << planner_params_["termination_distance"] 
+        << " min_d: " << min_d
+        << endl; 
         if ((!terminate_) && (dist_to_goal < planner_params_["termination_distance"]))
         {            
             // Reconstruct and return path
             constructPlan(state_ptr);   
             terminate_ = true;
+            if (VERBOSE) cout << "Goal reached!" << endl;
+            getchar();
             return;
         }        
     }
@@ -144,7 +176,8 @@ StateVarsType RrtPlanner::sampleState(StatePtrType goal_state_ptr, int thread_id
     StateVarsType sampled_state;
     if (r < planner_params_["goal_bias_probability"])
     {
-        sampled_state = goal_state_ptr->GetStateVars();
+        sampled_state = goal_state_vars_;
+        if (VERBOSE) cout << "Sampling goal" << endl;
     }
     else
     {           
@@ -222,7 +255,13 @@ StateVarsType RrtPlanner::collisionFree(const StateVarsType& state_vars_start,
     StateVarsType final_valid_state  = state_vars_start;
     StateVarsType curr_state = state_vars_start;
 
-    int num_samples = planner_params_["num_samples"];
+    double distance = 0;
+    for (int i = 0; i < ndof; i++)
+    {
+        if(distance < fabs(state_vars_end[i] - state_vars_start[i]))
+            distance = fabs(state_vars_end[i] - state_vars_start[i]);
+    }
+    int num_samples = (int)(distance/(M_PI/180));
 
     for (int i = 0; i < num_samples; ++i)
     {
@@ -250,10 +289,11 @@ StatePtrType RrtPlanner::extend(const StatePtrType& nearest_neighbor, const Stat
     int ndof = nearest_neighbor->GetStateVars().size();
     auto nearest_state_vars = nearest_neighbor->GetStateVars();
     // if sampledNode is closer than m_eps, return that 
-    if (calculateDistance(sampled_state, nearest_state_vars) < planner_params_["eps"])
-    {
-        return constructState(sampled_state, state_map);
-    }
+    // if (calculateDistance(sampled_state, nearest_state_vars) < planner_params_["eps"])
+    // {
+    //     if (VERBOSE) cout << "Sampled state closer than " << planner_params_["eps"] << " to NN!" << endl;
+    //     return constructState(sampled_state, state_map);
+    // }
 
     double angle_diff_norm = 0;
     for (int i = 0; i < ndof; ++i)
@@ -268,11 +308,19 @@ StatePtrType RrtPlanner::extend(const StatePtrType& nearest_neighbor, const Stat
     {
         final_state_vars[i] = nearest_state_vars[i] + 
         planner_params_["eps"]*(angleDifference(sampled_state[i],nearest_state_vars[i])/angle_diff_norm); 
+
+        // cout << "eps: " << planner_params_["eps"] << " diff: " <<   angleDifference(sampled_state[i],nearest_state_vars[i])/angle_diff_norm << endl;
+        // cout << "Addding: " << 
+        // planner_params_["eps"]*(angleDifference(sampled_state[i],nearest_state_vars[i])/angle_diff_norm) << " to " << nearest_state_vars[i] << endl;
     }
+
+    if (VERBOSE) PrintStateVars(final_state_vars, "Final target state:");
 
     auto final_valid_state_vars = collisionFree(nearest_state_vars, final_state_vars, 
         state_map, is_collision, thread_id);
     
+    if (VERBOSE) PrintStateVars(final_valid_state_vars, "Final feasible state:");
+
     return constructState(final_valid_state_vars, state_map); 
 }
 

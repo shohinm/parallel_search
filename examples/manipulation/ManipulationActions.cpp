@@ -189,7 +189,7 @@ namespace ps
     return empty;
   }
 
-  bool ManipulationAction::isFeasible(const StateVarsType& state_vars, int thread_id)
+  bool ManipulationAction::IsFeasible(const StateVarsType& state_vars, int thread_id)
   {
     return isCollisionFree(state_vars, thread_id);
   }

@@ -233,7 +233,7 @@ void setupMujoco(mjModel **m, mjData **d, std::string modelpath)
        if (argc != 2) throw runtime_error("Format: run_robot_nav_2d insat");
        num_threads = 1;
    }
-   else if (!strcmp(argv[1], "pinsat"))
+   else if (!strcmp(argv[1], "pinsat") || !strcmp(argv[1], "rrt") || !strcmp(argv[1], "rrtconnect"))
    {
        if (argc != 3) throw runtime_error("Format: run_robot_nav_2d pinsat [num_threads]");
        num_threads = atoi(argv[2]);
@@ -279,6 +279,14 @@ void setupMujoco(mjModel **m, mjData **d, std::string modelpath)
     ParamsType planner_params;
     planner_params["num_threads"] = num_threads;
     planner_params["heuristic_weight"] = 50;
+
+    if ((planner_name == "rrt") || (planner_name == "rrtconnect"))
+    {
+        planner_params["eps"] = 1.0;
+        planner_params["goal_bias_probability"] = 0.05;
+        planner_params["termination_distance"] = 3.0;
+    }
+
 
     // Generate random starts and goals
     std::vector<vector<double>> starts, goals;
@@ -338,7 +346,10 @@ void setupMujoco(mjModel **m, mjData **d, std::string modelpath)
 
         // Set start state
         planner_ptr->SetStartState(start);
-        // planner_ptr->SetGoalState(goal);
+        if ((planner_name == "rrt") || (planner_name == "rrtconnect"))
+        {
+            planner_ptr->SetGoalState(goal);
+        }
 
 
         double t=0, cost=0;

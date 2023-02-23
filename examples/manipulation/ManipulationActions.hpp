@@ -81,7 +81,7 @@ namespace ps
 
     /// MuJoCo
     VecDf GetSuccessor(const VecDf& state, int thread_id);
-    bool isFeasible(const StateVarsType& state_vars, int thread_id);
+    bool IsFeasible(const StateVarsType& state_vars, int thread_id);
     bool isCollisionFree(const VecDf& state, int thread_id) const;
     bool isCollisionFree(const StateVarsType& state_vars, int thread_id) const;
     bool isCollisionFree(const VecDf& curr,

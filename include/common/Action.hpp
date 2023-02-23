@@ -18,7 +18,7 @@ public:
     virtual bool IsFeasible(const StateVarsType& state, int thread_id=0)
     {throw std::runtime_error("IsFeasible not implemented!");};
     virtual StateVarsType SampleFeasibleState(int thread_id=0)
-    {throw std::runtime_error("IsFeasible not implemented!");};
+    {throw std::runtime_error("SampleFeasibleState not implemented!");};
     virtual ActionSuccessor GetSuccessor(StateVarsType state_vars, int thread_id=0)=0; 
     virtual ActionSuccessor GetSuccessorLazy(StateVarsType state_vars, int thread_id=0)
     {throw std::runtime_error("GetSuccessorLazy not implemented!");};
