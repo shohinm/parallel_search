@@ -72,4 +72,7 @@ while s < data_size:
 
     s = s+1
 
-
+start_file = '../examples/manipulation/resources/shield/starts.txt'
+goal_file = '../examples/manipulation/resources/shield/goals.txt'
+np.savetxt(start_file, starts, delimiter=',')
+np.savetxt(goal_file, goals, delimiter=',')
