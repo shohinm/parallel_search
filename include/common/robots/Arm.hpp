@@ -11,7 +11,9 @@ namespace ps
 {
     struct Arm
     {
-        VecDf min_q_, max_q_, min_dq_, max_dq_;
+        VecDf min_q_, max_q_;
+        VecDf min_dq_, max_dq_;
+        VecDf min_ddq_, max_ddq_;
     };
 }
 
