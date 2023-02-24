@@ -149,7 +149,7 @@ void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vec
     planner_ptr->SetEdgeKeyGenerator(bind(EdgeKeyGenerator, placeholders::_1));
     planner_ptr->SetHeuristicGenerator(bind(computeHeuristic, placeholders::_1));
     planner_ptr->SetStateToStateHeuristicGenerator(bind(computeHeuristicStateToState, placeholders::_1, placeholders::_2));
-    planner_ptr->SetGoalChecker(bind(isGoalState, placeholders::_1, 3.0));
+    planner_ptr->SetGoalChecker(bind(isGoalState, placeholders::_1, 1.5));
 }
 
 std::random_device rd;
@@ -185,8 +185,7 @@ void generateStartsAndGoals(vector<vector<double>>& starts, vector<vector<double
         VecDf go = genRandomVector(lo, hi, dof);
         for (int i=0; i<dof; ++i)
         {
-            st(i) = angles::normalize_angle(st(i));
-            go(i) = angles::normalize_angle(go(i));
+            if (i==3 || i==5) { st(i) = go(i) = 0.0;}
         }
 
         std::vector<double> v_st, v_go;
@@ -199,6 +198,32 @@ void generateStartsAndGoals(vector<vector<double>>& starts, vector<vector<double
         goals.emplace_back(v_go);
     }
 }
+
+//https://eigen.tuxfamily.org/dox/structEigen_1_1IOFormat.html
+const static Eigen::IOFormat CSVFormat(Eigen::FullPrecision, Eigen::DontAlignCols, ", ", "\n");
+void writeToCSVfile(std::string& fname, const MatDf& matrix)
+{
+    std::ofstream file(fname);
+    if (file.is_open())
+    {
+        file << matrix.format(CSVFormat);
+        file.close();
+    }
+}
+
+MatDf sampleTrajectory(const drake::trajectories::BsplineTrajectory<double>& traj, double dt=1e-1)
+{
+    MatDf sampled_traj;
+    int i=0;
+    for (double t=0.0; t<=traj.end_time(); t+=dt)
+    {
+        sampled_traj.conservativeResize(dof, sampled_traj.cols()+1);
+        sampled_traj.col(i) = traj.value(t);
+        ++i;
+    }
+    return sampled_traj;
+}
+
 
 void setupMujoco(mjModel **m, mjData **d, std::string modelpath)
 {
@@ -222,25 +247,25 @@ int main(int argc, char* argv[])
 {
     int num_threads;
 
-   if (!strcmp(argv[1], "insat"))
-   {
-       if (argc != 2) throw runtime_error("Format: run_robot_nav_2d insat");
-       num_threads = 1;
-   }
-   else if (!strcmp(argv[1], "pinsat") || !strcmp(argv[1], "rrt") || !strcmp(argv[1], "rrtconnect"))
-   {
-       if (argc != 3) throw runtime_error("Format: run_robot_nav_2d pinsat [num_threads]");
-       num_threads = atoi(argv[2]);
-   }
-   else
-   {
-       throw runtime_error("Planner " + string(argv[1]) + " not identified");
-   }
+//   if (!strcmp(argv[1], "insat"))
+//   {
+//       if (argc != 2) throw runtime_error("Format: run_robot_nav_2d insat");
+//       num_threads = 1;
+//   }
+//   else if (!strcmp(argv[1], "pinsat") || !strcmp(argv[1], "rrt") || !strcmp(argv[1], "rrtconnect"))
+//   {
+//       if (argc != 3) throw runtime_error("Format: run_robot_nav_2d pinsat [num_threads]");
+//       num_threads = atoi(argv[2]);
+//   }
+//   else
+//   {
+//       throw runtime_error("Planner " + string(argv[1]) + " not identified");
+//   }
+//
+//   string planner_name = argv[1];
 
-   string planner_name = argv[1];
-
-    // num_threads = 1;
-    // std::string planner_name = "insat";
+     num_threads = 1;
+     std::string planner_name = "insat";
 
     /// Load MuJoCo model
     std::string modelpath = "../third_party/mujoco-2.3.2/model/abb/irb_1600/irb1600_6_12_shield.xml";
@@ -272,7 +297,7 @@ int main(int argc, char* argv[])
     // Define planner parameters
     ParamsType planner_params;
     planner_params["num_threads"] = num_threads;
-    planner_params["heuristic_weight"] = 50;
+    planner_params["heuristic_weight"] = 10;
 
     if ((planner_name == "rrt") || (planner_name == "rrtconnect"))
     {
@@ -287,11 +312,11 @@ int main(int argc, char* argv[])
     generateStartsAndGoals(starts, goals, num_runs, m, d);
 
     // Robot Params
-    ABBParams robot_params;
+    IRB1600 robot_params;
     // Insat Params
     InsatParams insat_params(dof, 2*dof, dof);
     // spline params
-    BSplineOpt::BSplineOptParams spline_params(dof, 8, 4, 1.0);
+    BSplineOpt::BSplineOptParams spline_params(dof, 7, 4, 1.0);
     // discretization
     VecDf discretization(dof);
     discretization.setOnes();
@@ -300,6 +325,12 @@ int main(int argc, char* argv[])
     vector<double> all_maps_time_vec, all_maps_cost_vec;
     vector<int> all_maps_num_edges_vec;
     unordered_map<string, vector<double>> all_action_eval_times;
+
+    /// save logs
+    MatDf start_log, goal_log, traj_log;
+    std::string traj_path ="/home/gaussian/cmu_ri_phd/phd_research/parallel_search/logs/" + planner_name +"_traj.txt";
+    std::string starts_path ="/home/gaussian/cmu_ri_phd/phd_research/parallel_search/logs/" + planner_name + "_abb_starts.txt";
+    std::string goals_path ="/home/gaussian/cmu_ri_phd/phd_research/parallel_search/logs/" + planner_name +"_abb_goals.txt";
 
     // create opt
     auto opt = BSplineOpt(insat_params, robot_params, spline_params);
@@ -416,7 +447,28 @@ int main(int argc, char* argv[])
                 cout << action << ": " << accumulate(times.begin(), times.end(), 0.0)/times.size() << endl;
             }
             cout << "************************" << endl;
-    
+
+            /// track logs
+            start_log.conservativeResize(start_log.rows()+1, insat_params.lowD_dims_);
+            goal_log.conservativeResize(goal_log.rows()+1, insat_params.lowD_dims_);
+            for (int i=0; i<dof; ++i)
+            {
+                Eigen::Map<const VecDf> svec(&starts[run][0], dof);
+                Eigen::Map<const VecDf> gvec(&goals[run][0], dof);
+                start_log.bottomRows(1) = svec.transpose();
+                goal_log.bottomRows(1) = gvec.transpose();
+            }
+
+            if (planner_name == "insat")
+            {
+                std::shared_ptr<InsatPlanner> insat_planner = std::dynamic_pointer_cast<InsatPlanner>(planner_ptr);
+                auto soln_traj = insat_planner->getSolutionTraj();
+                auto samp_traj = sampleTrajectory(soln_traj.traj_, 6e-3);
+                traj_log.conservativeResize(insat_params.lowD_dims_, traj_log.cols()+samp_traj.cols());
+                traj_log.rightCols(samp_traj.cols()) = samp_traj;
+            }
+
+
             if (visualize_plan)
             {
             }
@@ -426,10 +478,12 @@ int main(int argc, char* argv[])
         {
             cout << " | Plan not found!" << endl;
         }
-
-
-
     }
+
+    traj_log.transposeInPlace();
+    writeToCSVfile(traj_path, traj_log);
+    writeToCSVfile(starts_path, start_log);
+    writeToCSVfile(goals_path, goal_log);
 
     cout << endl << "************ Global Stats ************" << endl;
     cout << "Success rate: " << double(num_success)/num_runs << endl;
