@@ -50,9 +50,9 @@ def isCollisionFree(q):
         return True
 
 
-def ik(x):
+def ik(x,r):
     ### your code here
-    q = fkik.computeIK(target_position=x, target_orientation=[0,0,0,1])
+    q = fkik.computeIK(target_position=x, target_orientation=r)
     return q
 
 s = 0
@@ -81,13 +81,13 @@ while s < data_size:
     st_q = ik(start, r)
 
     r = np.array([0,0,0,1])
-    if sid==1:
+    if gid==1:
         r = np.array([0.707, 0, 0, 0.707])
-    elif sid==2:
+    elif gid==2:
         r = np.array([0, 0, 1, 0])
-    elif sid==3:
+    elif gid==3:
         r = np.array([0.707, 0, 0, -0.707])
-    go_q = ik(goal)
+    go_q = ik(goal, r)
 
 
     if st_q is not None and go_q is not None:
