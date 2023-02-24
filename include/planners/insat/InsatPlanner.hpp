@@ -208,7 +208,7 @@ namespace ps
 //                        }
                     }
 
-                    if (traj.size()==0)
+                    if (traj.disc_traj_.cols()<=2)
                     {
                         return;
                     }

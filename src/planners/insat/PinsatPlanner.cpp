@@ -426,7 +426,8 @@ void PinsatPlanner::expandEdge(InsatEdgePtrType edge_ptr, int thread_id)
             }
             lock_.lock();
 
-            if (traj.size() != 0)
+//            if (traj.size() != 0)
+            if (traj.disc_traj_.cols()>2)
             {
                 cost = action_ptr->getCost(traj);
                 double new_g_val = cost;
