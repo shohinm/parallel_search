@@ -205,7 +205,8 @@ namespace ps
   bool ManipulationAction::isCollisionFree(const VecDf &curr, const VecDf &succ, VecDf &free_state, int thread_id) const
   {
     double ang_dist = (succ-curr).norm();
-    int n = static_cast<int>(ceil(ang_dist/(5e-2)));
+    double dx = discretization_.minCoeff()/3.0;
+    int n = static_cast<int>(ceil(ang_dist/(dx)));
     MatDf edge = linInterp(curr, succ, n);
 
     double coll_free = true;
