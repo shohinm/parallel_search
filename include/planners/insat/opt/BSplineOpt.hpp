@@ -8,26 +8,10 @@
 // PS
 #include <common/Types.hpp>
 #include <iostream>
+#include <common/robots/Abb.hpp>
 
 namespace ps
 {
-
-
-    struct ABBParams
-    {
-        ABBParams() : min_q_(6),
-                      max_q_(6),
-                      min_dq_(6),
-                      max_dq_(6)
-        {
-            min_q_ << -3.14159, -1.0995, -4.1015, -3.4906, -2.0071, -6.9813;
-            max_q_ << 3.14159, 1.9198, 0.9599, 3.4906, 2.0071, 6.9813;
-            min_dq_ << -2.618, -2.7925, -2.967, -5.585, -6.9813, -7.854;
-            max_dq_ << 2.618, 2.7925, 2.967, 5.585, 6.9813, 7.854;
-        }
-
-        VecDf min_q_, max_q_, min_dq_, max_dq_;
-    };
 
     class BSplineOpt
     {
@@ -38,7 +22,7 @@ namespace ps
         typedef drake::solvers::MathematicalProgramResult OptResult;
 
         // Robot
-        typedef ABBParams RobotParamsType;
+        typedef IRB1600 RobotParamsType;
 
         struct BSplineOptParams
         {
@@ -251,7 +235,7 @@ namespace ps
 
         /// Params
         InsatParams insat_params_;
-        ABBParams robot_params_;
+        IRB1600 robot_params_;
         BSplineOptParams opt_params_;
 
         /// @TODO (@ram): Rewrite Drake optimizer and make it highly reusable.
