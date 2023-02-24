@@ -36,17 +36,19 @@ class Planner
         void SetActions(std::vector<std::shared_ptr<Action>> actions_ptrs);
         virtual void SetStartState(const StateVarsType& state_vars);
         virtual void SetGoalState(const StateVarsType& state_vars);
-        void SetGoalChecker(std::function<bool(const StatePtrType&)> callback);
+        void SetGoalChecker(std::function<bool(const StateVarsType&)> callback);
 
         void SetStateMapKeyGenerator(std::function<std::size_t(const StateVarsType&)> callback);
         void SetEdgeKeyGenerator(std::function<std::size_t(const EdgePtrType&)> callback);
-        void SetHeuristicGenerator(std::function<double(const StatePtrType&)> callback);
-        void SetStateToStateHeuristicGenerator(std::function<double(const StatePtrType&, const StatePtrType&)> callback);
+        void SetHeuristicGenerator(std::function<double(const StateVarsType&)> callback);
+        void SetStateToStateHeuristicGenerator(std::function<double(const StateVarsType&, const StateVarsType&)> callback);
 
 
     protected:
         
         virtual void initialize();
+        void startTimer();
+        bool checkTimeout();
         virtual void resetStates();
         StatePtrType constructState(const StateVarsType& state);
         size_t getEdgeKey(const EdgePtrType& edge_ptr);
@@ -72,15 +74,16 @@ class Planner
 
         std::function<std::size_t(const StateVarsType&)> state_key_generator_;
         std::function<std::size_t(const EdgePtrType&)> edge_key_generator_;
-        std::function<double(const StatePtrType&)> unary_heuristic_generator_;
-        std::function<double(const StatePtrType&, const StatePtrType&)> binary_heuristic_generator_;
-        std::function<double(const StatePtrType&)> goal_checker_;
+        std::function<double(const StateVarsType&)> unary_heuristic_generator_;
+        std::function<double(const StateVarsType&, const StateVarsType&)> binary_heuristic_generator_;
+        std::function<double(const StateVarsType&)> goal_checker_;
 
         // Statistics
         std::vector<PlanElement> plan_;
         PlannerStats planner_stats_;
         double h_val_min_;
 
+        std::chrono::time_point<std::chrono::steady_clock> t_start_;
 };
 
 }

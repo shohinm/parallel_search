@@ -34,9 +34,8 @@ namespace ps
         bool Plan()
         {
             initialize();
-            auto t_start = std::chrono::steady_clock::now();
-
-            while (!insat_state_open_list_.empty())
+            startTimer();   
+            while (!insat_state_open_list_.empty() && !checkTimeout())
             {
                 auto state_ptr = insat_state_open_list_.min();
                 insat_state_open_list_.pop();
@@ -45,7 +44,7 @@ namespace ps
                 if (isGoalState(state_ptr))
                 {
                     auto t_end = std::chrono::steady_clock::now();
-                    double t_elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(t_end-t_start).count();
+                    double t_elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(t_end-t_start_).count();
                     goal_state_ptr_ = state_ptr;
 
                     // Reconstruct and return path
@@ -60,7 +59,7 @@ namespace ps
             }
 
             auto t_end = std::chrono::steady_clock::now();
-            double t_elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(t_end-t_start).count();
+            double t_elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(t_end-t_start_).count();
             planner_stats_.total_time_ = 1e-9*t_elapsed;
             return false;
         }

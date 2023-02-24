@@ -83,9 +83,8 @@ vector<vector<int>> loadMap(const char *fname, cv::Mat& img, int &width, int &he
     return scaled_map;
 
 }
-double computeHeuristic(const StatePtrType& state_ptr)
+double computeHeuristic(const StateVarsType& state_vars)
 {
-    auto state_vars = state_ptr->GetStateVars();
     double dist_to_goal_region = pow(pow((state_vars[0] - goal[0]), 2) + pow((state_vars[1] - goal[1]), 2), 0.5);
 
     if (dist_to_goal_region < 0)
@@ -93,19 +92,17 @@ double computeHeuristic(const StatePtrType& state_ptr)
     return dist_to_goal_region;
 }
 
-double computeHeuristicStateToState(const StatePtrType& state_ptr_1, const StatePtrType& state_ptr_2)
+double computeHeuristicStateToState(const StateVarsType& state_vars_1, const StateVarsType& state_vars_2)
 {
-    auto state_vars_1 = state_ptr_1->GetStateVars();
-    auto state_vars_2 = state_ptr_2->GetStateVars();
     double dist = pow(pow((state_vars_1[0] - state_vars_2[0]), 2) + pow((state_vars_1[1] - state_vars_2[1]), 2), 0.5);
     if (dist < 0)
         dist = 0;
     return dist;
 }
 
-bool isGoalState(const StatePtrType& state_ptr, double dist_thresh)
+bool isGoalState(const StateVarsType& state_vars, double dist_thresh)
 {
-    return (computeHeuristic(state_ptr) < dist_thresh);
+    return (computeHeuristic(state_vars) < dist_thresh);
 }
 
 size_t StateKeyGenerator(const StateVarsType& state_vars)
@@ -280,6 +277,7 @@ int main(int argc, char* argv[])
     ParamsType planner_params;
     planner_params["num_threads"] = num_threads;
     planner_params["heuristic_weight"] = 50;
+    planner_params["timeout"] = 5;
 
     // Read map
     int width, height;
