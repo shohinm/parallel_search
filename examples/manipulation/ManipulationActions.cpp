@@ -55,16 +55,21 @@ namespace ps
       mjData* dat = mj_makeData(mod);
       m_.push_back(mod);
       d_.push_back(dat);
-//      m_.emplace_back(std::make_shared<mjModel>());
-//      d_.emplace_back(mj_makeData(m_[i]));
     }
 
-    // Caching discrete angles per DOF in the range -M_PI to M_PI
+    // Caching discrete angles per DOF in the robot joint angle range
+    VecDf disc_min_ang(m_[0]->nq);
+    VecDf disc_max_ang(m_[0]->nq);
+    VecDf num_angles(m_[0]->nq);
+
     for (int i=0; i<m_[0]->nq; ++i)
     {
-      double ang_lim = discretization_(i)*static_cast<int>(M_PI/discretization_(i));
-      int num_angles = 1+(2*static_cast<int>(M_PI/discretization_(i)));
-      discrete_angles_[i] = VecDf::LinSpaced(num_angles, -ang_lim, ang_lim);
+        disc_min_ang(i) = discretization_(i)*
+                static_cast<int>(robot_params_.min_q_(i)/discretization_(i));
+        disc_max_ang(i) = discretization_(i)*
+                          static_cast<int>(robot_params_.max_q_(i)/discretization_(i));
+        num_angles(i) = 1+(static_cast<int>((disc_max_ang(i)-disc_min_ang(i))/discretization_(i)));
+        discrete_angles_[i] = VecDf::LinSpaced(num_angles(i), disc_min_ang(i), disc_max_ang(i));
     }
 
     joint_limits_ = getJointLimits(0);
@@ -110,32 +115,15 @@ namespace ps
   /// Snap to Grid
   VecDf ManipulationAction::contToDisc(const VecDf & cont_state, int thread_id)
   {
-    VecDf disc_state(m_[thread_id]->nq);
-    for (int i=0; i<m_[thread_id]->nq; ++i)
-    {
-      // Normalize angle to -pi to pi. Should already be in that range.
-//       cont_state(i) = angles::normalize_angle(cont_state(i));
-      // Number of discrete angles in the DOF i
-      int n_disc = discrete_angles_[i].size();
-      // The offset to be added to find the bin because of negative to positive range
-      int offset = (n_disc-1)/2;
-      // One of the indexes of the bin (idx1)
-      int idx1 = static_cast<int>(cont_state(i)/discretization_(i)) + offset;
-      // The idx1 should not exceed bounds
-      assert(idx1>=0 && idx1<discrete_angles_[i].size());
-      // The second index (idx2) based on idx1
-      int idx2 = cont_state(i)>discrete_angles_[i](idx1)?idx1+1:idx1-1;
-      idx2 = (idx2<0)?discrete_angles_[i].size()-1:idx2;
-      idx2 = (idx2==discrete_angles_[i].size())?0:idx2;
-      // The distance to the angles from two instances
-      double d1 = fabs(angles::shortest_angular_distance(cont_state(i), discrete_angles_[i](idx1)));
-      double d2 = fabs(angles::shortest_angular_distance(cont_state(i), discrete_angles_[i](idx2)));
-      // The distance to the angles from two instances
-      disc_state(i) = (d1 < d2)?
-                      discrete_angles_[i](idx1):
-                      discrete_angles_[i](idx2);
-    }
-    return disc_state;
+      VecDf disc_state(m_[thread_id]->nq);
+      for (int i=0; i<m_[thread_id]->nq; ++i)
+      {
+          Eigen::Index index;
+          VecDf candi = cont_state(i)*VecDf::Ones(discrete_angles_[i].size());
+          (discrete_angles_[i] - candi).rowwise().squaredNorm().minCoeff(&index);
+          disc_state(i) = discrete_angles_[i](index);
+      }
+      return disc_state;
   }
 
   /// MuJoCo
@@ -148,7 +136,6 @@ namespace ps
         for (int j=0; j<m_[thread_id]->nq; ++j)
         {
             succ(j) = state(j) + mprims_(prim_id,j)*discretization_(j);
-            succ(j) = angles::normalize_angle(succ(j));
         }
         succ = contToDisc(succ, thread_id);
 
@@ -214,23 +201,23 @@ namespace ps
     return d_[thread_id]->ncon>0? false: true;
   }
 
+
   bool ManipulationAction::isCollisionFree(const VecDf &curr, const VecDf &succ, VecDf &free_state, int thread_id) const
   {
-    double ang_dist = angles::calcAngDist(curr, succ);
+    double ang_dist = (succ-curr).norm();
     int n = static_cast<int>(ceil(ang_dist/(5e-2)));
-    double rho = 1.0/n;
+    MatDf edge = linInterp(curr, succ, n);
 
     double coll_free = true;
     free_state = curr;
-    for (int k=0; k<=n; ++k)
+    for (int k=0; k<n; ++k)
     {
-      VecDf interp = angles::interpolateAngle(curr, succ, rho*k);
-      if (!isCollisionFree(interp, thread_id))
+      if (!isCollisionFree(edge.col(k), thread_id))
       {
         coll_free = false;
         break;
       }
-      free_state = interp;
+      free_state = edge.col(k);
     }
     return coll_free;
   }
@@ -301,13 +288,7 @@ namespace ps
 
   double ManipulationAction::getCostToSuccessor(const VecDf &current_state, const VecDf &successor_state, int thread_id)
   {
-    VecDf angle_dist(m_[thread_id]->nq);
-    for (int i=0; i<m_[thread_id]->nq; ++i)
-    {
-      angle_dist(i) = angles::shortest_angular_distance(current_state(i),
-                                                        successor_state(i));
-    }
-    return angle_dist.norm();
+    return (successor_state-current_state).norm();
   }
 
 
@@ -357,5 +338,18 @@ namespace ps
   {
     return (*opt_)[thread_id].calculateCost(traj);
   }
+
+  MatDf ManipulationAction::linInterp(const VecDf& p1, const VecDf& p2, int N) const
+  {
+     MatDf traj(p1.size(), N);
+     for (int i=0.0; i<N; ++i)
+     {
+       double j = i/static_cast<double>(N);
+       traj.col(i) = p1*(1-j) + p2*j;
+     }
+     traj.rightCols(1) = p2;
+
+     return traj;
+    }
 
 }

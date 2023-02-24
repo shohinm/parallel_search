@@ -38,7 +38,7 @@
 #include <random>
 #include <common/Types.hpp>
 #include <common/insat/InsatAction.hpp>
-#include <common/GlorifiedAngles.h>
+#include <common/robots/Abb.hpp>
 #include "planners/insat/opt/BSplineOpt.hpp"
 
 // MuJoCo
@@ -102,6 +102,7 @@ namespace ps
     TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id) const;
     TrajType warmOptimize(const TrajType& t, int thread_id) const;
     double getCost(const TrajType& traj, int thread_id) const;
+    MatDf linInterp(const VecDf& p1, const VecDf& p2, int N) const;
 
   protected:
     LockType lock_;
@@ -112,9 +113,13 @@ namespace ps
     MatDf mprims_;
     VecDf discretization_;
     std::unordered_map<int, VecDf> discrete_angles_;
+//    MatDf discrete_angles_;
 
     /// Optimizer stuff
     OptVecPtrType opt_;
+
+    /// Robot stuff
+    IRB1600 robot_params_;
 
     /// MuJoCo
     MjModelVecType m_;
@@ -159,6 +164,9 @@ namespace ps
       }
       mprims_.block(m_[0]->nq,0,m_[0]->nq,m_[0]->nq) =
               -1*mprims_.block(0,0,m_[0]->nq,m_[0]->nq);
+
+//      mprims_.col(3).setZero();
+//      mprims_.col(5).setZero();
 
       goal_.resize(m_[0]->nq);
       for (int i=0; i<goal.size(); ++i) { goal_(i) = goal[i]; }
