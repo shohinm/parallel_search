@@ -139,6 +139,14 @@ namespace ps
         }
         succ = contToDisc(succ, thread_id);
 
+        /// If successor is the same as the state. This will happen if the joint angle is close its limit.
+        if (state.isApprox(succ, 1e-3)) /// assuming discretization is never finer than 1e-3.
+        {
+            VecDf empty;
+            assert(empty.size() == 0);
+            return empty;
+        }
+
         if (!validateJointLimits(succ, thread_id))
         {
             VecDf empty;
@@ -205,7 +213,7 @@ namespace ps
   bool ManipulationAction::isCollisionFree(const VecDf &curr, const VecDf &succ, VecDf &free_state, int thread_id) const
   {
     double ang_dist = (succ-curr).norm();
-    double dx = discretization_.minCoeff()/3.0;
+    double dx = discretization_.minCoeff()/3.0; /// Magic number 3.0 will prevent roundoff errors
     int n = static_cast<int>(ceil(ang_dist/(dx)));
     MatDf edge = linInterp(curr, succ, n);
 
