@@ -2,7 +2,6 @@
 #define ARASTAR_PLANNER_HPP
 
 #include <future>
-#include <planners/Planner.hpp>
 #include <planners/WastarPlanner.hpp>  
 
 namespace ps

@@ -473,7 +473,8 @@ void AgepasePlanner::expandEdge(EdgePtrType edge_ptr, int thread_id)
                 }
                 else
                 {
-                    if (find(edge_incon_list_.begin(), edge_incon_list_.end(), proxy_edge_ptr) == edge_incon_list_.end()) {
+                    if (find(edge_incon_list_.begin(), edge_incon_list_.end(), proxy_edge_ptr) == edge_incon_list_.end())
+                    {
                         edge_incon_list_.emplace_back(proxy_edge_ptr);
                     }
                 }

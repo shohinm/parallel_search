@@ -10,6 +10,7 @@
 #include "RobotNav2dActions.hpp"
 #include <planners/WastarPlanner.hpp>
 #include <planners/PwastarPlanner.hpp>
+#include <planners/ArastarPlanner.hpp>
 #include <planners/PasePlanner.hpp>
 #include <planners/EpasePlanner.hpp>
 #include <planners/GepasePlanner.hpp>
@@ -209,6 +210,8 @@ void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vec
         planner_ptr = make_shared<WastarPlanner>(planner_params);
     else if (planner_name == "pwastar")
         planner_ptr = make_shared<PwastarPlanner>(planner_params);
+    else if (planner_name == "arastar")
+        planner_ptr = make_shared<ArastarPlanner>(planner_params);
     else if (planner_name == "pase")
         planner_ptr = make_shared<PasePlanner>(planner_params);
     else if (planner_name == "epase")
@@ -272,6 +275,12 @@ int main(int argc, char* argv[])
         if (argc != 3) throw runtime_error("Format: run_robot_nav_2d [planner_name] [num_threads]");
         if (atoi(argv[2]) < 4) throw runtime_error("mplp requires a minimum of 4 threads");
         num_threads = atoi(argv[2]);
+    }
+    else if (!strcmp(argv[1], "arastar"))
+    {
+        if (argc != 3) throw runtime_error("Format: run_robot_nav_2d arastar [time_budget]");
+        num_threads = 1;
+        time_budget = atof(argv[2]);
     }
     else if (!strcmp(argv[1], "agepase"))
     {
