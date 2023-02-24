@@ -65,6 +65,11 @@ namespace ps
             return false;
         }
 
+        TrajType getSolutionTraj()
+        {
+            return soln_traj_;
+        }
+
     protected:
         void initialize()
         {
@@ -338,7 +343,6 @@ namespace ps
             }
             planner_stats_.path_length_ += plan_.size();
         }
-        
 
         void exit()
         {
