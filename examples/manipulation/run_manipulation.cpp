@@ -295,6 +295,7 @@ int main(int argc, char* argv[])
     ParamsType planner_params;
     planner_params["num_threads"] = num_threads;
     planner_params["heuristic_weight"] = 10;
+    planner_params["timeout"] = 20;
 
     if ((planner_name == "rrt") || (planner_name == "rrtconnect"))
     {

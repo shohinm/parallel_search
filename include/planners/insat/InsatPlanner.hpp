@@ -34,9 +34,8 @@ namespace ps
         bool Plan()
         {
             initialize();
-            auto t_start = std::chrono::steady_clock::now();
-
-            while (!insat_state_open_list_.empty())
+            startTimer();   
+            while (!insat_state_open_list_.empty() && !checkTimeout())
             {
                 auto state_ptr = insat_state_open_list_.min();
                 insat_state_open_list_.pop();
@@ -44,9 +43,8 @@ namespace ps
                 // Return solution if goal state is expanded
                 if (isGoalState(state_ptr))
                 {
-                    state_ptr->Print("Goal");
                     auto t_end = std::chrono::steady_clock::now();
-                    double t_elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(t_end-t_start).count();
+                    double t_elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(t_end-t_start_).count();
                     goal_state_ptr_ = state_ptr;
 
                     // Reconstruct and return path
@@ -61,7 +59,7 @@ namespace ps
             }
 
             auto t_end = std::chrono::steady_clock::now();
-            double t_elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(t_end-t_start).count();
+            double t_elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(t_end-t_start_).count();
             planner_stats_.total_time_ = 1e-9*t_elapsed;
             return false;
         }
@@ -340,11 +338,7 @@ namespace ps
                 else
                     plan_.insert(plan_.begin(), PlanElement(state_ptr->GetStateVars(), NULL, 0));
 
-                state_ptr->Print("State ");
-                state_ptr->GetIncomingEdgePtr()->Print("Edge ");
                 state_ptr = state_ptr->GetIncomingEdgePtr()->fullD_parent_state_ptr_;
-                state_ptr->Print("Next state");
-                getchar();
             }
             planner_stats_.path_length_ += plan_.size();
         }

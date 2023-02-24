@@ -277,6 +277,7 @@ int main(int argc, char* argv[])
     ParamsType planner_params;
     planner_params["num_threads"] = num_threads;
     planner_params["heuristic_weight"] = 50;
+    planner_params["timeout"] = 5;
 
     // Read map
     int width, height;
