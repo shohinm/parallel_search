@@ -68,17 +68,25 @@ while s < data_size:
 
     st_seed = np.random.random_sample((3,))
     go_seed = np.random.random_sample((3,))
-    # start = np.array([(vol[sid,0,1]-vol[sid,0,0])*st_seed[0]+vol[sid,0,0],
-    #                   (vol[sid,1,1]-vol[sid,1,0])*st_seed[1]+vol[sid,1,0],
-    #                   (vol[sid,2,1]-vol[sid,2,0])*st_seed[2]+vol[sid,2,0]])
-    # goal = np.array([(vol[gid,0,1]-vol[gid,0,0])*go_seed+vol[gid,0,0],
-    #                  (vol[gid,1,1]-vol[gid,1,0])*go_seed+vol[gid,1,0],
-    #                  (vol[gid,2,1]-vol[gid,2,0])*go_seed+vol[gid,2,0]])
     start = np.array([(vol[sid,:,1]-vol[sid,:,0])*st_seed+vol[sid,:,0]])
     goal = np.array([(vol[gid,:,1]-vol[gid,:,0])*go_seed+vol[gid,:,0]])
 
+    r = np.array([0,0,0,1])
+    if sid==1:
+        r = np.array([0.707, 0, 0, 0.707])
+    elif sid==2:
+        r = np.array([0, 0, 1, 0])
+    elif sid==3:
+        r = np.array([0.707, 0, 0, -0.707])
+    st_q = ik(start, r)
 
-    st_q = ik(start)
+    r = np.array([0,0,0,1])
+    if sid==1:
+        r = np.array([0.707, 0, 0, 0.707])
+    elif sid==2:
+        r = np.array([0, 0, 1, 0])
+    elif sid==3:
+        r = np.array([0.707, 0, 0, -0.707])
     go_q = ik(goal)
 
 
