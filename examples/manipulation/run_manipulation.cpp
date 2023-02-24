@@ -165,6 +165,37 @@ VecDf genRandomVector(VecDf& low, VecDf& high, int size)
     return randvec;
 }
 
+template<typename M>
+M load_csv (const std::string & path, char delim=' ') {
+    using namespace Eigen;
+    std::ifstream indata;
+    indata.open(path);
+    std::string line;
+    std::vector<double> values;
+    uint rows = 0;
+    while (std::getline(indata, line)) {
+        std::stringstream lineStream(line);
+        std::string cell;
+        while (std::getline(lineStream, cell, delim)) {
+            values.push_back(std::stod(cell));
+        }
+        ++rows;
+    }
+    return Map<const Matrix<typename M::Scalar, M::RowsAtCompileTime, M::ColsAtCompileTime, RowMajor>>(values.data(), rows, values.size()/rows);
+}
+
+//https://eigen.tuxfamily.org/dox/structEigen_1_1IOFormat.html
+const static Eigen::IOFormat CSVFormat(Eigen::FullPrecision, Eigen::DontAlignCols, ", ", "\n");
+void writeToCSVfile(std::string& fname, const MatDf& matrix)
+{
+    std::ofstream file(fname);
+    if (file.is_open())
+    {
+        file << matrix.format(CSVFormat);
+        file.close();
+    }
+}
+
 void generateStartsAndGoals(vector<vector<double>>& starts, vector<vector<double>>& goals, int num_runs, mjModel* m, mjData* d)
 {
     bool valid = true;
@@ -196,17 +227,31 @@ void generateStartsAndGoals(vector<vector<double>>& starts, vector<vector<double
     }
 }
 
-//https://eigen.tuxfamily.org/dox/structEigen_1_1IOFormat.html
-const static Eigen::IOFormat CSVFormat(Eigen::FullPrecision, Eigen::DontAlignCols, ", ", "\n");
-void writeToCSVfile(std::string& fname, const MatDf& matrix)
+void loadStartsAndGoalsFromFile(vector<vector<double>>& starts,
+                                vector<vector<double>>& goals,
+                                const string& start_path, const string& goal_path)
 {
-    std::ofstream file(fname);
-    if (file.is_open())
+    MatDf start_mat = load_csv<MatDf>(start_path);
+    MatDf goal_mat = load_csv<MatDf>(goal_path);
+
+    for (int i=0; i<start_mat.rows(); ++i)
     {
-        file << matrix.format(CSVFormat);
-        file.close();
+//        for (int i=0; i<dof; ++i)
+//        {
+//            if (i==3 || i==5) { st(i) = go(i) = 0.0;}
+//        }
+
+        std::vector<double> v_st, v_go;
+        v_st.resize(dof);
+        v_go.resize(dof);
+        VecDf::Map(&v_st[0], start_mat.cols()) = start_mat.row(i);
+        VecDf::Map(&v_go[0], goal_mat.cols()) = goal_mat.row(i);
+
+        starts.emplace_back(v_st);
+        goals.emplace_back(v_go);
     }
 }
+
 
 MatDf sampleTrajectory(const drake::trajectories::BsplineTrajectory<double>& traj, double dt=1e-1)
 {
@@ -261,6 +306,9 @@ int main(int argc, char* argv[])
 
     string planner_name = argv[1];
 
+//    num_threads = 1;
+//    std::string planner_name = "insat";
+
     /// Load MuJoCo model
     std::string modelpath = "../third_party/mujoco-2.3.2/model/abb/irb_1600/irb1600_6_12_shield.xml";
     mjModel *m = nullptr;
@@ -283,7 +331,7 @@ int main(int argc, char* argv[])
 
 
     // Experiment parameters
-    int num_runs = 10;
+    int num_runs = 20;
     vector<int> scale_vec = {5, 5, 5, 10, 5};
     bool visualize_plan = true;
     bool load_starts_goals_from_file = true;
@@ -301,10 +349,18 @@ int main(int argc, char* argv[])
         planner_params["termination_distance"] = 3.0;
     }
 
-
     // Generate random starts and goals
     std::vector<vector<double>> starts, goals;
-    generateStartsAndGoals(starts, goals, num_runs, m, d);
+    if (load_starts_goals_from_file)
+    {
+        std::string starts_path = "../examples/manipulation/resources/shield/starts.txt";
+        std::string goals_path = "../examples/manipulation/resources/shield/goals.txt";
+        loadStartsAndGoalsFromFile(starts, goals, starts_path, goals_path);
+    }
+    else
+    {
+        generateStartsAndGoals(starts, goals, num_runs, m, d);
+    }
 
     // Robot Params
     IRB1600 robot_params;
@@ -323,9 +379,9 @@ int main(int argc, char* argv[])
 
     /// save logs
     MatDf start_log, goal_log, traj_log;
-    std::string traj_path ="/home/gaussian/cmu_ri_phd/phd_research/parallel_search/logs/" + planner_name +"_traj.txt";
-    std::string starts_path ="/home/gaussian/cmu_ri_phd/phd_research/parallel_search/logs/" + planner_name + "_abb_starts.txt";
-    std::string goals_path ="/home/gaussian/cmu_ri_phd/phd_research/parallel_search/logs/" + planner_name +"_abb_goals.txt";
+    std::string traj_path ="../logs/" + planner_name +"_abb_traj.txt";
+    std::string starts_path ="../logs/" + planner_name + "_abb_starts.txt";
+    std::string goals_path ="../logs/" + planner_name +"_abb_goals.txt";
 
     // create opt
     auto opt = BSplineOpt(insat_params, robot_params, spline_params);
