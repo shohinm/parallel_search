@@ -137,10 +137,11 @@ namespace ps
             drake::solvers::MathematicalProgram& prog(opt.get_mutable_prog());
 
             opt.AddDurationCost(1.0);
-            opt.AddPathLengthCost(1.0);
+            opt.AddPathLengthCost(0.1);
 
             opt.AddPositionBounds(robot_params_.min_q_, robot_params_.max_q_);
             opt.AddVelocityBounds(robot_params_.min_dq_, robot_params_.max_dq_);
+//            opt.AddAccelerationBounds(robot_params_.min_ddq_, robot_params_.max_ddq_);
 
             opt.AddDurationConstraint(opt_params_.duration_, opt_params_.duration_);
 
@@ -151,9 +152,9 @@ namespace ps
             opt.AddPathPositionConstraint(qF, qF, 1); // Linear constraint
 
             /// Cost
-            auto c1 = prog.AddQuadraticErrorCost(MatDf::Identity(insat_params_.lowD_dims_, insat_params_.lowD_dims_),
+            prog.AddQuadraticErrorCost(MatDf::Identity(insat_params_.lowD_dims_, insat_params_.lowD_dims_),
                                                  q0,opt.control_points().leftCols(1));
-            auto c2 = prog.AddQuadraticErrorCost(MatDf::Identity(insat_params_.lowD_dims_, insat_params_.lowD_dims_),
+            prog.AddQuadraticErrorCost(MatDf::Identity(insat_params_.lowD_dims_, insat_params_.lowD_dims_),
                                                  qF, opt.control_points().rightCols(1));
 
             if (traj1.result_.is_success())
