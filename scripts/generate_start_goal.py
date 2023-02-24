@@ -8,7 +8,7 @@ from numpy import genfromtxt
 
 
 #### Load mujoco model
-model_dir = '/home/gaussian/cmu_ri_phd/phd_research/parallel_search/third_party/mujoco-2.3.2/model/abb/irb_1600'
+model_dir = '../third_party/mujoco-2.3.2/model/abb/irb_1600'
 mjcf_arm = 'irb1600_6_12_shield.xml'
 arm_model = MjModel.from_xml_path(os.path.join(model_dir, mjcf_arm))
 arm_data = MjData(arm_model)
