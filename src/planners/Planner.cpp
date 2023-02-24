@@ -80,6 +80,18 @@ void Planner::initialize()
 
 }
 
+void Planner::startTimer()
+{
+    t_start_ = chrono::steady_clock::now();
+}
+
+bool Planner::checkTimeout()
+{
+    auto t_end = chrono::steady_clock::now();
+    double t_elapsed = 1e-9*chrono::duration_cast<chrono::nanoseconds>(t_end-t_start_).count();
+    return t_elapsed > planner_params_["timeout"];
+}
+
 void Planner::resetStates()
 {
     for (auto it = state_map_.begin(); it != state_map_.end(); ++it)
