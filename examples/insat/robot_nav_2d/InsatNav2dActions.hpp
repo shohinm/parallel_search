@@ -26,10 +26,10 @@ namespace ps
                          OptVecPtrType& opt,
                          bool is_expensive = true);
 
-        virtual bool CheckPreconditions(StateVarsType state);
-        ActionSuccessor GetSuccessor(StateVarsType state_vars, int thread_id);
-        ActionSuccessor GetSuccessorLazy(StateVarsType state_vars, int thread_id);
-        ActionSuccessor Evaluate(StateVarsType parent_state_vars, StateVarsType child_state_vars, int thread_id=0);
+        virtual bool CheckPreconditions(const StateVarsType& state);
+        ActionSuccessor GetSuccessor(const StateVarsType& state_vars, int thread_id);
+        ActionSuccessor GetSuccessorLazy(const StateVarsType& state_vars, int thread_id);
+        ActionSuccessor Evaluate(const StateVarsType& parent_state_vars, const StateVarsType& child_state_vars, int thread_id=0);
         bool isValidCell(int x, int y) const;
         bool inRange(int x, int y);
         std::vector<std::pair<int, int>> getFootPrintRectangular(int x, int y, int footprint_size);

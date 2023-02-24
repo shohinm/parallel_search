@@ -12,15 +12,15 @@ class RobotNav2dAction : public Action
 public:
     RobotNav2dAction(const std::string& type, ParamsType params, std::vector<std::vector<int>> map, bool is_expensive = true)
     : Action(type, params, is_expensive), map_(map) {};
-    bool CheckPreconditions(StateVarsType state); 
-    ActionSuccessor GetSuccessor(StateVarsType state_vars, int thread_id); 
-    ActionSuccessor GetSuccessorLazy(StateVarsType state_vars, int thread_id); 
-    ActionSuccessor Evaluate(StateVarsType parent_state_vars, StateVarsType child_state_vars, int thread_id=0);
+    bool CheckPreconditions(const StateVarsType& state); 
+    ActionSuccessor GetSuccessor(const StateVarsType& state_vars, int thread_id); 
+    ActionSuccessor GetSuccessorLazy(const StateVarsType& state_vars, int thread_id); 
+    ActionSuccessor Evaluate(const StateVarsType& parent_state_vars, const StateVarsType& child_state_vars, int thread_id=0);
+     
+protected:
     bool isValidCell(int x, int y);
     bool inRange(int x, int y);
     std::vector<std::pair<int, int>> getFootPrintRectangular(int x, int y, int footprint_size);
-
-protected:
     std::vector<double> move_dir_;
     std::vector<std::vector<int>> map_;
     std::vector<std::pair<int, int>> footprint_;

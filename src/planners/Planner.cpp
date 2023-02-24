@@ -31,7 +31,7 @@ void Planner::SetGoalState(const StateVarsType& state_vars)
     throw runtime_error("SetGoalState not implemented!");
 }
 
-void Planner::SetGoalChecker(function<bool(const StatePtrType&)> callback)
+void Planner::SetGoalChecker(function<bool(const StateVarsType&)> callback)
 {
     goal_checker_ = callback;
 }
@@ -46,12 +46,12 @@ void Planner::SetEdgeKeyGenerator(function<size_t(const EdgePtrType&)> callback)
     edge_key_generator_ = callback;
 }
 
-void Planner::SetHeuristicGenerator(function<double(const StatePtrType&)> callback)
+void Planner::SetHeuristicGenerator(function<double(const StateVarsType&)> callback)
 {
     unary_heuristic_generator_ = callback;
 }
 
-void Planner::SetStateToStateHeuristicGenerator(function<double(const StatePtrType&, const StatePtrType&)> callback)
+void Planner::SetStateToStateHeuristicGenerator(function<double(const StateVarsType&, const StateVarsType&)> callback)
 {
     binary_heuristic_generator_ = callback;
 }
@@ -83,6 +83,18 @@ void Planner::initialize()
     // Reset h_min
     h_val_min_ = DINF;
 
+}
+
+void Planner::startTimer()
+{
+    t_start_ = chrono::steady_clock::now();
+}
+
+bool Planner::checkTimeout()
+{
+    auto t_end = chrono::steady_clock::now();
+    double t_elapsed = 1e-9*chrono::duration_cast<chrono::nanoseconds>(t_end-t_start_).count();
+    return t_elapsed > planner_params_["timeout"];
 }
 
 void Planner::resetStates()
@@ -130,21 +142,22 @@ StatePtrType Planner::constructState(const StateVarsType& state)
 
 double Planner::computeHeuristic(const StatePtrType& state_ptr)
 {
-    return roundOff(unary_heuristic_generator_(state_ptr));
+    return roundOff(unary_heuristic_generator_(state_ptr->GetStateVars()));
 }
 
 double Planner::computeHeuristic(const StatePtrType& state_ptr_1, const StatePtrType& state_ptr_2)
 {
-    return roundOff(binary_heuristic_generator_(state_ptr_1, state_ptr_2));
+    return roundOff(binary_heuristic_generator_(state_ptr_1->GetStateVars(), state_ptr_2->GetStateVars()));
 }
 
 bool Planner::isGoalState(const StatePtrType& state_ptr)
 {
-    return goal_checker_(state_ptr);
+    return goal_checker_(state_ptr->GetStateVars());
 }
 
 void Planner::constructPlan(StatePtrType& state_ptr)
 {
+    double cost = 0;
     while(state_ptr->GetIncomingEdgePtr())
     {
         if (state_ptr->GetIncomingEdgePtr()) // For start state_ptr, there is no incoming edge
@@ -152,10 +165,12 @@ void Planner::constructPlan(StatePtrType& state_ptr)
         else
             plan_.insert(plan_.begin(), PlanElement(state_ptr->GetStateVars(), NULL, 0));        
 
-        planner_stats_.path_cost_ += state_ptr->GetIncomingEdgePtr()->GetCost();
+        cost += state_ptr->GetIncomingEdgePtr()->GetCost();
         state_ptr = state_ptr->GetIncomingEdgePtr()->parent_state_ptr_;     
     }
-    planner_stats_.path_length_ += plan_.size();
+
+    planner_stats_.path_cost_= cost;
+    planner_stats_.path_length_ = plan_.size();
 }
 
 double Planner::roundOff(double value, int prec)

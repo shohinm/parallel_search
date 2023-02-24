@@ -22,9 +22,8 @@ bool PasePlanner::Plan()
 {
     initialize();
     
-    auto t_start = chrono::steady_clock::now();
     planner_stats_.num_threads_spawned_ = 1;
-
+    startTimer();   
     if (num_threads_ == 1)
     {
         paseThread(0);
@@ -41,10 +40,11 @@ bool PasePlanner::Plan()
     }
 
     // Spin till termination, should be replaced by conditional variable
-    while(!terminate_){}
+    while(!terminate_&& !checkTimeout()){}
 
+    terminate_ = true;
     auto t_end = chrono::steady_clock::now();
-    double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
+    double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start_).count();
     planner_stats_.total_time_ = 1e-9*t_elapsed;
     exit();
 

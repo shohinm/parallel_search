@@ -77,12 +77,12 @@ namespace ps
 
   }
 
-  bool ManipulationAction::CheckPreconditions(StateVarsType state)
+  bool ManipulationAction::CheckPreconditions(const StateVarsType& state)
   {
     return true;
   }
 
-  ActionSuccessor ManipulationAction::GetSuccessor(StateVarsType state_vars, int thread_id)
+  ActionSuccessor ManipulationAction::GetSuccessor(const StateVarsType& state_vars, int thread_id)
   {
     Eigen::Map<const VecDf> state(&state_vars[0], state_vars.size());
     VecDf successor = GetSuccessor(state, thread_id);
@@ -102,12 +102,12 @@ namespace ps
     }
   }
 
-  ActionSuccessor ManipulationAction::GetSuccessorLazy(StateVarsType state_vars, int thread_id)
+  ActionSuccessor ManipulationAction::GetSuccessorLazy(const StateVarsType& state_vars, int thread_id)
   {
 
   }
 
-  ActionSuccessor ManipulationAction::Evaluate(StateVarsType parent_state_vars, StateVarsType child_state_vars, int thread_id)
+  ActionSuccessor ManipulationAction::Evaluate(const StateVarsType& parent_state_vars, const StateVarsType& child_state_vars, int thread_id)
   {
     return GetSuccessor(parent_state_vars, thread_id);
   }

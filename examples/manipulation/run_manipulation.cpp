@@ -58,9 +58,8 @@ double roundOff(double value, unsigned char prec)
     return round(value * pow_10) / pow_10;
 }
 
-double computeHeuristic(const StatePtrType& state_ptr)
+double computeHeuristic(const StateVarsType& state_vars)
 {
-    auto state_vars = state_ptr->GetStateVars();
     double dist_to_goal_region = 0.0;
     for (int i=0; i<dof; ++i)
     {
@@ -70,10 +69,8 @@ double computeHeuristic(const StatePtrType& state_ptr)
     return dist_to_goal_region;
 }
 
-double computeHeuristicStateToState(const StatePtrType& state_ptr_1, const StatePtrType& state_ptr_2)
+double computeHeuristicStateToState(const StateVarsType& state_vars_1, const StateVarsType& state_vars_2)
 {
-    auto state_vars_1 = state_ptr_1->GetStateVars();
-    auto state_vars_2 = state_ptr_2->GetStateVars();
     double dist = 0.0;
     for (int i=0; i<dof; ++i)
     {
@@ -82,9 +79,9 @@ double computeHeuristicStateToState(const StatePtrType& state_ptr_1, const State
     return dist;
 }
 
-bool isGoalState(const StatePtrType& state_ptr, double dist_thresh)
+bool isGoalState(const StateVarsType& state_vars, double dist_thresh)
 {
-    return (computeHeuristic(state_ptr) < dist_thresh);
+    return (computeHeuristic(state_vars) < dist_thresh);
 }
 
 size_t StateKeyGenerator(const StateVarsType& state_vars)

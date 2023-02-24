@@ -44,6 +44,7 @@ namespace ps
                 // Return solution if goal state is expanded
                 if (isGoalState(state_ptr))
                 {
+                    state_ptr->Print("Goal");
                     auto t_end = std::chrono::steady_clock::now();
                     double t_elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(t_end-t_start).count();
                     goal_state_ptr_ = state_ptr;
@@ -339,7 +340,11 @@ namespace ps
                 else
                     plan_.insert(plan_.begin(), PlanElement(state_ptr->GetStateVars(), NULL, 0));
 
+                state_ptr->Print("State ");
+                state_ptr->GetIncomingEdgePtr()->Print("Edge ");
                 state_ptr = state_ptr->GetIncomingEdgePtr()->fullD_parent_state_ptr_;
+                state_ptr->Print("Next state");
+                getchar();
             }
             planner_stats_.path_length_ += plan_.size();
         }
