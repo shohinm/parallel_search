@@ -548,6 +548,7 @@ int main(int argc, char* argv[])
         << planner_stats.path_cost_<< " " 
         << planner_stats.path_length_<< " " 
         << planner_stats.num_state_expansions_<< " " 
+        << planner_stats.num_evaluated_edges_<< " " 
         << planner_stats.num_threads_spawned_<< " " 
         << endl;
     }
