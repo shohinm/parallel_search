@@ -104,6 +104,9 @@ namespace ps
     double getCost(const TrajType& traj, int thread_id) const;
     MatDf linInterp(const VecDf& p1, const VecDf& p2, int N) const;
 
+    /// goal
+    void setGoal(StateVarsType& goal);
+
   protected:
     LockType lock_;
 
@@ -139,7 +142,6 @@ namespace ps
                     VecDf ang_discretization,
                     OptVecPtrType opt,
                     MjModelVecType& m_vec, MjDataVecType& d_vec,
-                    StateVarsType& goal,
                     int num_threads=1,
                     bool is_expensive = true):
             ManipulationAction(type,
@@ -168,9 +170,6 @@ namespace ps
 //      mprims_.col(3).setZero();
 //      mprims_.col(5).setZero();
 
-      goal_.resize(m_[0]->nq);
-      for (int i=0; i<goal.size(); ++i) { goal_(i) = goal[i]; }
-      goal_ = contToDisc(goal_, 0);
     };
   };
 

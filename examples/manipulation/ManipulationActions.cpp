@@ -361,4 +361,12 @@ namespace ps
      return traj;
     }
 
+    void ManipulationAction::setGoal(StateVarsType & goal)
+    {
+        goal_.resize(m_[0]->nq);
+        for (int i=0; i<goal.size(); ++i) { goal_(i) = goal[i]; }
+        goal_ = contToDisc(goal_, 0);
+    }
+
+
 }
