@@ -23,7 +23,7 @@ dt = 1e-3
 model_dir = '/home/gaussian/cmu_ri_phd/phd_research/parallel_search/third_party/mujoco-2.3.2/model/abb/irb_1600'
 mjcf = 'irb1600_6_12.xml'
 mjcf_arm = 'irb1600_6_12_shield.xml'
-traj_file = '/home/gaussian/cmu_ri_phd/phd_research/parallel_search/logs/insat_traj.txt'
+traj_file = '/home/gaussian/cmu_ri_phd/phd_research/parallel_search/logs/insat_abb_traj.txt'
 starts_file = '/home/gaussian/cmu_ri_phd/phd_research/parallel_search/logs/insat_abb_starts.txt'
 goals_file = '/home/gaussian/cmu_ri_phd/phd_research/parallel_search/logs/insat_abb_goals.txt'
 traj = genfromtxt(traj_file, delimiter=',')
