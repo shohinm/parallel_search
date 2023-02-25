@@ -368,6 +368,7 @@ int main(int argc, char* argv[])
     InsatParams insat_params(dof, 2*dof, dof);
     // spline params
     BSplineOpt::BSplineOptParams spline_params(dof, 7, 4, 1.0);
+    spline_params.setAdaptiveParams(4, 10, 2.0);
     // discretization
     VecDf discretization(dof);
     discretization.setOnes();
@@ -407,8 +408,18 @@ int main(int argc, char* argv[])
         // Set goal conditions
         goal = goals[run];
         auto start = starts[run];
-        
-	   // print start and goal
+
+        for (auto& op : *opt_vec_ptr)
+        {
+            op.updateStartAndGoal(start, goal);
+        }
+
+        for (auto& m : manip_action_ptrs)
+        {
+            m->setGoal(goals[run]);
+        }
+
+        // print start and goal
         std::cout << "start: ";
         for (double i: starts[run])
             std::cout << i << ' ';
@@ -417,11 +428,6 @@ int main(int argc, char* argv[])
         for (double i: goals[run])
             std::cout << i << ' ';
         std::cout << std::endl;
-
-        for (auto& m : manip_action_ptrs)
-        {
-            m->setGoal(goals[run]);
-        }
 
         // Construct planner
         shared_ptr<Planner> planner_ptr;

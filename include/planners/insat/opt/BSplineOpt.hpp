@@ -50,6 +50,15 @@ namespace ps
                 start_goal_dist_ = (goal - start).norm();
             }
 
+            void setAdaptiveParams(int min_ctrl_points,
+                                   int max_ctrl_points,
+                                   double total_duration)
+            {
+                min_ctrl_points_ = min_ctrl_points;
+                max_ctrl_points_ = max_ctrl_points;
+                total_duration_ = total_duration;
+            }
+
             int num_positions_;
             int num_control_points_;
             int spline_order_;
@@ -81,6 +90,15 @@ namespace ps
         void SetGoalChecker(std::function<bool(const StateVarsType&)> callback)
         {
             goal_checker_ = callback;
+        }
+
+        void updateStartAndGoal(StateVarsType& start, StateVarsType& goal)
+        {
+            Eigen::Map<VecDf> st(&start[0], start.size());
+            Eigen::Map<VecDf> go(&goal[0], goal.size());
+            opt_params_.global_start_ = st;
+            opt_params_.global_goal_ = go;
+            opt_params_.start_goal_dist_ = (go - st).norm();
         }
 
         bool isGoal(const VecDf& state)
@@ -277,7 +295,7 @@ namespace ps
 
 
         BSplineTraj runBSplineOpt(const InsatAction* act,
-                                  VecDf& q0, VecDf& qF,
+                                  const VecDf& q0, const VecDf& qF,
                                   VecDf& dq0, VecDf& dqF,
                                   int order, int num_ctrl_pt, double T,
                                   int thread_id)
@@ -317,6 +335,7 @@ namespace ps
             BSplineTraj traj;
             traj.result_ = drake::solvers::Solve(prog);
 
+            bool is_feasible = false;
             if (traj.result_.is_success())
             {
                 traj.traj_ = opt.ReconstructTrajectory(traj.result_);
@@ -325,6 +344,7 @@ namespace ps
                 if (act->isFeasible(disc_traj, thread_id))
                 {
                     traj.disc_traj_ = disc_traj;
+                    is_feasible = true;
                 }
                 else
                 {
@@ -336,19 +356,27 @@ namespace ps
                         {
                             traj.traj_ = traj_trace[i];
                             traj.disc_traj_ = samp_traj;
+                            is_feasible = true;
                             break;
                         }
                     }
                 }
             }
 
+            if (!is_feasible)
+            {
+                traj.result_ = TrajType::OptResultType();
+                traj.traj_ = TrajType::TrajInstanceType();
+                assert(traj.disc_traj_.size() == 0);
+            }
+
             return traj;
         }
 
-
+        /// The assumption is both t1 and t2 exists and this function is only used for blending
         BSplineTraj runBSplineOptWithInitGuess(const InsatAction* act,
-                                               BSplineTraj& t1, BSplineTraj& t2,
-                                               VecDf& q0, VecDf& qF,
+                                               const BSplineTraj& t1, BSplineTraj& t2,
+                                               const VecDf& q0, const VecDf& qF,
                                                VecDf& dq0, VecDf& dqF,
                                                int order,
                                                int c1, int c2,
@@ -417,6 +445,7 @@ namespace ps
             BSplineTraj traj;
             traj.result_ = drake::solvers::Solve(prog);
 
+            bool is_feasible = false;
             if (traj.result_.is_success())
             {
                 traj.traj_ = opt.ReconstructTrajectory(traj.result_);
@@ -425,6 +454,7 @@ namespace ps
                 if (act->isFeasible(disc_traj, thread_id))
                 {
                     traj.disc_traj_ = disc_traj;
+                    is_feasible = true;
                 }
                 else
                 {
@@ -436,10 +466,18 @@ namespace ps
                         {
                             traj.traj_ = traj_trace[i];
                             traj.disc_traj_ = samp_traj;
+                            is_feasible = true;
                             break;
                         }
                     }
                 }
+            }
+
+            if (!is_feasible)
+            {
+                traj.result_ = TrajType::OptResultType();
+                traj.traj_ = TrajType::TrajInstanceType();
+                assert(traj.disc_traj_.size() == 0);
             }
 
             return traj;
@@ -447,9 +485,9 @@ namespace ps
 
 
         BSplineTraj optimize(const InsatAction* act,
-                             BSplineTraj incoming_traj,
-                             VecDf& curr_state,
-                             VecDf& succ_state,
+                             const BSplineTraj& incoming_traj,
+                             const VecDf& curr_state,
+                             const VecDf& succ_state,
                              int thread_id)
         {
 
@@ -470,7 +508,7 @@ namespace ps
 
             double To = (succ_state-curr_state).norm()/opt_params_.start_goal_dist_;
             int nc = std::max(opt_params_.min_ctrl_points_,
-                              static_cast<int>(T*opt_params_.max_ctrl_points_));
+                              static_cast<int>(To*opt_params_.max_ctrl_points_));
 
             auto inc_traj = runBSplineOpt(act,
                                           curr_state, succ_state,
@@ -478,21 +516,32 @@ namespace ps
                                           opt_params_.spline_order_, nc, To,
                                           thread_id);
 
-            int c1 = incoming_traj.size()>0? incoming_traj.traj_.num_control_points() : 0;
-            int c2 = nc;
+            BSplineTraj full_traj;
+            if (inc_traj.isValid())
+            {
+                if (incoming_traj.isValid())
+                {
+                    int c1 = incoming_traj.size()>0? incoming_traj.traj_.num_control_points() : 0;
+                    int c2 = nc;
 
-            double Two = (succ_state-opt_params_.global_start_).norm()/opt_params_.start_goal_dist_;
-            int tc = static_cast<int>(Two*opt_params_.max_ctrl_points_);
-            int nc1 = static_cast<int>((static_cast<double>(c1)/(c1+c2))*tc);
-            int nc2 = tc - nc1;
+                    double Two = (succ_state-opt_params_.global_start_).norm()/opt_params_.start_goal_dist_;
+                    int tc = static_cast<int>(Two*opt_params_.max_ctrl_points_);
+                    int nc1 = static_cast<int>((static_cast<double>(c1)/(c1+c2))*tc);
+                    int nc2 = tc - nc1;
 
-            auto full_traj = runBSplineOptWithInitGuess(act,
-                                                        incoming_traj, inc_traj,
-                                                        curr_state, succ_state,
-                                                        dq0, dqF,
-                                                        opt_params_.spline_order_,
-                                                        nc1, nc2, Two,
-                                                        thread_id);
+                    full_traj = runBSplineOptWithInitGuess(act,
+                                                           incoming_traj, inc_traj,
+                                                           curr_state, succ_state,
+                                                           dq0, dqF,
+                                                           opt_params_.spline_order_,
+                                                           nc1, nc2, Two,
+                                                           thread_id);
+                }
+                else
+                {
+                    full_traj = inc_traj;
+                }
+            }
 
             return full_traj;
         }

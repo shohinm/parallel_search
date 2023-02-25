@@ -343,6 +343,17 @@ namespace ps
       return (*opt_)[thread_id].warmOptimize(this, t, thread_id);
   }
 
+  TrajType ManipulationAction::optimize(const TrajType& incoming_traj,
+                                        const StateVarsType &s1,
+                                        const StateVarsType &s2,
+                                        int thread_id)
+  {
+      Eigen::Map<const VecDf> p1(&s1[0], s1.size());
+      Eigen::Map<const VecDf> p2(&s2[0], s2.size());
+      return (*opt_)[thread_id].optimize(this, incoming_traj, p1, p2, thread_id);
+  }
+
+
   double ManipulationAction::getCost(const TrajType &traj, int thread_id) const
   {
     return (*opt_)[thread_id].calculateCost(traj);

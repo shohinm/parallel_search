@@ -40,6 +40,10 @@ namespace ps
         TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id) const;
         TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id) const;
         TrajType warmOptimize(const TrajType& t, int thread_id) const;
+        virtual TrajType optimize(const TrajType& incoming_traj,
+                                  const StateVarsType &s1,
+                                  const StateVarsType &s2,
+                                  int thread_id=0) {}
         double getCost(const TrajType& traj, int thread_id=0) const;
 
     protected:

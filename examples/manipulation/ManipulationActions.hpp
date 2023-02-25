@@ -101,6 +101,10 @@ namespace ps
     TrajType optimize(const StateVarsType& s1, const StateVarsType& s2, int thread_id) const;
     TrajType warmOptimize(const TrajType& t1, const TrajType& t2, int thread_id) const;
     TrajType warmOptimize(const TrajType& t, int thread_id) const;
+    TrajType optimize(const TrajType& incoming_traj,
+                      const StateVarsType &s1,
+                      const StateVarsType &s2,
+                      int thread_id);
     double getCost(const TrajType& traj, int thread_id) const;
     MatDf linInterp(const VecDf& p1, const VecDf& p2, int N) const;
 
@@ -140,7 +144,7 @@ namespace ps
                     ParamsType params,
                     std::string& mj_modelpath,
                     VecDf ang_discretization,
-                    OptVecPtrType opt,
+                    OptVecPtrType& opt,
                     MjModelVecType& m_vec, MjDataVecType& d_vec,
                     int num_threads=1,
                     bool is_expensive = true):
