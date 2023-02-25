@@ -375,17 +375,21 @@ void PinsatPlanner::expandEdge(InsatEdgePtrType edge_ptr, int thread_id)
             lock_.unlock();
             for (auto& anc: ancestors)
             {
-                TrajType inc_traj = action_ptr->optimize(anc->GetStateVars(), successor_state_ptr->GetStateVars(), thread_id);
-                if (inc_traj.size() > 0)
+                if (planner_params_["adaptive_opt"] == true)
                 {
-                    inc_cost = action_ptr->getCost(inc_traj);
                     if (anc->GetIncomingEdgePtr()) /// When anc is not start
                     {
-                        traj = action_ptr->warmOptimize(anc->GetIncomingEdgePtr()->GetTraj(), inc_traj, thread_id);
+                        traj = action_ptr->optimize(anc->GetIncomingEdgePtr()->GetTraj(),
+                                                    anc->GetStateVars(),
+                                                    successor_state_ptr->GetStateVars(), thread_id);
+                        inc_cost = action_ptr->getCost(traj) - action_ptr->getCost(anc->GetIncomingEdgePtr()->GetTraj());
                     }
                     else
                     {
-                        traj = action_ptr->warmOptimize(inc_traj, thread_id);
+                        traj = action_ptr->optimize(TrajType(),
+                                                    anc->GetStateVars(),
+                                                    successor_state_ptr->GetStateVars(), thread_id);
+                        inc_cost = action_ptr->getCost(traj);
                     }
 
                     if (traj.isValid())
@@ -396,7 +400,29 @@ void PinsatPlanner::expandEdge(InsatEdgePtrType edge_ptr, int thread_id)
                 }
                 else
                 {
-                    continue;
+                    TrajType inc_traj = action_ptr->optimize(anc->GetStateVars(), successor_state_ptr->GetStateVars(), thread_id);
+                    if (inc_traj.size() > 0)
+                    {
+                        inc_cost = action_ptr->getCost(inc_traj);
+                        if (anc->GetIncomingEdgePtr()) /// When anc is not start
+                        {
+                            traj = action_ptr->warmOptimize(anc->GetIncomingEdgePtr()->GetTraj(), inc_traj, thread_id);
+                        }
+                        else
+                        {
+                            traj = action_ptr->warmOptimize(inc_traj, thread_id);
+                        }
+
+                        if (traj.isValid())
+                        {
+                            best_anc = anc;
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        continue;
+                    }
                 }
             }
             lock_.lock();
