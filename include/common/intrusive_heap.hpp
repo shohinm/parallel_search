@@ -203,7 +203,8 @@ void intrusive_heap<T, Compare>::erase(T* e)
     m_data[pos]->m_heap_index = pos;
     e->m_heap_index = 0;
     m_data.pop_back();
-    if (pos < m_data.size()) {
+    if ((pos < m_data.size()) && contains(m_data[pos]))
+    {
         update(m_data[pos]);
     }
 }

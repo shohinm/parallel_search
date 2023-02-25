@@ -164,7 +164,7 @@ namespace ps
                             inc_cost = action_ptr->getCost(inc_traj);
                             if (anc->GetIncomingEdgePtr()) /// When anc is not start
                             {
-                                traj = action_ptr->warmOptimize(anc->GetIncomingEdgePtr()->traj_, inc_traj);
+                                traj = action_ptr->warmOptimize(anc->GetIncomingEdgePtr()->GetTraj(), inc_traj);
                             }
                             else
                             {
@@ -202,7 +202,7 @@ namespace ps
 //                        else
 //                        {
 //                            inc_cost = action_ptr->getCost(inc_traj);
-//                            traj = action_ptr->warmOptimize(anc->GetIncomingEdgePtr()->traj_, inc_traj);
+//                            traj = action_ptr->warmOptimize(anc->GetIncomingEdgePtr()->GetTraj(), inc_traj);
 //                            best_anc = anc;
 //                            break;
 //                        }
@@ -328,8 +328,8 @@ namespace ps
             {
 //                planner_stats_.path_cost_ = state_ptr->GetIncomingEdgePtr()->GetTrajCost();
                 planner_stats_.path_cost_ =
-                        insat_actions_ptrs_[0]->getCost(state_ptr->GetIncomingEdgePtr()->traj_);
-                soln_traj_ = state_ptr->GetIncomingEdgePtr()->traj_;
+                        insat_actions_ptrs_[0]->getCost(state_ptr->GetIncomingEdgePtr()->GetTraj());
+                soln_traj_ = state_ptr->GetIncomingEdgePtr()->GetTraj();
             }
             while(state_ptr->GetIncomingEdgePtr())
             {
