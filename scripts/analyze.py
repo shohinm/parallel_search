@@ -37,8 +37,8 @@ def print_stats(insat, pinsat, cost_thresh):
     print("\n\n--------------- Cost thresh: {} ---------------".format(cost_thresh))
 
     d = {}
-    d['insat'] = {'id' : insat[:, 0], 'time' : insat[:, 1], 'cost' : insat[:, 2], 'length' : insat[:, 3], 'state_expansions' : insat[:, 3], 'edge_expansions' : insat[:, 4]} 
-    d['pinsat'] = {'id' : pinsat[:, 0], 'time' : pinsat[:, 1], 'cost' : pinsat[:, 2], 'length' : pinsat[:, 3], 'state_expansions' : pinsat[:, 3], 'edge_expansions' : pinsat[:, 4]} 
+    d['insat'] = {'id' : insat[:, 0], 'time' : insat[:, 1], 'cost' : insat[:, 2], 'length' : insat[:, 3], 'state_expansions' : insat[:, 4], 'edge_expansions' : insat[:, 5]} 
+    d['pinsat'] = {'id' : pinsat[:, 0], 'time' : pinsat[:, 1], 'cost' : pinsat[:, 2], 'length' : pinsat[:, 3], 'state_expansions' : pinsat[:, 4], 'edge_expansions' : pinsat[:, 5]} 
 
     insat_idx, insat_success, insat_success_idx = relevant_indices('insat', d['insat'], cost_thresh, 1000)
     pinsat_idx, pinsat_success, pinsat_success_idx = relevant_indices('pinsat', d['pinsat'], cost_thresh, 1000)
@@ -65,8 +65,9 @@ def print_stats(insat, pinsat, cost_thresh):
     pinsat = np.array(pinsat_filtered).squeeze()
 
 
-    d['insat'] = {'id' : insat[:, 0], 'time' : insat[:, 1], 'cost' : insat[:, 2], 'state_expansions' : insat[:, 3], 'edge_expansions' : insat[:, 4]} 
-    d['pinsat'] = {'id' : pinsat[:, 0], 'time' : pinsat[:, 1], 'cost' : pinsat[:, 2], 'state_expansions' : pinsat[:, 3], 'edge_expansions' : pinsat[:, 4]} 
+    d['insat'] = {'id' : insat[:, 0], 'time' : insat[:, 1], 'cost' : insat[:, 2], 'length' : insat[:, 3], 'state_expansions' : insat[:, 4], 'edge_expansions' : insat[:, 5]} 
+    d['pinsat'] = {'id' : pinsat[:, 0], 'time' : pinsat[:, 1], 'cost' : pinsat[:, 2], 'length' : pinsat[:, 3], 'state_expansions' : pinsat[:, 4], 'edge_expansions' : pinsat[:, 5]} 
+
 
     # pdb.set_trace()
 
@@ -89,7 +90,7 @@ def print_stats(insat, pinsat, cost_thresh):
     stats['insat']['median_time'] = np.median(d['insat']['time'])
     stats['insat']['max_time'] = np.max(d['insat']['time'])
     stats['insat']['mean_state_expansions'] = np.mean(d['insat']['state_expansions'])
-    # stats['insat']['mean_edge_expansions'] = np.mean(d['insat']['edge_expansions'])
+    stats['insat']['mean_edge_expansions'] = np.mean(d['insat']['edge_expansions'])
 
     stats['pinsat']['num_success_problems'] = d['pinsat']['id'].shape[0]
     stats['pinsat']['success_rate'] = pinsat_success
@@ -100,7 +101,7 @@ def print_stats(insat, pinsat, cost_thresh):
     stats['pinsat']['median_time'] = np.median(d['pinsat']['time'])
     stats['pinsat']['max_time'] = np.max(d['pinsat']['time'])
     stats['pinsat']['mean_state_expansions'] = np.mean(d['pinsat']['state_expansions'])
-    # stats['pinsat']['mean_edge_expansions'] = np.mean(d['pinsat']['edge_expansions'])
+    stats['pinsat']['mean_edge_expansions'] = np.mean(d['pinsat']['edge_expansions'])
 
 
     for alg in ['insat', 'pinsat']:

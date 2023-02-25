@@ -306,7 +306,6 @@ int main(int argc, char* argv[])
 
     string planner_name = argv[1];
 
-    ofstream log_file("../logs/log_" + planner_name + ".txt");
 
     /// Load MuJoCo model
     std::string modelpath = "../third_party/mujoco-2.3.2/model/abb/irb_1600/irb1600_6_12_shield.xml";
@@ -340,7 +339,18 @@ int main(int argc, char* argv[])
     planner_params["num_threads"] = num_threads;
     planner_params["heuristic_weight"] = 10;
     planner_params["timeout"] = 20;
-    planner_params["adaptive_opt"] = true;
+    planner_params["adaptive_opt"] = 1;
+    
+    ofstream log_file;
+
+    if ((planner_params["adaptive_opt"] == 1) && ((planner_name == "insat") || (planner_name == "pinsat")))
+    {
+       log_file.open("../logs/log_" + planner_name + "_adaptive.txt"); 
+    }
+    else
+    {
+       log_file.open("../logs/log_" + planner_name + ".txt"); 
+    }
 
     if ((planner_name == "rrt") || (planner_name == "rrtconnect"))
     {
