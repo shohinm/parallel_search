@@ -47,7 +47,7 @@ namespace ps
                                                       global_goal_(goal),
                                                       total_duration_(total_duration)
             {
-                start_goal_normdist_ = (goal-start).norm();
+                start_goal_dist_ = (goal - start).norm();
             }
 
             int num_positions_;
@@ -55,13 +55,16 @@ namespace ps
             int spline_order_;
             double duration_;
 
+            double duration_cost_w_ = 1.0;
+            double length_cost_w_ = 0.1;
+
             /// Adaptive BSpline optimization
             int min_ctrl_points_;
             int max_ctrl_points_;
             VecDf global_start_; /// For now assuming higher derivatives = 0
             VecDf global_goal_; /// For now assuming higher derivatives = 0
             double total_duration_;
-            double start_goal_normdist_;
+            double start_goal_dist_;
 
 
         };
@@ -105,6 +108,19 @@ namespace ps
                 ++i;
             }
             return sampled_traj;
+        }
+
+        void addDurationAndPathCost(OptType& opt) const
+        {
+            opt.AddDurationCost(opt_params_.duration_cost_w_);
+            opt.AddPathLengthCost(opt_params_.length_cost_w_);
+        }
+
+        void addStateSpaceBounds(OptType& opt) const
+        {
+            opt.AddPositionBounds(robot_params_.min_q_, robot_params_.max_q_);
+            opt.AddVelocityBounds(robot_params_.min_dq_, robot_params_.max_dq_);
+//            opt.AddAccelerationBounds(robot_params_.min_ddq_, robot_params_.max_ddq_);
         }
 
         std::vector<BSplineTraj::TrajInstanceType> optimizeWithCallback(const OptType& opt,
@@ -173,13 +189,8 @@ namespace ps
                         opt_params_.duration_);
             drake::solvers::MathematicalProgram& prog(opt.get_mutable_prog());
 
-            opt.AddDurationCost(1.0);
-            opt.AddPathLengthCost(0.1);
-
-            opt.AddPositionBounds(robot_params_.min_q_, robot_params_.max_q_);
-            opt.AddVelocityBounds(robot_params_.min_dq_, robot_params_.max_dq_);
-//            opt.AddAccelerationBounds(robot_params_.min_ddq_, robot_params_.max_ddq_);
-
+            addDurationAndPathCost(opt);
+            addStateSpaceBounds(opt);
             opt.AddDurationConstraint(opt_params_.duration_, opt_params_.duration_);
 
             /// Start constraint
@@ -236,8 +247,6 @@ namespace ps
                 }
             }
 
-//            std::cout << "Generated trajectory sampled at length: " << traj.disc_traj_.size() << std::endl;
-
             return traj;
         }
 
@@ -253,13 +262,172 @@ namespace ps
         }
 
 
+        BSplineTraj runBSplineOpt(const InsatAction* act,
+                                  VecDf& q0, VecDf& qF,
+                                  VecDf& dq0, VecDf& dqF,
+                                  int order, int num_ctrl_pt, double T,
+                                  int thread_id)
+        {
+            OptType opt(insat_params_.lowD_dims_,
+                        num_ctrl_pt,
+                        order,
+                        T);
+            drake::solvers::MathematicalProgram& prog(opt.get_mutable_prog());
+
+            addDurationAndPathCost(opt);
+            addStateSpaceBounds(opt);
+            opt.AddDurationConstraint(T, T);
+
+            /// Terminal position constraint
+            opt.AddPathPositionConstraint(q0, q0, 0); // Linear constraint
+            opt.AddPathPositionConstraint(qF, qF, 1); // Linear constraint
+
+            /// Terminal velocity constraints if needed
+            if (dq0.size()>0)
+            {
+                opt.AddPathVelocityConstraint(dq0, dq0, 0); // Linear constraint
+            }
+            if (dqF.size()>0)
+            {
+                opt.AddPathVelocityConstraint(dqF, dqF, 1); // Linear constraint
+            }
+
+
+            /// Cost
+            prog.AddQuadraticErrorCost(MatDf::Identity(insat_params_.lowD_dims_, insat_params_.lowD_dims_),
+                                       q0,opt.control_points().leftCols(1));
+            prog.AddQuadraticErrorCost(MatDf::Identity(insat_params_.lowD_dims_, insat_params_.lowD_dims_),
+                                       qF, opt.control_points().rightCols(1));
+
+            /// Solve
+            BSplineTraj traj;
+            traj.result_ = drake::solvers::Solve(prog);
+
+            if (traj.result_.is_success())
+            {
+                traj.traj_ = opt.ReconstructTrajectory(traj.result_);
+
+                auto disc_traj = sampleTrajectory(traj);
+                if (act->isFeasible(disc_traj, thread_id))
+                {
+                    traj.disc_traj_ = disc_traj;
+                }
+                else
+                {
+                    std::vector<BSplineTraj::TrajInstanceType> traj_trace = optimizeWithCallback(opt, prog);
+                    for (int i=traj_trace.size()-1; i>=0; --i)
+                    {
+                        auto samp_traj = sampleTrajectory(traj_trace[i]);
+                        if (act->isFeasible(samp_traj, thread_id))
+                        {
+                            traj.traj_ = traj_trace[i];
+                            traj.disc_traj_ = samp_traj;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            return traj;
+        }
+
+
+        BSplineTraj runBSplineOptWithInitGuess(const InsatAction* act,
+                                               BSplineTraj& t1, BSplineTraj& t2,
+                                               VecDf& q0, VecDf& qF,
+                                               VecDf& dq0, VecDf& dqF,
+                                               int order,
+                                               int c1, int c2,
+                                               double T,
+                                               int thread_id)
+        {
+            OptType opt(insat_params_.lowD_dims_,
+                        c1+c2,
+                        order,
+                        T);
+            drake::solvers::MathematicalProgram& prog(opt.get_mutable_prog());
+
+            addDurationAndPathCost(opt);
+            addStateSpaceBounds(opt);
+            opt.AddDurationConstraint(T, T);
+
+            /// Terminal position constraint
+            opt.AddPathPositionConstraint(q0, q0, 0); // Linear constraint
+            opt.AddPathPositionConstraint(qF, qF, 1); // Linear constraint
+
+            /// Terminal velocity constraints if needed
+            if (dq0.size()>0)
+            {
+                opt.AddPathVelocityConstraint(dq0, dq0, 0); // Linear constraint
+            }
+            if (dqF.size()>0)
+            {
+                opt.AddPathVelocityConstraint(dqF, dqF, 1); // Linear constraint
+            }
+
+            /// Control vector blending
+            assert(c1 <= t1.traj_.num_control_points());
+            assert(c2 <= t2.traj_.num_control_points());
+            std::vector<MatDf> blend_ctrl_pt;
+            
+
+
+            /// Cost
+            prog.AddQuadraticErrorCost(MatDf::Identity(insat_params_.lowD_dims_, insat_params_.lowD_dims_),
+                                       q0,opt.control_points().leftCols(1));
+            prog.AddQuadraticErrorCost(MatDf::Identity(insat_params_.lowD_dims_, insat_params_.lowD_dims_),
+                                       qF, opt.control_points().rightCols(1));
+
+            /// Solve
+            BSplineTraj traj;
+            traj.result_ = drake::solvers::Solve(prog);
+
+            if (traj.result_.is_success())
+            {
+                traj.traj_ = opt.ReconstructTrajectory(traj.result_);
+
+                auto disc_traj = sampleTrajectory(traj);
+                if (act->isFeasible(disc_traj, thread_id))
+                {
+                    traj.disc_traj_ = disc_traj;
+                }
+                else
+                {
+                    std::vector<BSplineTraj::TrajInstanceType> traj_trace = optimizeWithCallback(opt, prog);
+                    for (int i=traj_trace.size()-1; i>=0; --i)
+                    {
+                        auto samp_traj = sampleTrajectory(traj_trace[i]);
+                        if (act->isFeasible(samp_traj, thread_id))
+                        {
+                            traj.traj_ = traj_trace[i];
+                            traj.disc_traj_ = samp_traj;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            return traj;
+        }
+
+
         BSplineTraj optimize(const InsatAction* act,
                              BSplineTraj incoming_traj,
                              VecDf& curr_state,
                              VecDf& succ_state)
         {
 
-            
+            bool is_start=false, is_goal=false;
+            if (curr_state.isApprox(opt_params_.global_start_, 5e-2))
+            {
+                is_start=true;
+            }
+            if (succ_state.isApprox(opt_params_.global_goal_, 5e-2))
+            {
+                is_goal=true;
+            }
+
+
 
 
 
