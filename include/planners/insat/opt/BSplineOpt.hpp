@@ -112,11 +112,13 @@ namespace ps
 
         MatDf sampleTrajectory(const BSplineTraj& traj, double dt=1e-1) const
         {
-            return sampleTrajectory(traj.traj_);
+            dt = traj.traj_.end_time()/10;
+            return sampleTrajectory(traj.traj_, dt);
         }
 
         MatDf sampleTrajectory(const BSplineTraj::TrajInstanceType& traj, double dt=1e-1) const
         {
+            dt = traj.end_time()/10;
             MatDf sampled_traj;
             int i=0;
             for (double t=0.0; t<=traj.end_time(); t+=dt)
@@ -412,8 +414,8 @@ namespace ps
             int nc2 = t2.traj_.num_control_points();
             assert(c1 <= nc1);
             assert(c2 <= nc2);
-            VecDi ctrl_idx1 = VecDf::LinSpaced(c1, 0, nc1).cast<int>();
-            VecDi ctrl_idx2 = VecDf::LinSpaced(c2, 0, nc2).cast<int>();
+            VecDi ctrl_idx1 = VecDf::LinSpaced(c1, 0, nc1-1).cast<int>();
+            VecDi ctrl_idx2 = VecDf::LinSpaced(c2, 0, nc2-1).cast<int>();
 
             std::vector<MatDf> blend_ctrl_pt;
             for (int i=0; i<ctrl_idx1.size(); ++i)
@@ -517,30 +519,30 @@ namespace ps
                                           thread_id);
 
             BSplineTraj full_traj;
-            if (inc_traj.isValid())
+            if (!incoming_traj.isValid())
             {
-                if (incoming_traj.isValid())
-                {
-                    int c1 = incoming_traj.size()>0? incoming_traj.traj_.num_control_points() : 0;
-                    int c2 = nc;
+                full_traj = inc_traj;
+                return full_traj;
+            }
 
-                    double Two = (succ_state-opt_params_.global_start_).norm()/opt_params_.start_goal_dist_;
-                    int tc = static_cast<int>(Two*opt_params_.max_ctrl_points_);
-                    int nc1 = static_cast<int>((static_cast<double>(c1)/(c1+c2))*tc);
-                    int nc2 = tc - nc1;
+            if (inc_traj.isValid() && incoming_traj.isValid())
+            {
+                int c1 = incoming_traj.size()>0? incoming_traj.traj_.num_control_points() : 0;
+                int c2 = nc;
 
-                    full_traj = runBSplineOptWithInitGuess(act,
-                                                           incoming_traj, inc_traj,
-                                                           curr_state, succ_state,
-                                                           dq0, dqF,
-                                                           opt_params_.spline_order_,
-                                                           nc1, nc2, Two,
-                                                           thread_id);
-                }
-                else
-                {
-                    full_traj = inc_traj;
-                }
+                double Two = (succ_state-opt_params_.global_start_).norm()/opt_params_.start_goal_dist_;
+                int tc = static_cast<int>(Two*opt_params_.max_ctrl_points_);
+                tc = std::max(tc, opt_params_.min_ctrl_points_);
+                int nc1 = static_cast<int>((static_cast<double>(c1)/(c1+c2))*tc);
+                int nc2 = tc - nc1;
+
+                full_traj = runBSplineOptWithInitGuess(act,
+                                                       incoming_traj, inc_traj,
+                                                       curr_state, succ_state,
+                                                       dq0, dqF,
+                                                       opt_params_.spline_order_,
+                                                       nc1, nc2, Two,
+                                                       thread_id);
             }
 
             return full_traj;

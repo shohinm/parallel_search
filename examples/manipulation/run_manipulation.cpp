@@ -368,7 +368,7 @@ int main(int argc, char* argv[])
     InsatParams insat_params(dof, 2*dof, dof);
     // spline params
     BSplineOpt::BSplineOptParams spline_params(dof, 7, 4, 1.0);
-    spline_params.setAdaptiveParams(4, 10, 2.0);
+    spline_params.setAdaptiveParams(7, 10, 2.0);
     // discretization
     VecDf discretization(dof);
     discretization.setOnes();
