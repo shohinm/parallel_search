@@ -221,6 +221,7 @@ namespace ps
             BSplineTraj traj;
             traj.result_ = drake::solvers::Solve(prog);
 
+            bool is_feasible = false;
             if (traj.result_.is_success())
             {
                 traj.traj_ = opt.ReconstructTrajectory(traj.result_);
@@ -229,9 +230,11 @@ namespace ps
                 if (act->isFeasible(disc_traj, thread_id))
                 {
                     traj.disc_traj_ = disc_traj;
+                    is_feasible = true;
                 }
                 else
                 {
+                    /// re-solve with callback
                     if (traj1.result_.is_success())
                     {
                         opt.SetInitialGuess(traj1.traj_);
@@ -244,10 +247,18 @@ namespace ps
                         {
                             traj.traj_ = traj_trace[i];
                             traj.disc_traj_ = samp_traj;
+                            is_feasible = true;
                             break;
                         }
                     }
                 }
+            }
+
+            if (!is_feasible)
+            {
+                traj.result_ = TrajType::OptResultType();
+                traj.traj_ = TrajType::TrajInstanceType();
+                assert(traj.disc_traj_.size() == 0);
             }
 
             return traj;
