@@ -232,7 +232,10 @@ namespace ps
                 }
                 else
                 {
-                    opt.SetInitialGuess(traj1.traj_);
+                    if (traj1.result_.is_success())
+                    {
+                        opt.SetInitialGuess(traj1.traj_);
+                    }
                     std::vector<BSplineTraj::TrajInstanceType> traj_trace = optimizeWithCallback(opt, prog);
                     for (int i=traj_trace.size()-1; i>=0; --i)
                     {
