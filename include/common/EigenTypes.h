@@ -61,6 +61,8 @@ using Vecf = Eigen::Matrix<decimal_t, N, 1>;
 /// Eigen 1D int vector of size N
 template <int N>
 using Veci = Eigen::Matrix<int, N, 1>;
+/// Eigen 1D int vector of dynamic size
+using VecDi = Eigen::Matrix<int, Eigen::Dynamic, 1>;
 /// Eigen 1D float vector of dynamic size
 using VecDf = Eigen::Matrix<decimal_t, Eigen::Dynamic, 1>;
 /// MxN Eigen matrix
