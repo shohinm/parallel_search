@@ -340,6 +340,7 @@ int main(int argc, char* argv[])
     planner_params["num_threads"] = num_threads;
     planner_params["heuristic_weight"] = 10;
     planner_params["timeout"] = 20;
+    planner_params["adaptive_opt"] = true;
 
     if ((planner_name == "rrt") || (planner_name == "rrtconnect"))
     {
@@ -366,8 +367,8 @@ int main(int argc, char* argv[])
     // Insat Params
     InsatParams insat_params(dof, 2*dof, dof);
     // spline params
-    BSplineOpt::BSplineOptParams spline_params(dof, 7, 4, 1.0);
-    spline_params.setAdaptiveParams(7, 10, 2.0);
+    BSplineOpt::BSplineOptParams spline_params(dof, 7, 4, 2.0);
+    spline_params.setAdaptiveParams(4, 7, 2.0);
     // discretization
     VecDf discretization(dof);
     discretization.setOnes();
