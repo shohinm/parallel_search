@@ -213,7 +213,7 @@ void PinsatPlanner::initialize()
 
     // Reset state
     planner_stats_ = PlannerStats();
-    planner_stats_.num_jobs_per_thread_.resize(num_threads_, 0);
+    planner_stats_.num_jobs_per_thread_.resize(num_threads_-1, 0);
 
     terminate_ = false;
     recheck_flag_ = true;
@@ -266,12 +266,12 @@ void PinsatPlanner::expandEdgeLoop(int thread_id)
 
 void PinsatPlanner::expand(InsatEdgePtrType edge_ptr, int thread_id)
 {
+    planner_stats_.num_jobs_per_thread_[thread_id] +=1;
     auto t_start = chrono::steady_clock::now();
     lock_.lock();
     auto t_lock_e = chrono::steady_clock::now();
     planner_stats_.lock_time_ += 1e-9*chrono::duration_cast<chrono::nanoseconds>(t_lock_e-t_start).count();
 
-    planner_stats_.num_jobs_per_thread_[thread_id] +=1;
     
     // Proxy edge, add the real edges to Eopen
     if (edge_ptr->action_ptr_ == dummy_action_ptr_)
@@ -375,17 +375,21 @@ void PinsatPlanner::expandEdge(InsatEdgePtrType edge_ptr, int thread_id)
             lock_.unlock();
             for (auto& anc: ancestors)
             {
-                TrajType inc_traj = action_ptr->optimize(anc->GetStateVars(), successor_state_ptr->GetStateVars(), thread_id);
-                if (inc_traj.size() > 0)
+                if (planner_params_["adaptive_opt"] == true)
                 {
-                    inc_cost = action_ptr->getCost(inc_traj);
                     if (anc->GetIncomingEdgePtr()) /// When anc is not start
                     {
-                        traj = action_ptr->warmOptimize(anc->GetIncomingEdgePtr()->GetTraj(), inc_traj, thread_id);
+                        traj = action_ptr->optimize(anc->GetIncomingEdgePtr()->GetTraj(),
+                                                    anc->GetStateVars(),
+                                                    successor_state_ptr->GetStateVars(), thread_id);
+                        inc_cost = action_ptr->getCost(traj) - action_ptr->getCost(anc->GetIncomingEdgePtr()->GetTraj());
                     }
                     else
                     {
-                        traj = action_ptr->warmOptimize(inc_traj, thread_id);
+                        traj = action_ptr->optimize(TrajType(),
+                                                    anc->GetStateVars(),
+                                                    successor_state_ptr->GetStateVars(), thread_id);
+                        inc_cost = action_ptr->getCost(traj);
                     }
 
                     if (traj.isValid())
@@ -396,7 +400,29 @@ void PinsatPlanner::expandEdge(InsatEdgePtrType edge_ptr, int thread_id)
                 }
                 else
                 {
-                    continue;
+                    TrajType inc_traj = action_ptr->optimize(anc->GetStateVars(), successor_state_ptr->GetStateVars(), thread_id);
+                    if (inc_traj.size() > 0)
+                    {
+                        inc_cost = action_ptr->getCost(inc_traj);
+                        if (anc->GetIncomingEdgePtr()) /// When anc is not start
+                        {
+                            traj = action_ptr->warmOptimize(anc->GetIncomingEdgePtr()->GetTraj(), inc_traj, thread_id);
+                        }
+                        else
+                        {
+                            traj = action_ptr->warmOptimize(inc_traj, thread_id);
+                        }
+
+                        if (traj.isValid())
+                        {
+                            best_anc = anc;
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        continue;
+                    }
                 }
             }
             lock_.lock();

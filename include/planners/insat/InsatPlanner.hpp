@@ -21,7 +21,10 @@ namespace ps
         InsatPlanner(ParamsType planner_params):
                 Planner(planner_params)
         {
-
+            if (planner_params.find("adaptive_opt") == planner_params.end())
+            {
+                planner_params["adaptive_opt"] = false;
+            }
         };
 
         ~InsatPlanner() {};
@@ -158,17 +161,21 @@ namespace ps
                     bool root=true;
                     for (auto& anc: ancestors)
                     {
-                        TrajType inc_traj = action_ptr->optimize(anc->GetStateVars(), successor_state_ptr->GetStateVars());
-                        if (inc_traj.size() > 0)
+                        if (planner_params_["adaptive_opt"] == true)
                         {
-                            inc_cost = action_ptr->getCost(inc_traj);
                             if (anc->GetIncomingEdgePtr()) /// When anc is not start
                             {
-                                traj = action_ptr->warmOptimize(anc->GetIncomingEdgePtr()->GetTraj(), inc_traj);
+                                traj = action_ptr->optimize(anc->GetIncomingEdgePtr()->GetTraj(),
+                                                            anc->GetStateVars(),
+                                                            successor_state_ptr->GetStateVars());
+                                inc_cost = action_ptr->getCost(traj) - action_ptr->getCost(anc->GetIncomingEdgePtr()->GetTraj());
                             }
                             else
                             {
-                                traj = action_ptr->warmOptimize(inc_traj);
+                                traj = action_ptr->optimize(TrajType(),
+                                                            anc->GetStateVars(),
+                                                            successor_state_ptr->GetStateVars());
+                                inc_cost = action_ptr->getCost(traj);
                             }
 
                             if (traj.isValid())
@@ -179,33 +186,31 @@ namespace ps
                         }
                         else
                         {
-                            continue;
-                        }
+                            TrajType inc_traj = action_ptr->optimize(anc->GetStateVars(), successor_state_ptr->GetStateVars());
+                            if (inc_traj.size() > 0)
+                            {
+                                inc_cost = action_ptr->getCost(inc_traj);
+                                if (anc->GetIncomingEdgePtr()) /// When anc is not start
+                                {
+                                    traj = action_ptr->warmOptimize(anc->GetIncomingEdgePtr()->GetTraj(), inc_traj);
+                                }
+                                else
+                                {
+                                    traj = action_ptr->warmOptimize(inc_traj);
+                                }
 
-//                        if (root && inc_traj.size() > 0)
-//                        {
-//                            root = false;
-//                            inc_cost = action_ptr->getCost(inc_traj);
-//                            traj = inc_traj;
-//                            best_anc = anc;
-//                            break;
-//                        }
-//                        else if (root && inc_traj.size() == 0)
-//                        {
-//                            root = false;
-//                            continue;
-//                        }
-//                        else if (inc_traj.size() == 0)
-//                        {
-//                            continue;
-//                        }
-//                        else
-//                        {
-//                            inc_cost = action_ptr->getCost(inc_traj);
-//                            traj = action_ptr->warmOptimize(anc->GetIncomingEdgePtr()->GetTraj(), inc_traj);
-//                            best_anc = anc;
-//                            break;
-//                        }
+                                if (traj.isValid())
+                                {
+                                    best_anc = anc;
+                                    break;
+                                }
+                            }
+                            else
+                            {
+                                continue;
+                            }
+
+                        }
                     }
 
                     if (traj.disc_traj_.cols()<=2)

@@ -306,8 +306,7 @@ int main(int argc, char* argv[])
 
     string planner_name = argv[1];
 
-//    num_threads = 1;
-//    std::string planner_name = "insat";
+    ofstream log_file("../logs/log_" + planner_name + ".txt");
 
     /// Load MuJoCo model
     std::string modelpath = "../third_party/mujoco-2.3.2/model/abb/irb_1600/irb1600_6_12_shield.xml";
@@ -331,7 +330,7 @@ int main(int argc, char* argv[])
 
 
     // Experiment parameters
-    int num_runs = 20;
+    int num_runs = 500;
     vector<int> scale_vec = {5, 5, 5, 10, 5};
     bool visualize_plan = true;
     bool load_starts_goals_from_file = true;
@@ -341,6 +340,7 @@ int main(int argc, char* argv[])
     planner_params["num_threads"] = num_threads;
     planner_params["heuristic_weight"] = 10;
     planner_params["timeout"] = 20;
+    planner_params["adaptive_opt"] = true;
 
     if ((planner_name == "rrt") || (planner_name == "rrtconnect"))
     {
@@ -367,7 +367,8 @@ int main(int argc, char* argv[])
     // Insat Params
     InsatParams insat_params(dof, 2*dof, dof);
     // spline params
-    BSplineOpt::BSplineOptParams spline_params(dof, 7, 4, 1.0);
+    BSplineOpt::BSplineOptParams spline_params(dof, 7, 4, 2.0);
+    spline_params.setAdaptiveParams(4, 7, 2.0);
     // discretization
     VecDf discretization(dof);
     discretization.setOnes();
@@ -407,8 +408,18 @@ int main(int argc, char* argv[])
         // Set goal conditions
         goal = goals[run];
         auto start = starts[run];
-        
-	   // print start and goal
+
+        for (auto& op : *opt_vec_ptr)
+        {
+            op.updateStartAndGoal(start, goal);
+        }
+
+        for (auto& m : manip_action_ptrs)
+        {
+            m->setGoal(goals[run]);
+        }
+
+        // print start and goal
         std::cout << "start: ";
         for (double i: starts[run])
             std::cout << i << ' ';
@@ -417,11 +428,6 @@ int main(int argc, char* argv[])
         for (double i: goals[run])
             std::cout << i << ' ';
         std::cout << std::endl;
-
-        for (auto& m : manip_action_ptrs)
-        {
-            m->setGoal(goals[run]);
-        }
 
         // Construct planner
         shared_ptr<Planner> planner_ptr;
@@ -454,10 +460,10 @@ int main(int argc, char* argv[])
         int num_edges=0;
 
         bool plan_found = planner_ptr->Plan();
+        auto planner_stats = planner_ptr->GetStats();
 
         if (plan_found)
         {
-            auto planner_stats = planner_ptr->GetStats();
 
             time_vec.emplace_back(planner_stats.total_time_);
             all_maps_time_vec.emplace_back(planner_stats.total_time_);
@@ -477,14 +483,10 @@ int main(int argc, char* argv[])
                  << " | Cost: " << planner_stats.path_cost_
                  << " | Length: " << planner_stats.path_length_
                  << " | State expansions: " << planner_stats.num_state_expansions_
-                 << " | Threads used: " << planner_stats.num_threads_spawned_ << "/" << planner_params["num_threads"]
                  << " | Lock time: " <<  planner_stats.lock_time_
                  << " | Expand time: " << planner_stats.cumulative_expansions_time_
                  << " | Threads: " << planner_stats.num_threads_spawned_ << "/" << planner_params["num_threads"] << endl;
 
-            // cout << endl << "------------- Jobs per thread -------------" << endl;
-            // for (int tidx = 0; tidx < planner_params["num_threads"]; ++tidx)
-            // cout << "thread: " << tidx << " jobs: " << planner_stats.num_jobs_per_thread_[tidx] << endl;
             for (int tidx = 0; tidx < planner_params["num_threads"]; ++tidx)
                 jobs_per_thread[tidx] += planner_stats.num_jobs_per_thread_[tidx];
 
@@ -540,6 +542,14 @@ int main(int argc, char* argv[])
         {
             cout << " | Plan not found!" << endl;
         }
+
+        log_file << run << " " 
+        << planner_stats.total_time_ << " " 
+        << planner_stats.path_cost_<< " " 
+        << planner_stats.path_length_<< " " 
+        << planner_stats.num_state_expansions_<< " " 
+        << planner_stats.num_threads_spawned_<< " " 
+        << endl;
     }
 
     traj_log.transposeInPlace();

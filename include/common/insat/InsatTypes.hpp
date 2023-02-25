@@ -37,8 +37,8 @@ namespace ps
         typedef drake::solvers::MathematicalProgramResult OptResultType;
         typedef drake::trajectories::BsplineTrajectory<double> TrajInstanceType;
 
-        inline long size() {return disc_traj_.size();}
-        inline bool isValid() {return result_.is_success();}
+        inline long size() const {return disc_traj_.size();}
+        inline bool isValid() const {return result_.is_success();}
 
         OptResultType result_;
         TrajInstanceType traj_;
