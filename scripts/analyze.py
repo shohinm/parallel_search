@@ -83,7 +83,9 @@ def print_stats(insat, pinsat, cost_thresh):
     stats['insat']['num_success_problems'] = d['insat']['id'].shape[0]
     stats['insat']['success_rate'] = insat_success
     stats['insat']['mean_cost'] = np.mean(d['insat']['cost'])
+    stats['insat']['std_cost'] = np.std(d['insat']['cost'])
     stats['insat']['mean_time'] = np.mean(d['insat']['time'])
+    stats['insat']['std_time'] = np.std(d['insat']['time'])
     stats['insat']['median_time'] = np.median(d['insat']['time'])
     stats['insat']['max_time'] = np.max(d['insat']['time'])
     stats['insat']['mean_state_expansions'] = np.mean(d['insat']['state_expansions'])
@@ -92,7 +94,9 @@ def print_stats(insat, pinsat, cost_thresh):
     stats['pinsat']['num_success_problems'] = d['pinsat']['id'].shape[0]
     stats['pinsat']['success_rate'] = pinsat_success
     stats['pinsat']['mean_cost'] = np.mean(d['pinsat']['cost'])
+    stats['pinsat']['std_cost'] = np.std(d['pinsat']['cost'])
     stats['pinsat']['mean_time'] = np.mean(d['pinsat']['time'])
+    stats['pinsat']['std_time'] = np.std(d['pinsat']['time'])
     stats['pinsat']['median_time'] = np.median(d['pinsat']['time'])
     stats['pinsat']['max_time'] = np.max(d['pinsat']['time'])
     stats['pinsat']['mean_state_expansions'] = np.mean(d['pinsat']['state_expansions'])
@@ -103,7 +107,7 @@ def print_stats(insat, pinsat, cost_thresh):
         print("------------------")
         print(alg)
         print("------------------")
-        for stat in np.sort(stats[alg].keys()):
+        for stat in np.sort(list(stats[alg])):
             print('{}: {}'.format(stat, stats[alg][stat]))
 
 
