@@ -433,11 +433,13 @@ void runBVPTest(std::vector<double>& time_log, bool save=false, int test_size=1)
 
         std::cout << "---- TRIAL " << i+1 << "------" << "\nst: " << r1.transpose() << "\ngo: " << r2.transpose() << std::endl;
 
+//        opt.prog_.SetSol
         auto start_time = Clock::now();
         auto result = opt.optimize(st, go, true);
         auto end_time = Clock::now();
         if (result.is_success())
         {
+            std::cout << "solver name: " << result.get_solver_id().name() << std::endl;
             auto traj = sampleTrajectory(opt.opt_->ReconstructTrajectory(result), 6e-3);
             if (opt.isFeasible(traj))
             {
@@ -487,10 +489,10 @@ void runBVPTest(std::vector<double>& time_log, bool save=false, int test_size=1)
         writeToCSVfile(starts_path, starts);
         writeToCSVfile(goals_path, goals);
 
-        std::cout << "starts:\n" << starts << std::endl;
-        std::cout << "goals:\n" << goals << std::endl;
+//        std::cout << "starts:\n" << starts << std::endl;
+//        std::cout << "goals:\n" << goals << std::endl;
 //        std::cout << "alltraj:\n" << starts << std::endl;
-        std::cout << "tracelog:\n" << trace_log << std::endl;
+//        std::cout << "tracelog:\n" << trace_log << std::endl;
 
     }
 

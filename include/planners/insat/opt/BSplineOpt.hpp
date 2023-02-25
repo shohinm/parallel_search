@@ -37,6 +37,19 @@ namespace ps
                                                                       spline_order_(spline_order),
                                                                       duration_(duration) {}
 
+            BSplineOptParams(int min_ctrl_points,
+                             int max_ctrl_points,
+                             VecDf& start,
+                             VecDf& goal,
+                             double total_duration) : min_ctrl_points_(min_ctrl_points),
+                                                      max_ctrl_points_(max_ctrl_points),
+                                                      global_start_(start),
+                                                      global_goal_(goal),
+                                                      total_duration_(total_duration)
+            {
+                start_goal_normdist_ = (goal-start).norm();
+            }
+
             int num_positions_;
             int num_control_points_;
             int spline_order_;
@@ -48,6 +61,7 @@ namespace ps
             VecDf global_start_; /// For now assuming higher derivatives = 0
             VecDf global_goal_; /// For now assuming higher derivatives = 0
             double total_duration_;
+            double start_goal_normdist_;
 
 
         };
@@ -245,6 +259,8 @@ namespace ps
                              VecDf& succ_state)
         {
 
+            
+
 
 
             OptType opt(opt_params_.num_positions_,
@@ -252,6 +268,14 @@ namespace ps
                         opt_params_.spline_order_,
                         opt_params_.duration_);
             drake::solvers::MathematicalProgram& prog(opt.get_mutable_prog());
+
+
+
+            if (incoming_traj.disc_traj_.size() == 0)
+            {
+
+
+            }
 
 
         }
