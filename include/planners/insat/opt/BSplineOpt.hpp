@@ -369,11 +369,32 @@ namespace ps
             }
 
             /// Control vector blending
-            assert(c1 <= t1.traj_.num_control_points());
-            assert(c2 <= t2.traj_.num_control_points());
-            std::vector<MatDf> blend_ctrl_pt;
-            
+            int nc1 = t1.traj_.num_control_points();
+            int nc2 = t2.traj_.num_control_points();
+            assert(c1 <= nc1);
+            assert(c2 <= nc2);
+            VecDi ctrl_idx1 = VecDf::LinSpaced(c1, 0, nc1).cast<int>();
+            VecDi ctrl_idx2 = VecDf::LinSpaced(c2, 0, nc2).cast<int>();
 
+            std::vector<MatDf> blend_ctrl_pt;
+            for (int i=0; i<ctrl_idx1.size(); ++i)
+            {
+                blend_ctrl_pt.push_back(t1.traj_.control_points()[ctrl_idx1(i)]);
+            }
+            for (int i=0; i<ctrl_idx2.size(); ++i)
+            {
+                blend_ctrl_pt.push_back(t2.traj_.control_points()[ctrl_idx2(i)]);
+            }
+
+            /// number of control points should be equal to the number of basis
+            auto bspline_basis = drake::math::BsplineBasis<double>(order,
+                                                                   blend_ctrl_pt.size(),
+                                                                   drake::math::KnotVectorType::kClampedUniform,
+                                                                   0, T);
+            auto init_guess = BSplineTraj::TrajInstanceType(bspline_basis, blend_ctrl_pt);
+
+            /// Now set the init guess
+            opt.SetInitialGuess(init_guess);
 
             /// Cost
             prog.AddQuadraticErrorCost(MatDf::Identity(insat_params_.lowD_dims_, insat_params_.lowD_dims_),
@@ -417,38 +438,52 @@ namespace ps
         BSplineTraj optimize(const InsatAction* act,
                              BSplineTraj incoming_traj,
                              VecDf& curr_state,
-                             VecDf& succ_state)
+                             VecDf& succ_state,
+                             int thread_id)
         {
 
             bool is_start=false, is_goal=false;
+            VecDf dq0, dqF;
             if (curr_state.isApprox(opt_params_.global_start_, 5e-2))
             {
                 is_start=true;
+                dq0.resize(insat_params_.aux_dims_);
+                dq0.setZero();
             }
             if (succ_state.isApprox(opt_params_.global_goal_, 5e-2))
             {
                 is_goal=true;
+                dqF.resize(insat_params_.aux_dims_);
+                dqF.setZero();
             }
 
+            double To = (succ_state-curr_state).norm()/opt_params_.start_goal_dist_;
+            int nc = std::max(opt_params_.min_ctrl_points_,
+                              static_cast<int>(T*opt_params_.max_ctrl_points_));
 
+            auto inc_traj = runBSplineOpt(act,
+                                          curr_state, succ_state,
+                                          dq0, dqF,
+                                          opt_params_.spline_order_, nc, To,
+                                          thread_id);
 
+            int c1 = incoming_traj.size()>0? incoming_traj.traj_.num_control_points() : 0;
+            int c2 = nc;
 
+            double Two = (succ_state-opt_params_.global_start_).norm()/opt_params_.start_goal_dist_;
+            int tc = static_cast<int>(Two*opt_params_.max_ctrl_points_);
+            int nc1 = static_cast<int>((static_cast<double>(c1)/(c1+c2))*tc);
+            int nc2 = tc - nc1;
 
-            OptType opt(opt_params_.num_positions_,
-                        opt_params_.num_control_points_,
-                        opt_params_.spline_order_,
-                        opt_params_.duration_);
-            drake::solvers::MathematicalProgram& prog(opt.get_mutable_prog());
+            auto full_traj = runBSplineOptWithInitGuess(act,
+                                                        incoming_traj, inc_traj,
+                                                        curr_state, succ_state,
+                                                        dq0, dqF,
+                                                        opt_params_.spline_order_,
+                                                        nc1, nc2, Two,
+                                                        thread_id);
 
-
-
-            if (incoming_traj.disc_traj_.size() == 0)
-            {
-
-
-            }
-
-
+            return full_traj;
         }
 
         virtual double calculateCost(const TrajType& traj)
