@@ -213,7 +213,7 @@ void PinsatPlanner::initialize()
 
     // Reset state
     planner_stats_ = PlannerStats();
-    planner_stats_.num_jobs_per_thread_.resize(num_threads_-1, 0);
+    planner_stats_.num_jobs_per_thread_.resize(num_threads_, 0);
 
     terminate_ = false;
     recheck_flag_ = true;
