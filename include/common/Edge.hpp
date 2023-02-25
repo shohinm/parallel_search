@@ -50,7 +50,7 @@ class Edge : public smpl::heap_element
         std::atomic<bool> is_eval_;
         std::atomic<bool> is_invalid_;
  
-    private:
+    protected:
         double cost_;
         mutable std::mutex lock_; 
         double roundOff(double value, int prec=3);

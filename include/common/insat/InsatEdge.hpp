@@ -21,10 +21,35 @@ namespace ps
         InsatEdge& operator=(const InsatEdge& other_edge);
         bool operator==(const InsatEdge& other_edge) const;
 
-        void SetTraj(TrajType& traj) {traj_ = traj;};
-        TrajType GetTraj() { return traj_;};
-        void SetTrajCost(double traj_cost) {traj_cost_ = traj_cost;};
-        double GetTrajCost() { return traj_cost_;};
+        void SetTraj(TrajType& traj) 
+        {
+            lock_.lock();
+            traj_ = traj;
+            lock_.unlock();
+        };
+        
+        TrajType GetTraj() 
+        { 
+            lock_.lock();
+            auto traj_local = traj_;
+            lock_.unlock();
+            return traj_local;
+        };
+
+        void SetTrajCost(double traj_cost) 
+        {
+            lock_.lock();
+            traj_cost_ = traj_cost;
+            lock_.unlock();
+        };
+
+        double GetTrajCost() 
+        { 
+            lock_.lock();
+            auto traj_cost_local = traj_cost_;
+            lock_.unlock();
+            return traj_cost_local;
+        };
 
         InsatStatePtrType lowD_parent_state_ptr_;
         InsatStatePtrType lowD_child_state_ptr_;
@@ -32,6 +57,7 @@ namespace ps
         InsatStatePtrType fullD_child_state_ptr_;
         InsatActionPtrType action_ptr_;
 
+    private:
         // Dynamic trajectory
         TrajType traj_;
         double traj_cost_;
