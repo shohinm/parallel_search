@@ -123,7 +123,7 @@ void constructActions(vector<shared_ptr<Action>>& action_ptrs,
 {
     for (int i=0; i<=2*dof; ++i)
     {
-        auto one_joint_action = std::make_shared<OneJointAtATime>(std::to_string(i), action_params, mj_modelpath, ang_discretization, opt, m_vec, d_vec, goal, num_threads);
+        auto one_joint_action = std::make_shared<OneJointAtATime>(std::to_string(i), action_params, mj_modelpath, ang_discretization, opt, m_vec, d_vec, num_threads);
         action_ptrs.emplace_back(one_joint_action);
     }
 }
@@ -388,7 +388,17 @@ int main(int argc, char* argv[])
     std::vector<BSplineOpt> opt_vec(num_threads, opt);
     auto opt_vec_ptr = std::make_shared<ManipulationAction::OptVecType>(opt_vec);
 
+    // Construct actions
+    ParamsType action_params;
+    vector<shared_ptr<Action>> action_ptrs;
+    constructActions(action_ptrs, action_params, modelpath, discretization, opt_vec_ptr, m_vec, d_vec, num_threads);
 
+    std::vector<std::shared_ptr<ManipulationAction>> manip_action_ptrs;
+    for (auto& a : action_ptrs)
+    {
+        std::shared_ptr<ManipulationAction> manip_action_ptr = std::dynamic_pointer_cast<ManipulationAction>(a);
+        manip_action_ptrs.emplace_back(manip_action_ptr);
+    }
 
     int num_success = 0;
     for (int run = 0; run < num_runs; ++run)
@@ -407,10 +417,10 @@ int main(int argc, char* argv[])
             std::cout << i << ' ';
         std::cout << std::endl;
 
-        // Construct actions
-        ParamsType action_params;
-        vector<shared_ptr<Action>> action_ptrs;
-        constructActions(action_ptrs, action_params, modelpath, discretization, opt_vec_ptr, m_vec, d_vec, num_threads);
+        for (auto& m : manip_action_ptrs)
+        {
+            m->setGoal(goals[run]);
+        }
 
         // Construct planner
         shared_ptr<Planner> planner_ptr;
