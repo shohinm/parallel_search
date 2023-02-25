@@ -41,6 +41,15 @@ namespace ps
             int num_control_points_;
             int spline_order_;
             double duration_;
+
+            /// Adaptive BSpline optimization
+            int min_ctrl_points_;
+            int max_ctrl_points_;
+            VecDf global_start_; /// For now assuming higher derivatives = 0
+            VecDf global_goal_; /// For now assuming higher derivatives = 0
+            double total_duration_;
+
+
         };
 
 
@@ -50,6 +59,20 @@ namespace ps
                                                          robot_params_(robot_params),
                                                          opt_params_(opt_params)
         {
+        }
+
+        void SetGoalChecker(std::function<bool(const StateVarsType&)> callback)
+        {
+            goal_checker_ = callback;
+        }
+
+        bool isGoal(const VecDf& state)
+        {
+            StateVarsType state_var;
+            state_var.resize(insat_params_.lowD_dims_);
+            VecDf::Map(&state_var[0], state.size()) = state;
+
+            return goal_checker_(state_var);
         }
 
         MatDf sampleTrajectory(const BSplineTraj& traj, double dt=1e-1) const
@@ -150,6 +173,12 @@ namespace ps
             opt.AddPathVelocityConstraint(dq0, dq0, 0); // Linear constraint
             /// Goal constraint
             opt.AddPathPositionConstraint(qF, qF, 1); // Linear constraint
+            if (isGoal(qF))
+            {
+                VecDf dqF(insat_params_.aux_dims_);
+                dqF.setZero();
+                opt.AddPathVelocityConstraint(qF, qF, 1); // Linear constraint
+            }
 
             /// Cost
             prog.AddQuadraticErrorCost(MatDf::Identity(insat_params_.lowD_dims_, insat_params_.lowD_dims_),
@@ -210,6 +239,23 @@ namespace ps
         }
 
 
+        BSplineTraj optimize(const InsatAction* act,
+                             BSplineTraj incoming_traj,
+                             VecDf& curr_state,
+                             VecDf& succ_state)
+        {
+
+
+
+            OptType opt(opt_params_.num_positions_,
+                        opt_params_.num_control_points_,
+                        opt_params_.spline_order_,
+                        opt_params_.duration_);
+            drake::solvers::MathematicalProgram& prog(opt.get_mutable_prog());
+
+
+        }
+
         virtual double calculateCost(const TrajType& traj)
         {
             auto& disc_traj = traj.disc_traj_;
@@ -238,6 +284,9 @@ namespace ps
         InsatParams insat_params_;
         IRB1600 robot_params_;
         BSplineOptParams opt_params_;
+
+        /// Adaptive BSplineOpt
+        std::function<double(const StateVarsType&)> goal_checker_;
 
         /// @TODO (@ram): Rewrite Drake optimizer and make it highly reusable.
         /// Optimizer
