@@ -64,7 +64,7 @@ namespace ps
             double max_duration_;
 
             double duration_cost_w_ = 1.0;
-            double length_cost_w_ = 0;
+            double length_cost_w_ = 0.1;
 
             /// Adaptive BSpline optimization
             int min_ctrl_points_;
