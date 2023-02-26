@@ -348,14 +348,14 @@ int main(int argc, char* argv[])
     
     ofstream log_file;
 
-    if ((planner_params["adaptive_opt"] == 1) && ((planner_name == "insat") || (planner_name == "pinsat")))
-    {
-       log_file.open("../logs/log_" + planner_name + "_adaptive.txt"); 
-    }
-    else
-    {
-       log_file.open("../logs/log_" + planner_name + ".txt"); 
-    }
+    // if ((planner_params["adaptive_opt"] == 1) && ((planner_name == "insat") || (planner_name == "pinsat")))
+    // {
+    //    log_file.open("../logs/log_" + planner_name + "_adaptive.txt"); 
+    // }
+    // else
+    // {
+   log_file.open("../logs/" + planner_name + "_" + to_string(num_threads) + ".txt"); 
+    // }
 
     if ((planner_name == "rrt") || (planner_name == "rrtconnect"))
     {
