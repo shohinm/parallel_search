@@ -48,6 +48,9 @@ set(SOURCES
     src/planners/RrtPlanner.cpp
     src/planners/RrtConnectPlanner.cpp
     src/planners/insat/PinsatPlanner.cpp
+    src/planners/insat/InsatPlanner.cpp
+    src/planners/insat/opt/DummyOpt.cpp
+    src/planners/insat/opt/BSplineOpt.cpp
 )
 
 # EXECUTABLES
