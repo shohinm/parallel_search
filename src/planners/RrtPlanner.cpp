@@ -145,6 +145,11 @@ void RrtPlanner::rrtThread(int thread_id)
         edge->SetCost(getCost(nearest_neighbor->GetStateVars(), state_ptr->GetStateVars(), thread_id));
         state_ptr->SetIncomingEdgePtr(edge);
 
+        if(!isValidConfiguration(state_ptr->GetStateVars(), thread_id))
+        {
+            throw runtime_error("COLLISION!");
+        }
+
         if (VERBOSE)  cout << "Graph size: " <<  state_map_.size() << endl;   
 
         auto dist_to_goal = calculateDistance(state_ptr->GetStateVars(), goal_state_vars_);
@@ -302,11 +307,11 @@ StatePtrType RrtPlanner::extend(const StatePtrType& nearest_neighbor, const Stat
     int ndof = nearest_neighbor->GetStateVars().size();
     auto nearest_state_vars = nearest_neighbor->GetStateVars();
     // if sampledNode is closer than m_eps, return that 
-    if (calculateDistance(sampled_state, nearest_state_vars) < planner_params_["eps"])
-    {
-        if (VERBOSE) cout << "Sampled state closer than " << planner_params_["eps"] << " to NN!" << endl;
-        return constructState(sampled_state, state_map);
-    }
+    // if (calculateDistance(sampled_state, nearest_state_vars) < planner_params_["eps"])
+    // {
+    //     if (VERBOSE) cout << "Sampled state closer than " << planner_params_["eps"] << " to NN!" << endl;
+    //     return constructState(sampled_state, state_map);
+    // }
 
     double angle_diff_norm = 0;
     for (int i = 0; i < ndof; ++i)
