@@ -49,6 +49,8 @@
 using namespace std;
 using namespace ps;
 
+#define TERMINATION_DIST 1.5
+
 vector<double> goal;
 int dof;
 
@@ -146,7 +148,7 @@ void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vec
     planner_ptr->SetEdgeKeyGenerator(bind(EdgeKeyGenerator, placeholders::_1));
     planner_ptr->SetHeuristicGenerator(bind(computeHeuristic, placeholders::_1));
     planner_ptr->SetStateToStateHeuristicGenerator(bind(computeHeuristicStateToState, placeholders::_1, placeholders::_2));
-    planner_ptr->SetGoalChecker(bind(isGoalState, placeholders::_1, 1.5));
+    planner_ptr->SetGoalChecker(bind(isGoalState, placeholders::_1, TERMINATION_DIST));
 }
 
 std::random_device rd;
@@ -356,7 +358,7 @@ int main(int argc, char* argv[])
     {
         planner_params["eps"] = 1.0;
         planner_params["goal_bias_probability"] = 0.05;
-        planner_params["termination_distance"] = 3.0;
+        planner_params["termination_distance"] = TERMINATION_DIST;
     }
 
     // Generate random starts and goals
@@ -396,7 +398,7 @@ int main(int argc, char* argv[])
 
     // create opt
     auto opt = BSplineOpt(insat_params, robot_params, spline_params);
-    opt.SetGoalChecker(bind(isGoalState, placeholders::_1, 1.5));
+    opt.SetGoalChecker(bind(isGoalState, placeholders::_1, TERMINATION_DIST));
     std::vector<BSplineOpt> opt_vec(num_threads, opt);
     auto opt_vec_ptr = std::make_shared<ManipulationAction::OptVecType>(opt_vec);
 

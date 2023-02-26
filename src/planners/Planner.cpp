@@ -158,15 +158,21 @@ bool Planner::isGoalState(const StatePtrType& state_ptr)
 void Planner::constructPlan(StatePtrType& state_ptr)
 {
     double cost = 0;
-    while(state_ptr->GetIncomingEdgePtr())
+    while(state_ptr)
     {
-        if (state_ptr->GetIncomingEdgePtr()) // For start state_ptr, there is no incoming edge
+        // state_ptr->Print("Plan state");
+        if (state_ptr->GetIncomingEdgePtr())
+        { 
             plan_.insert(plan_.begin(), PlanElement(state_ptr->GetStateVars(), state_ptr->GetIncomingEdgePtr()->action_ptr_, state_ptr->GetIncomingEdgePtr()->GetCost()));        
+            cost += state_ptr->GetIncomingEdgePtr()->GetCost();
+            state_ptr = state_ptr->GetIncomingEdgePtr()->parent_state_ptr_;     
+        }
         else
+        {
+            // For start state_ptr, there is no incoming edge
             plan_.insert(plan_.begin(), PlanElement(state_ptr->GetStateVars(), NULL, 0));        
-
-        cost += state_ptr->GetIncomingEdgePtr()->GetCost();
-        state_ptr = state_ptr->GetIncomingEdgePtr()->parent_state_ptr_;     
+            state_ptr = NULL;
+        }
     }
 
     planner_stats_.path_cost_= cost;
