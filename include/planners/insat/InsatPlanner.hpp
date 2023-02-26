@@ -124,6 +124,7 @@ namespace ps
         {
 
             if (VERBOSE) state_ptr->Print("Expanding");
+            planner_stats_.num_state_expansions_++;
 
             state_ptr->SetVisited();
 
@@ -148,6 +149,8 @@ namespace ps
                          InsatActionPtrType& action_ptr,
                          ActionSuccessor& action_successor)
         {
+            planner_stats_.num_evaluated_edges_++;
+            
             if (action_successor.success_)
             {
                 auto successor_state_ptr = constructInsatState(action_successor.successor_state_vars_costs_.back().first);

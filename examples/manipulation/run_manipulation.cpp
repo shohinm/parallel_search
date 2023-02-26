@@ -306,7 +306,6 @@ int main(int argc, char* argv[])
 
     string planner_name = argv[1];
 
-    ofstream log_file("../logs/log_" + planner_name + ".txt");
 
     /// Load MuJoCo model
     std::string modelpath = "../third_party/mujoco-2.3.2/model/abb/irb_1600/irb1600_6_12_shield.xml";
@@ -340,7 +339,18 @@ int main(int argc, char* argv[])
     planner_params["num_threads"] = num_threads;
     planner_params["heuristic_weight"] = 10;
     planner_params["timeout"] = 20;
-    planner_params["adaptive_opt"] = true;
+    planner_params["adaptive_opt"] = 1;
+    
+    ofstream log_file;
+
+    if ((planner_params["adaptive_opt"] == 1) && ((planner_name == "insat") || (planner_name == "pinsat")))
+    {
+       log_file.open("../logs/log_" + planner_name + "_adaptive.txt"); 
+    }
+    else
+    {
+       log_file.open("../logs/log_" + planner_name + ".txt"); 
+    }
 
     if ((planner_name == "rrt") || (planner_name == "rrtconnect"))
     {
@@ -403,6 +413,8 @@ int main(int argc, char* argv[])
     }
 
     int num_success = 0;
+    vector<vector<PlanElement>> plan_vec;
+    
     for (int run = 0; run < num_runs; ++run)
     {
         // Set goal conditions
@@ -523,13 +535,18 @@ int main(int argc, char* argv[])
                 goal_log.bottomRows(1) = gvec.transpose();
             }
 
-            if (planner_name == "insat")
+            if ((planner_name == "insat") || (planner_name == "pinsat"))
             {
                 std::shared_ptr<InsatPlanner> insat_planner = std::dynamic_pointer_cast<InsatPlanner>(planner_ptr);
                 auto soln_traj = insat_planner->getSolutionTraj();
                 auto samp_traj = sampleTrajectory(soln_traj.traj_, 6e-3);
                 traj_log.conservativeResize(insat_params.lowD_dims_, traj_log.cols()+samp_traj.cols());
                 traj_log.rightCols(samp_traj.cols()) = samp_traj;
+            }
+            else
+            {
+                auto plan = planner_ptr->GetPlan();
+                plan_vec.emplace_back(plan);
             }
 
 
@@ -553,10 +570,41 @@ int main(int argc, char* argv[])
         << endl;
     }
 
-    traj_log.transposeInPlace();
-    writeToCSVfile(traj_path, traj_log);
+    StateVarsType dummy_wp(6, -1);
+    if ((planner_name == "insat") || (planner_name == "pinsat"))
+    {
+        traj_log.transposeInPlace();
+        writeToCSVfile(traj_path, traj_log);
+    }
+    else
+    {
+        ofstream traj_fout("../logs/" + planner_name + "_abb_traj.txt");
+
+        for (auto& p : plan_vec)
+        {
+            for (auto& wp : p)
+            {
+                for (auto& j : wp.state_)
+                {
+                    traj_fout << j << " ";
+                }
+                traj_fout << endl;
+            }
+
+            for (auto& j : dummy_wp)
+            {
+                traj_fout << j << " ";
+            }
+            traj_fout << endl;
+        }
+        
+        traj_fout.close();
+
+    }
+
     writeToCSVfile(starts_path, start_log);
     writeToCSVfile(goals_path, goal_log);
+
 
     cout << endl << "************ Global Stats ************" << endl;
     cout << "Success rate: " << double(num_success)/num_runs << endl;
