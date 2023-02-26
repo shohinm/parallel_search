@@ -96,6 +96,8 @@ void RrtConnectPlanner::rrtThread(int thread_id)
 {
     while (!terminate_)
     {
+        planner_stats_.num_jobs_per_thread_[thread_id] +=1;
+
         bool is_collision;
         StatePtrType state_ptr;
 
@@ -107,7 +109,12 @@ void RrtConnectPlanner::rrtThread(int thread_id)
             auto edge = addEdge(nearest_neighbor, state_ptr, edge_map_);
             edge->SetCost(getCost(nearest_neighbor->GetStateVars(), state_ptr->GetStateVars(), thread_id));
             state_ptr->SetIncomingEdgePtr(edge);
-
+            
+            if(!isValidConfiguration(state_ptr->GetStateVars(), thread_id))
+            {
+                throw runtime_error("COLLISION!");
+            }
+            
             StatePtrType connected_state;
             if (connect(state_ptr, state_map_goal_, edge_map_, thread_id, connected_state))
             {            
@@ -133,6 +140,11 @@ void RrtConnectPlanner::rrtThread(int thread_id)
             edge->SetCost(getCost(nearest_neighbor->GetStateVars(), state_ptr->GetStateVars(), thread_id));
             state_ptr->SetIncomingEdgePtr(edge);
 
+            if(!isValidConfiguration(state_ptr->GetStateVars(), thread_id))
+            {
+                throw runtime_error("COLLISION!");
+            }
+    
             StatePtrType connected_state;
             if (connect(state_ptr, state_map_, edge_map_goal_, thread_id, connected_state))
             {            
@@ -156,6 +168,24 @@ void RrtConnectPlanner::rrtThread(int thread_id)
 
 void RrtConnectPlanner::exit()
 {
+
+    bool all_rrt_threads_terminated = false;
+    while (!all_rrt_threads_terminated)
+    {
+        all_rrt_threads_terminated = true;
+        for (auto& fut : rrt_futures_)
+        {
+            if (!isFutureReady(fut))
+            {
+                all_rrt_threads_terminated = false;
+                break;
+            }
+        }
+    }
+    rrt_futures_.clear();
+
+
+    cout << "Exiting!" << endl;
     for (auto& state_it : state_map_goal_)
     {        
         if (state_it.second)
@@ -176,5 +206,6 @@ void RrtConnectPlanner::exit()
     }
     edge_map_goal_.clear();
 
-    RrtPlanner::exit();
+    Planner::exit();
+
 }

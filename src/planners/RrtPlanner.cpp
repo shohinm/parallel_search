@@ -71,7 +71,7 @@ void RrtPlanner::initialize()
     // Initialize planner stats
     planner_stats_ = PlannerStats();
     planner_stats_.num_jobs_per_thread_.resize(planner_params_["num_threads"], 0);
-    planner_stats_.num_threads_spawned_ = 2;
+    planner_stats_.num_threads_spawned_ = 1;
     terminate_ = false;
     plan_found_ = false;
 }
@@ -134,6 +134,8 @@ void RrtPlanner::rrtThread(int thread_id)
     double min_d = DINF;
     while (!terminate_)
     {
+        planner_stats_.num_jobs_per_thread_[thread_id] +=1;
+
         auto sampled_state = sampleState(goal_state_ptr_, thread_id, planner_params_["goal_bias_probability"]);
         if (VERBOSE) PrintStateVars(sampled_state, "Sampled state:");
         auto nearest_neighbor = getNearestNeighbor(sampled_state, state_map_);
@@ -155,6 +157,7 @@ void RrtPlanner::rrtThread(int thread_id)
         auto dist_to_goal = calculateDistance(state_ptr->GetStateVars(), goal_state_vars_);
         
         min_d = (dist_to_goal < min_d) ? dist_to_goal : min_d;
+    
 
         if ((dist_to_goal < planner_params_["termination_distance"]))
         {            
