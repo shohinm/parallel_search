@@ -42,6 +42,7 @@
 #include <planners/insat/PinsatPlanner.hpp>
 #include <planners/RrtPlanner.hpp>
 #include <planners/RrtConnectPlanner.hpp>
+#include <planners/EpasePlanner.hpp>
 #include "ManipulationActions.hpp"
 #include <mujoco/mujoco.h>
 #include <planners/insat/opt/BSplineOpt.hpp>
@@ -132,7 +133,9 @@ void constructActions(vector<shared_ptr<Action>>& action_ptrs,
 
 void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vector<shared_ptr<Action>>& action_ptrs, ParamsType& planner_params, ParamsType& action_params)
 {
-    if (planner_name == "insat")
+    if (planner_name == "epase")
+	planner_ptr = std::make_shared<EpasePlanner>(planner_params);	
+    else if (planner_name == "insat")
         planner_ptr = std::make_shared<InsatPlanner>(planner_params);
     else if (planner_name == "pinsat")
         planner_ptr = std::make_shared<PinsatPlanner>(planner_params);
@@ -296,7 +299,7 @@ int main(int argc, char* argv[])
       if (argc != 2) throw runtime_error("Format: run_robot_nav_2d insat");
       num_threads = 1;
     }
-    else if (!strcmp(argv[1], "pinsat") || !strcmp(argv[1], "rrt") || !strcmp(argv[1], "rrtconnect"))
+    else if (!strcmp(argv[1], "pinsat") || !strcmp(argv[1], "rrt") || !strcmp(argv[1], "rrtconnect") || !strcmp(argv[1], "epase"))
     {
       if (argc != 3) throw runtime_error("Format: run_robot_nav_2d pinsat [num_threads]");
       num_threads = atoi(argv[2]);
