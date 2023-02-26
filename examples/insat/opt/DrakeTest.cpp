@@ -95,8 +95,8 @@ namespace ps_drake
 //            // constraints for all t.
 //            for (int i = 0; i < sym_rdot_->num_control_points(); ++i) {
 //                prog_.AddLinearConstraint(sym_rdot_->control_points()[i] >=
-//                                          duration_ * lb &&
-//                                          sym_rdot_->control_points()[i] <= duration_ * ub);
+//                                          max_duration_ * lb &&
+//                                          sym_rdot_->control_points()[i] <= max_duration_ * ub);
 //            }
 //        }
 
