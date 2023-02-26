@@ -516,19 +516,19 @@ int main(int argc, char* argv[])
             cout << "Mean cost: " << accumulate(cost_vec.begin(), cost_vec.end(), 0.0)/cost_vec.size() << endl;
             cout << "Mean threads used: " << accumulate(threads_used_vec.begin(), threads_used_vec.end(), 0.0)/threads_used_vec.size() << "/" << planner_params["num_threads"] << endl;
             cout << "Mean evaluated edges: " << roundOff(accumulate(num_edges_vec.begin(), num_edges_vec.end(), 0.0)/double(num_edges_vec.size()), 2) << endl;
-            cout << endl << "------------- Mean jobs per thread -------------" << endl;
-            for (int tidx = 0; tidx < planner_params["num_threads"]; ++tidx)
-            {
-                cout << "thread: " << tidx << " jobs: " << jobs_per_thread[tidx]/num_success << endl;
-            }
-            cout << "************************" << endl;
+            // cout << endl << "------------- Mean jobs per thread -------------" << endl;
+            // for (int tidx = 0; tidx < planner_params["num_threads"]; ++tidx)
+            // {
+            //     cout << "thread: " << tidx << " jobs: " << jobs_per_thread[tidx]/num_success << endl;
+            // }
+            // cout << "************************" << endl;
 
-            cout << endl << "------------- Mean action eval times -------------" << endl;
-            for (auto [action, times] : action_eval_times)
-            {
-                cout << action << ": " << accumulate(times.begin(), times.end(), 0.0)/times.size() << endl;
-            }
-            cout << "************************" << endl;
+            // cout << endl << "------------- Mean action eval times -------------" << endl;
+            // for (auto [action, times] : action_eval_times)
+            // {
+            //     cout << action << ": " << accumulate(times.begin(), times.end(), 0.0)/times.size() << endl;
+            // }
+            // cout << "************************" << endl;
 
             /// track logs
             start_log.conservativeResize(start_log.rows()+1, insat_params.lowD_dims_);
