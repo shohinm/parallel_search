@@ -51,6 +51,11 @@ void Planner::SetStateToStateHeuristicGenerator(function<double(const StateVarsT
     binary_heuristic_generator_ = callback;
 }
 
+void Planner::SetPostProcessor(std::function<void(vector<PlanElement>& plan, double& cost)> callback)
+{
+    post_processor_ = callback;
+}
+
 std::vector<PlanElement> Planner::GetPlan() const
 {
     return plan_;
@@ -168,6 +173,11 @@ void Planner::constructPlan(StatePtrType& state_ptr)
             plan_.insert(plan_.begin(), PlanElement(state_ptr->GetStateVars(), NULL, 0));        
             state_ptr = NULL;
         }
+    }
+
+    if (post_processor_)
+    {
+        post_processor_(plan_, cost);
     }
 
     planner_stats_.path_cost_= cost;
