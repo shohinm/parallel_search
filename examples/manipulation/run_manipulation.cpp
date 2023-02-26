@@ -331,7 +331,7 @@ int main(int argc, char* argv[])
 
 
     // Experiment parameters
-    int num_runs = 500;
+    int num_runs = 1000;
     vector<int> scale_vec = {5, 5, 5, 10, 5};
     bool visualize_plan = true;
     bool load_starts_goals_from_file = true;
@@ -379,8 +379,8 @@ int main(int argc, char* argv[])
     // Insat Params
     InsatParams insat_params(dof, 2*dof, dof);
     // spline params
-    BSplineOpt::BSplineOptParams spline_params(dof, 7, 4, 2.0);
-    spline_params.setAdaptiveParams(4, 7, 2.0);
+    BSplineOpt::BSplineOptParams spline_params(dof, 7, 4, 0.02, 7.0);
+    spline_params.setAdaptiveParams(4, 7);
     // discretization
     VecDf discretization(dof);
     discretization.setOnes();
@@ -416,8 +416,9 @@ int main(int argc, char* argv[])
 
     int num_success = 0;
     vector<vector<PlanElement>> plan_vec;
-    
-    for (int run = 0; run < num_runs; ++run)
+
+    int run_offset = 0;
+    for (int run = run_offset; run < run_offset+num_runs; ++run)
     {
         // Set goal conditions
         goal = goals[run];
@@ -541,7 +542,7 @@ int main(int argc, char* argv[])
             {
                 std::shared_ptr<InsatPlanner> insat_planner = std::dynamic_pointer_cast<InsatPlanner>(planner_ptr);
                 auto soln_traj = insat_planner->getSolutionTraj();
-                auto samp_traj = sampleTrajectory(soln_traj.traj_, 6e-3);
+                auto samp_traj = sampleTrajectory(soln_traj.traj_, 5e-3);
                 traj_log.conservativeResize(insat_params.lowD_dims_, traj_log.cols()+samp_traj.cols());
                 traj_log.rightCols(samp_traj.cols()) = samp_traj;
             }
