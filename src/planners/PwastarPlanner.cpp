@@ -21,9 +21,8 @@ PwastarPlanner::~PwastarPlanner()
 bool PwastarPlanner::Plan()
 {
     initialize();
-    auto t_start = chrono::steady_clock::now();
-
-    while (!state_open_list_.empty())
+    startTimer();   
+    while (!state_open_list_.empty() && !checkTimeout())
     {
         auto state_ptr = state_open_list_.min();
         state_open_list_.pop();
@@ -32,7 +31,7 @@ bool PwastarPlanner::Plan()
         if (isGoalState(state_ptr))
         {
             auto t_end = chrono::steady_clock::now();
-            double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();            
+            double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start_).count();            
             goal_state_ptr_ = state_ptr;
             
             // Reconstruct and return path
@@ -48,7 +47,7 @@ bool PwastarPlanner::Plan()
     }
 
     auto t_end = chrono::steady_clock::now();
-    double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
+    double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start_).count();
     planner_stats_.total_time_ = 1e-9*t_elapsed;
     return false;
 }

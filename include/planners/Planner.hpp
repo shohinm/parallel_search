@@ -45,6 +45,8 @@ class Planner
     protected:
         
         virtual void initialize();
+        void startTimer();
+        bool checkTimeout();
         void resetStates();
         void resetClosed();
         StatePtrType constructState(const StateVarsType& state);
@@ -80,6 +82,7 @@ class Planner
         PlannerStats planner_stats_;
         double h_val_min_;
 
+        std::chrono::time_point<std::chrono::steady_clock> t_start_;
 };
 
 }

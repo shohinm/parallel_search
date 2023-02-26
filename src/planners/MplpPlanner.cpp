@@ -21,7 +21,7 @@ MplpPlanner::~MplpPlanner()
 bool MplpPlanner::Plan()
 {    
     initialize();    
-    auto t_start = chrono::steady_clock::now();
+    startTimer();   
 
     delegate_edges_process_ = shared_ptr<thread>(new thread(&MplpPlanner::delegateEdges, this));
     monitor_paths_process_ = shared_ptr<thread>(new thread(&MplpPlanner::monitorPaths, this));    
@@ -40,7 +40,7 @@ bool MplpPlanner::Plan()
         path_exists = replanMPLP();
 
         auto t_end = chrono::steady_clock::now();
-        double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
+        double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start_).count();
         plan_idx++;
 
     }
@@ -60,7 +60,7 @@ bool MplpPlanner::Plan()
     terminate_ = true;
 
     auto t_end = chrono::steady_clock::now();
-    double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
+    double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start_).count();
     planner_stats_.total_time_ = 1e-9*t_elapsed;
 
     exit();
@@ -112,7 +112,7 @@ bool MplpPlanner::replanMPLP()
     initializeReplanning(); 
     int num_expansions = 0;
 
-    while (!state_open_list_.empty())
+    while (!state_open_list_.empty() && !checkTimeout())
     {
 
         if (plan_found_)

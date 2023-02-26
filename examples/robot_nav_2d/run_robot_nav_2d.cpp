@@ -221,7 +221,7 @@ void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vec
     else if (planner_name == "agepase")
         planner_ptr = make_shared<AgepasePlanner>(planner_params);
     else if (planner_name == "mplp")
-        planner_ptr = make_shared<MplpPlanner>(planner_params);
+        planner_ptr = make_shared<MplpPlanner>(planner_params); 
     else
         throw runtime_error("Planner type not identified!");      
 
@@ -307,6 +307,7 @@ int main(int argc, char* argv[])
     planner_params["num_threads"] = num_threads;
     planner_params["heuristic_weight"] = 50;
     // planner_params["heuristic_weight"] = 1;
+    planner_params["timeout"] = 5;
     planner_params["time_budget"] = time_budget;
     
     // Read map
