@@ -29,13 +29,14 @@ namespace ps
             BSplineOptParams() : num_positions_(6),
                                  num_control_points_(10),
                                  spline_order_(4),
-                                 duration_(1.0) {}
+                                 max_duration_(1.0) {}
 
             BSplineOptParams(int num_positions, int num_control_points,
-                             int spline_order, double duration=1.0) : num_positions_(num_positions),
-                                                                      num_control_points_(num_control_points),
-                                                                      spline_order_(spline_order),
-                                                                      duration_(duration) {}
+                             int spline_order, double min_duration, double max_duration) : num_positions_(num_positions),
+                                                                                           num_control_points_(num_control_points),
+                                                                                           spline_order_(spline_order),
+                                                                                           min_duration_(min_duration),
+                                                                                           max_duration_(max_duration) {}
 
             BSplineOptParams(int min_ctrl_points,
                              int max_ctrl_points,
@@ -44,35 +45,32 @@ namespace ps
                              double total_duration) : min_ctrl_points_(min_ctrl_points),
                                                       max_ctrl_points_(max_ctrl_points),
                                                       global_start_(start),
-                                                      global_goal_(goal),
-                                                      total_duration_(total_duration)
+                                                      global_goal_(goal)
             {
                 start_goal_dist_ = (goal - start).norm();
             }
 
             void setAdaptiveParams(int min_ctrl_points,
-                                   int max_ctrl_points,
-                                   double total_duration)
+                                   int max_ctrl_points)
             {
                 min_ctrl_points_ = min_ctrl_points;
                 max_ctrl_points_ = max_ctrl_points;
-                total_duration_ = total_duration;
             }
 
             int num_positions_;
             int num_control_points_;
             int spline_order_;
-            double duration_;
+            double min_duration_;
+            double max_duration_;
 
             double duration_cost_w_ = 1.0;
-            double length_cost_w_ = 0.1;
+            double length_cost_w_ = 0;
 
             /// Adaptive BSpline optimization
             int min_ctrl_points_;
             int max_ctrl_points_;
             VecDf global_start_; /// For now assuming higher derivatives = 0
             VecDf global_goal_; /// For now assuming higher derivatives = 0
-            double total_duration_;
             double start_goal_dist_;
 
 
@@ -110,15 +108,9 @@ namespace ps
             return goal_checker_(state_var);
         }
 
-        MatDf sampleTrajectory(const BSplineTraj& traj, double dt=1e-1) const
+        /// trajectory samplers with fixed time
+        MatDf sampleTrajectory(const BSplineTraj::TrajInstanceType& traj, double dt) const
         {
-            dt = traj.traj_.end_time()/10;
-            return sampleTrajectory(traj.traj_, dt);
-        }
-
-        MatDf sampleTrajectory(const BSplineTraj::TrajInstanceType& traj, double dt=1e-1) const
-        {
-            dt = traj.end_time()/10;
             MatDf sampled_traj;
             int i=0;
             for (double t=0.0; t<=traj.end_time(); t+=dt)
@@ -128,6 +120,52 @@ namespace ps
                 ++i;
             }
             return sampled_traj;
+        }
+
+        MatDf sampleTrajectory(const BSplineTraj& traj, double dt) const
+        {
+            return sampleTrajectory(traj.traj_, dt);
+        }
+
+        /// trajectory samplers with adaptive time
+        MatDf sampleTrajectory(const BSplineTraj::TrajInstanceType& traj) const
+        {
+            int n = static_cast<int>(traj.end_time()/opt_params_.min_duration_);
+            double dt = n>=2? opt_params_.min_duration_: opt_params_.min_duration_/3.0;
+
+            MatDf sampled_traj;
+            /// save the init state
+            VecDf x1 = traj.value(0.0);
+            sampled_traj.conservativeResize(insat_params_.lowD_dims_, sampled_traj.cols()+1);
+            sampled_traj.rightCols(1) = x1;
+            /// loop over t
+            for (double t=0; t<traj.end_time(); )
+            {
+                /// adaptive dt called ddt
+                double ddt = dt;
+
+                VecDf x2 = traj.value(std::min(t+ddt, traj.end_time()));
+
+                /// keep decreasing adaptive t until distance is smaller than threshold
+                while ((x2-x1).norm() > robot_params_.collision_delta_ && ddt > opt_params_.min_duration_/5.0)
+                {
+                    ddt /= 2.0;
+                    x2 = traj.value(std::min(t+ddt, traj.end_time()));
+                }
+
+                /// once distance smaller than threshold collect the sample
+                sampled_traj.conservativeResize(insat_params_.lowD_dims_, sampled_traj.cols()+1);
+                sampled_traj.rightCols(1) = x2;
+
+                /// update t with adaptive t
+                t=t+ddt;
+            }
+            return sampled_traj;
+        }
+
+        MatDf sampleTrajectory(const BSplineTraj& traj) const
+        {
+            return sampleTrajectory(traj.traj_);
         }
 
         void addDurationAndPathCost(OptType& opt) const
@@ -141,6 +179,12 @@ namespace ps
             opt.AddPositionBounds(robot_params_.min_q_, robot_params_.max_q_);
             opt.AddVelocityBounds(robot_params_.min_dq_, robot_params_.max_dq_);
 //            opt.AddAccelerationBounds(robot_params_.min_ddq_, robot_params_.max_ddq_);
+        }
+
+        void addDurationConstraint(OptType& opt) const
+        {
+//            opt.AddDurationConstraint(opt_params_.max_duration_, opt_params_.max_duration_);
+            opt.AddDurationConstraint(opt_params_.min_duration_, opt_params_.max_duration_);
         }
 
         std::vector<BSplineTraj::TrajInstanceType> optimizeWithCallback(const OptType& opt,
@@ -206,12 +250,12 @@ namespace ps
             OptType opt(opt_params_.num_positions_,
                         opt_params_.num_control_points_,
                         opt_params_.spline_order_,
-                        opt_params_.duration_);
+                        opt_params_.max_duration_);
             drake::solvers::MathematicalProgram& prog(opt.get_mutable_prog());
 
             addDurationAndPathCost(opt);
             addStateSpaceBounds(opt);
-            opt.AddDurationConstraint(opt_params_.duration_, opt_params_.duration_);
+            addDurationConstraint(opt);
 
             /// Start constraint
             opt.AddPathPositionConstraint(q0, q0, 0); // Linear constraint
@@ -245,6 +289,10 @@ namespace ps
             if (traj.result_.is_success())
             {
                 traj.traj_ = opt.ReconstructTrajectory(traj.result_);
+
+                MatDf test(6,1);
+                test << -0.84119345, 0.21151205, 0.05051086, -0.81510994, -0.83423899, -0.26319817;
+//                std::cout << "test coll: " << act->isFeasible(test, thread_id) << std::endl;
 
                 auto disc_traj = sampleTrajectory(traj);
                 if (act->isFeasible(disc_traj, thread_id))
@@ -310,7 +358,7 @@ namespace ps
 
             addDurationAndPathCost(opt);
             addStateSpaceBounds(opt);
-            opt.AddDurationConstraint(T, T);
+            addDurationConstraint(opt);
 
             /// Terminal position constraint
             opt.AddPathPositionConstraint(q0, q0, 0); // Linear constraint
@@ -393,7 +441,7 @@ namespace ps
 
             addDurationAndPathCost(opt);
             addStateSpaceBounds(opt);
-            opt.AddDurationConstraint(T, T);
+            addDurationConstraint(opt);
 
             /// Terminal position constraint
             opt.AddPathPositionConstraint(q0, q0, 0); // Linear constraint
@@ -501,7 +549,8 @@ namespace ps
                 dq0.resize(insat_params_.aux_dims_);
                 dq0.setZero();
             }
-            if (succ_state.isApprox(opt_params_.global_goal_, 5e-2))
+//            if (succ_state.isApprox(opt_params_.global_goal_, 5e-2))
+            if ((opt_params_.global_goal_ - succ_state).norm() <= 1.5)
             {
                 is_goal=true;
                 dqF.resize(insat_params_.aux_dims_);
@@ -511,6 +560,8 @@ namespace ps
             double To = (succ_state-curr_state).norm()/opt_params_.start_goal_dist_;
             int nc = std::max(opt_params_.min_ctrl_points_,
                               static_cast<int>(To*opt_params_.max_ctrl_points_));
+            To = std::max(To, opt_params_.min_duration_);
+            To = std::min(To, opt_params_.max_duration_);
 
             auto inc_traj = runBSplineOpt(act,
                                           curr_state, succ_state,
@@ -535,6 +586,8 @@ namespace ps
                 tc = std::max(tc, opt_params_.min_ctrl_points_);
                 int nc1 = static_cast<int>((static_cast<double>(c1)/(c1+c2))*tc);
                 int nc2 = tc - nc1;
+                Two = std::max(Two, opt_params_.min_duration_);
+                Two = std::min(Two, opt_params_.max_duration_);
 
                 full_traj = runBSplineOptWithInitGuess(act,
                                                        incoming_traj, inc_traj,
