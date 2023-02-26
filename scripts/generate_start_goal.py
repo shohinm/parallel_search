@@ -115,7 +115,7 @@ while s < data_size:
         #     pdb.set_trace()
 
 
-start_file = '../examples/manipulation/resources/shield/starts.txt'
-goal_file = '../examples/manipulation/resources/shield/goals.txt'
+start_file = '../examples/manipulation/resources/shield/starts_ext.txt'
+goal_file = '../examples/manipulation/resources/shield/goals_ext.txt'
 np.savetxt(start_file, starts, delimiter=' ')
 np.savetxt(goal_file, goals, delimiter=' ')
