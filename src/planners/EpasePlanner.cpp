@@ -20,13 +20,12 @@ bool EpasePlanner::Plan()
 {
     
     initialize();    
-    auto t_start = chrono::steady_clock::now();
     
     vector<EdgePtrType> popped_edges;
 
     lock_.lock();
-
-    while(!terminate_)
+    startTimer();
+    while(!terminate_ && !checkTimeout())
     {
         EdgePtrType curr_edge_ptr = NULL;
 
@@ -36,7 +35,7 @@ bool EpasePlanner::Plan()
             {
                 terminate_ = true;
                 auto t_end = chrono::steady_clock::now();
-                double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
+                double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start_).count();
                 planner_stats_.total_time_ = 1e-9*t_elapsed;
                 cout << "Goal Not Reached" << endl;   
                 lock_.unlock();
@@ -114,7 +113,7 @@ bool EpasePlanner::Plan()
             if (isGoalState(curr_edge_ptr->parent_state_ptr_) && (!terminate_))
             {
                 auto t_end = chrono::steady_clock::now();
-                double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
+                double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start_).count();
                 planner_stats_.total_time_ = 1e-9*t_elapsed;
 
                 // cout << "--------------------------------------------------------" << endl;            
@@ -188,7 +187,7 @@ bool EpasePlanner::Plan()
 
     terminate_ = true;
     auto t_end = chrono::steady_clock::now();
-    double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
+    double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start_).count();
     planner_stats_.total_time_ = 1e-9*t_elapsed;
     // cout << "Goal Not Reached, Number of states expanded: " << planner_stats_.num_state_expansions_ << endl;   
     lock_.unlock();
