@@ -28,10 +28,14 @@ starts = np.empty((0,arm_model.nq))
 goals = np.empty((0,arm_model.nq))
 
 ### Volume to do IK
-vol = np.array([[[1.2, 2.0], [-1.2, 0], [0.8, 1.3]],
-                [[0, 1.2], [0, 0.8], [0.8, 1.3]],
-                [[-0.8, 0], [-1.2, 0], [0.8, 1.3]],
-                [[0, 1.2], [-2.0, -1.2], [0.8, 1.3]]])
+# vol = np.array([[[1.2, 1.8], [-1.2, 0], [0.2, 1.2]],
+#                 [[0, 1.2], [0, 0.6], [0.2, 1.2]],
+#                 [[-0.6, 0], [-1.2, 0], [0.2, 1.2]],
+#                 [[0, 1.2], [-1.8, -1.2], [0.2, 1.2]]])
+vol = np.array([[[1.4, 2.0], [-1.2, 0], [1.0, 1.8]],
+                [[0, 1.2], [0.2, 1.0], [1.0, 1.8]],
+                [[-1.0, -0.4], [-1.2, 0], [1.0, 1.8]],
+                [[0, 1.2], [-2.0, -1.4], [1.0, 1.8]]])
 
 data_size = 500
 
@@ -111,7 +115,7 @@ while s < data_size:
         #     pdb.set_trace()
 
 
-start_file = '../examples/manipulation/resources/shield/starts.txt'
-goal_file = '../examples/manipulation/resources/shield/goals.txt'
+start_file = '../examples/manipulation/resources/shield/starts_ext.txt'
+goal_file = '../examples/manipulation/resources/shield/goals_ext.txt'
 np.savetxt(start_file, starts, delimiter=' ')
 np.savetxt(goal_file, goals, delimiter=' ')
