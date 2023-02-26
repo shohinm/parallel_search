@@ -54,8 +54,8 @@ def print_stats(insat, pinsat, insat_adaptive, pinsat_adaptive, cost_thresh):
 
     
     common_idx = np.intersect1d(insat[:,0], pinsat[:,0])
-    common_idx = np.intersect1d(common_idx[:,0], insat_adaptive[:,0])
-    common_idx = np.intersect1d(common_idx[:,0], pinsat_adaptive[:,0])
+    common_idx = np.intersect1d(common_idx, insat_adaptive[:,0])
+    common_idx = np.intersect1d(common_idx, pinsat_adaptive[:,0])
     
     # pdb.set_trace()
 
@@ -120,7 +120,7 @@ def print_stats(insat, pinsat, insat_adaptive, pinsat_adaptive, cost_thresh):
     stats['pinsat']['mean_edge_expansions'] = np.mean(d['pinsat']['edge_expansions'])
 
     stats['insat_adaptive']['num_success_problems'] = d['insat_adaptive']['id'].shape[0]
-    stats['insat_adaptive']['success_rate'] = insat_success
+    stats['insat_adaptive']['success_rate'] = insat_adaptive_success
     stats['insat_adaptive']['mean_cost'] = np.mean(d['insat_adaptive']['cost'])
     stats['insat_adaptive']['std_cost'] = np.std(d['insat_adaptive']['cost'])
     stats['insat_adaptive']['mean_time'] = np.mean(d['insat_adaptive']['time'])
@@ -131,7 +131,7 @@ def print_stats(insat, pinsat, insat_adaptive, pinsat_adaptive, cost_thresh):
     stats['insat_adaptive']['mean_edge_expansions'] = np.mean(d['insat_adaptive']['edge_expansions'])
 
     stats['pinsat_adaptive']['num_success_problems'] = d['pinsat_adaptive']['id'].shape[0]
-    stats['pinsat_adaptive']['success_rate'] = pinsat_success
+    stats['pinsat_adaptive']['success_rate'] = pinsat_adaptive_success
     stats['pinsat_adaptive']['mean_cost'] = np.mean(d['pinsat_adaptive']['cost'])
     stats['pinsat_adaptive']['std_cost'] = np.std(d['pinsat_adaptive']['cost'])
     stats['pinsat_adaptive']['mean_time'] = np.mean(d['pinsat_adaptive']['time'])
@@ -189,11 +189,11 @@ if __name__ == "__main__":
     
     base_dir = "../logs"
 
-
     insat = np.loadtxt(os.path.join(base_dir, "log_insat.txt"))
     pinsat = np.loadtxt(os.path.join(base_dir, "log_pinsat.txt"))
     insat_adaptive = np.loadtxt(os.path.join(base_dir, "log_insat_adaptive.txt"))
     pinsat_adaptive = np.loadtxt(os.path.join(base_dir, "log_pinsat_adaptive.txt"))
+
 
     # pdb.set_trace()
     np.set_printoptions(suppress=True)
