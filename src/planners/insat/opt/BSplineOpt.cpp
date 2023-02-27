@@ -589,7 +589,7 @@ namespace ps
 
         addDurationAndPathCost(opt);
         addStateSpaceBounds(opt);
-        addDurationConstraint(opt, opt_params_.min_duration_, opt_params_.min_duration_);
+        addDurationConstraint(opt, opt_params_.min_duration_, opt_params_.max_duration_);
 
         VecDf dq0(insat_params_.aux_dims_), dqF(insat_params_.aux_dims_);
         dq0.setZero(); dqF.setZero();
@@ -803,6 +803,7 @@ namespace ps
         }
         rs /= rs(rs.size() - 1);
 
+        cost = 0.0;
         for (int i=2; i<=eig_path.cols(); ++i)
         {
             VecDi ctrl_idx = VecDf::LinSpaced(i, 0, eig_path.cols()-1).cast<int>();
