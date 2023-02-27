@@ -358,11 +358,11 @@ int main(int argc, char* argv[])
 
     if ((planner_params["smart_opt"] == 1) && ((planner_name == "insat") || (planner_name == "pinsat")))
     {
-        log_file.open("../logs/log_" + planner_name + "_smart_" + to_string(num_threads) + ".txt");
+        log_file.open("../logs/" + planner_name + "_smart_" + to_string(num_threads) + ".txt");
     }
     else if ((planner_params["adaptive_opt"] == 1) && ((planner_name == "insat") || (planner_name == "pinsat")))
     {
-       log_file.open("../logs/log_" + planner_name + "_adaptive_" + to_string(num_threads) + ".txt"); 
+       log_file.open("../logs/" + planner_name + "_adaptive_" + to_string(num_threads) + ".txt"); 
     }
     else
     {

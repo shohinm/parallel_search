@@ -45,7 +45,7 @@ bool RrtConnectPlanner::connect(StatePtrType state_ptr, StatePtrMapType& state_m
     }
     else
     {   
-        cout << "Connected \n";
+        // cout << "Connected \n";
         connected_state = nearest_neighbor;
         addEdge(nearest_neighbor, state_ptr, edge_map);
         return true;
