@@ -2,6 +2,7 @@
 #define AGEPASE_PLANNER_HPP
 
 #define NAIVE 1
+#define ADAPTIVE 1
 
 #include <future>
 #include <condition_variable>
@@ -26,6 +27,7 @@ class AgepasePlanner : public GepasePlanner
         void exit();
 
         std::vector<EdgePtrType> edge_incon_list_;
+        double delta_w_;
 };
 
 }

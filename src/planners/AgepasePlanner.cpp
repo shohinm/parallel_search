@@ -42,21 +42,37 @@ bool AgepasePlanner::Plan()
             cout << "Breaking out" << endl;
             break;
         }
-        heuristic_w_ -= 1;
+
+        // append inconsistent list's edges into Eopen
+        for(auto it_edge = edge_incon_list_.begin(); it_edge != edge_incon_list_.end(); it_edge++)
+        {
+            edge_open_list_.push(*it_edge);
+        }
+        edge_incon_list_.clear();
+
+        // Update heuristic weight
+        if (ADAPTIVE)
+        {
+            heuristic_w_ -= 1;
+        }
+        else
+        {
+            heuristic_w_ -= delta_w_;
+        }
         
         if (NAIVE)
         {
-            // auto plan = move(plan_);
-            // exit();
-            // initialize();
-            // plan_ = move(plan);
-            edge_incon_list_.clear();
             while (!edge_open_list_.empty())
             {
                 auto edge = edge_open_list_.min();
                 edge_open_list_.pop();
             }
 
+            resetStates();
+
+            // Initialize start state
+            start_state_ptr_->SetGValue(0);
+            start_state_ptr_->SetHValue(computeHeuristic(start_state_ptr_));
             auto edge_ptr = Edge(start_state_ptr_, dummy_action_ptr_);
             auto edge_key = getEdgeKey(&edge_ptr);
             auto it_edge = edge_map_.find(edge_key);
@@ -65,24 +81,11 @@ bool AgepasePlanner::Plan()
 
             edge_open_list_.push(it_edge->second);
             goal_state_ptr_ = NULL;
-            
-            // resetStates();
-            // cleanUp();
-
-            // auto plan = move(plan_);
-            // initialize();
-            // plan_ = move(plan);
         }
         else
         {
-            // append inconsistent list's edges into Eopen
-            for(auto it_edge = edge_incon_list_.begin(); it_edge != edge_incon_list_.end(); it_edge++)
-            {
-                edge_open_list_.push(*it_edge);
-            }
-            edge_incon_list_.clear();
-            
             EdgeQueueMinType edge_open_list;
+
             while (!edge_open_list_.empty())
             {
                 auto edge = edge_open_list_.min();
@@ -130,6 +133,7 @@ void AgepasePlanner::initialize()
 {
     GepasePlanner::initialize();
     edge_incon_list_.clear();
+    delta_w_ = 0.02;
 }
 
 void AgepasePlanner::improvePath() 
@@ -188,8 +192,8 @@ void AgepasePlanner::improvePath()
 
             if (edge_open_list_.empty() && being_expanded_states_.empty())
             {
-                cout << "No solution found!\n";
-                cin.get();
+                // cout << "No solution found!\n";
+                // cin.get();
                 lock_.unlock();
                 exitMultiThread();
                 return;
@@ -343,8 +347,8 @@ void AgepasePlanner::expand(EdgePtrType edge_ptr, int thread_id)
     if (edge_ptr->action_ptr_ == dummy_action_ptr_)
     {       
         auto state_ptr = edge_ptr->parent_state_ptr_;
-        state_ptr->num_successors_ = 0;
-        state_ptr->num_expanded_successors_ = 0;   
+        // state_ptr->num_successors_ = 0;
+        // state_ptr->num_expanded_successors_ = 0;   
         state_ptr->SetVValue(state_ptr->GetGValue());
 
         for (auto& action_ptr: actions_ptrs_)
@@ -415,7 +419,6 @@ void AgepasePlanner::expand(EdgePtrType edge_ptr, int thread_id)
     else
     {
         if (VERBOSE) edge_ptr->Print("Expansion completed ");
-        // if (1) edge_ptr->Print("Expansion completed ");
     }
 
     auto t_end_expansion = chrono::steady_clock::now();

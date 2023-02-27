@@ -109,16 +109,13 @@ void Planner::resetStates()
 
 void Planner::resetClosed()
 {
-    // cout << "*********************** REsetting *********************" << endl;
     for (auto it = state_map_.begin(); it != state_map_.end(); ++it)
     {
-        // it->second->Print();
         it->second->UnsetVisited();     
         it->second->UnsetBeingExpanded();      
-        // it->second->num_successors_ = 0;
-        // it->second->num_expanded_successors_ = 0;   
+        it->second->num_successors_ = 0;
+        it->second->num_expanded_successors_ = 0;   
     }
-    // cout << "***********************  *********************" << endl;
 }
 
 size_t Planner::getEdgeKey(const EdgePtrType& edge_ptr)
