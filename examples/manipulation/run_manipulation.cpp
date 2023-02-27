@@ -119,7 +119,7 @@ size_t EdgeKeyGenerator(const EdgePtrType& edge_ptr)
 void postProcess(std::vector<PlanElement>& path, double& cost, double allowed_time, const shared_ptr<Action>& act, BSplineOpt& opt)
 {
     std::shared_ptr<InsatAction> ins_act = std::dynamic_pointer_cast<InsatAction>(act);
-    opt.postProcess(path, cost, ins_act.get());
+    opt.postProcess(path, cost, allowed_time, ins_act.get());
 }
 
 void constructActions(vector<shared_ptr<Action>>& action_ptrs,
