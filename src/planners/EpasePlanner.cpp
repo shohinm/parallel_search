@@ -113,9 +113,6 @@ bool EpasePlanner::Plan()
             // Return solution if goal state is expanded
             if (isGoalState(curr_edge_ptr->parent_state_ptr_) && (!terminate_))
             {
-                auto t_end = chrono::steady_clock::now();
-                double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start_).count();
-                planner_stats_.total_time_ = 1e-9*t_elapsed;
 
                 // cout << "--------------------------------------------------------" << endl;            
                 // cout << "Goal Reached!" << endl;
@@ -126,6 +123,11 @@ bool EpasePlanner::Plan()
                 constructPlan(goal_state_ptr_);   
                 terminate_ = true;
                 recheck_flag_ = true;
+
+                auto t_end = chrono::steady_clock::now();
+                double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start_).count();
+                planner_stats_.total_time_ = 1e-9*t_elapsed;
+
                 lock_.unlock();
                 exit();
 
