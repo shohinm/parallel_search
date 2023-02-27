@@ -170,45 +170,49 @@ namespace ps
                 TrajType traj;
                 double cost = 0;
                 double inc_cost = 0;
-                bool root=true;
-                for (auto& anc: ancestors)
-                {
-                    if (planner_params_["adaptive_opt"] == true)
-                    {
-                        if (anc->GetIncomingEdgePtr()) /// When anc is not start
-                        {
-                            traj = action_ptr->optimize(anc->GetIncomingEdgePtr()->GetTraj(),
-                                                        anc->GetStateVars(),
-                                                        successor_state_ptr->GetStateVars());
-                            inc_cost = action_ptr->getCost(traj) - action_ptr->getCost(anc->GetIncomingEdgePtr()->GetTraj());
-                        }
-                        else
-                        {
-                            traj = action_ptr->optimize(TrajType(),
-                                                        anc->GetStateVars(),
-                                                        successor_state_ptr->GetStateVars());
-                            inc_cost = action_ptr->getCost(traj);
-                        }
 
-                        if (traj.isValid())
-                        {
-                            best_anc = anc;
-                            break;
-                        }
+                if (planner_params_["smart_opt"] == true)
+                {
+                    std::vector<StateVarsType> anc_states;
+                    for (auto& anc: ancestors)
+                    {
+                        anc_states.emplace_back(anc->GetStateVars());
+                    }
+
+                    if (state_ptr->GetIncomingEdgePtr()) /// When anc is not start
+                    {
+                        traj = action_ptr->optimize(state_ptr->GetIncomingEdgePtr()->GetTraj(),
+                                                    anc_states,
+                                                    successor_state_ptr->GetStateVars());
+                        inc_cost = action_ptr->getCost(traj) - action_ptr->getCost(state_ptr->GetIncomingEdgePtr()->GetTraj());
                     }
                     else
                     {
-                        TrajType inc_traj = action_ptr->optimize(anc->GetStateVars(), successor_state_ptr->GetStateVars());
-                        if (inc_traj.size() > 0)
+                        traj = action_ptr->optimize(TrajType(),
+                                                    anc_states,
+                                                    successor_state_ptr->GetStateVars());
+                        inc_cost = action_ptr->getCost(traj);
+                    }
+                }
+                else
+                {
+                    for (auto& anc: ancestors)
+                    {
+                        if (planner_params_["adaptive_opt"] == true)
                         {
-                            inc_cost = action_ptr->getCost(inc_traj);
                             if (anc->GetIncomingEdgePtr()) /// When anc is not start
                             {
-                                traj = action_ptr->warmOptimize(anc->GetIncomingEdgePtr()->GetTraj(), inc_traj);
+                                traj = action_ptr->optimize(anc->GetIncomingEdgePtr()->GetTraj(),
+                                                            anc->GetStateVars(),
+                                                            successor_state_ptr->GetStateVars());
+                                inc_cost = action_ptr->getCost(traj) - action_ptr->getCost(anc->GetIncomingEdgePtr()->GetTraj());
                             }
                             else
                             {
-                                traj = action_ptr->warmOptimize(inc_traj);
+                                traj = action_ptr->optimize(TrajType(),
+                                                            anc->GetStateVars(),
+                                                            successor_state_ptr->GetStateVars());
+                                inc_cost = action_ptr->getCost(traj);
                             }
 
                             if (traj.isValid())
@@ -219,11 +223,34 @@ namespace ps
                         }
                         else
                         {
-                            continue;
-                        }
+                            TrajType inc_traj = action_ptr->optimize(anc->GetStateVars(), successor_state_ptr->GetStateVars());
+                            if (inc_traj.size() > 0)
+                            {
+                                inc_cost = action_ptr->getCost(inc_traj);
+                                if (anc->GetIncomingEdgePtr()) /// When anc is not start
+                                {
+                                    traj = action_ptr->warmOptimize(anc->GetIncomingEdgePtr()->GetTraj(), inc_traj);
+                                }
+                                else
+                                {
+                                    traj = action_ptr->warmOptimize(inc_traj);
+                                }
 
+                                if (traj.isValid())
+                                {
+                                    best_anc = anc;
+                                    break;
+                                }
+                            }
+                            else
+                            {
+                                continue;
+                            }
+
+                        }
                     }
                 }
+
 
                 if (traj.disc_traj_.cols()<=2)
                 {

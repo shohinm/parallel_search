@@ -171,6 +171,7 @@ namespace ps
     }
     else
     {
+//        return goal_;
         /// Direct edge to goal
       VecDf free_state(m_[thread_id]->nq);
       if (isCollisionFree(state, goal_, free_state, thread_id))
@@ -353,6 +354,13 @@ namespace ps
       return (*opt_)[thread_id].optimize(this, incoming_traj, p1, p2, thread_id);
   }
 
+    TrajType ManipulationAction::optimize(const TrajType &incoming_traj,
+                                          const std::vector<StateVarsType> &ancestors,
+                                          const StateVarsType &successor,
+                                          int thread_id)
+    {
+        return (*opt_)[thread_id].optimize(this, incoming_traj, ancestors, successor, thread_id);
+    }
 
   double ManipulationAction::getCost(const TrajType &traj, int thread_id) const
   {

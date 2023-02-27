@@ -352,17 +352,22 @@ int main(int argc, char* argv[])
     planner_params["heuristic_weight"] = 10;
     planner_params["timeout"] = 10;
     planner_params["adaptive_opt"] = 1;
-    
+    planner_params["smart_opt"] = 0;
+
     ofstream log_file;
 
-    // if ((planner_params["adaptive_opt"] == 1) && ((planner_name == "insat") || (planner_name == "pinsat")))
-    // {
-    //    log_file.open("../logs/log_" + planner_name + "_adaptive.txt"); 
-    // }
-    // else
-    // {
-   log_file.open("../logs/" + planner_name + "_" + to_string(num_threads) + ".txt"); 
-    // }
+    if ((planner_params["smart_opt"] == 1) && ((planner_name == "insat") || (planner_name == "pinsat")))
+    {
+        log_file.open("../logs/log_" + planner_name + "_smart_" + to_string(num_threads) + ".txt");
+    }
+    else if ((planner_params["adaptive_opt"] == 1) && ((planner_name == "insat") || (planner_name == "pinsat")))
+    {
+       log_file.open("../logs/log_" + planner_name + "_adaptive_" + to_string(num_threads) + ".txt"); 
+    }
+    else
+    {
+        log_file.open("../logs/" + planner_name + "_" + to_string(num_threads) + ".txt");    
+    }
 
     if ((planner_name == "rrt") || (planner_name == "rrtconnect"))
     {
@@ -389,7 +394,7 @@ int main(int argc, char* argv[])
     // Insat Params
     InsatParams insat_params(dof, 2*dof, dof);
     // spline params
-    BSplineOpt::BSplineOptParams spline_params(dof, 7, 4, 0.02, 7.0);
+    BSplineOpt::BSplineOptParams spline_params(dof, 7, 4, 0.7, 0.7);
     spline_params.setAdaptiveParams(4, 7);
     // discretization
     VecDf discretization(dof);

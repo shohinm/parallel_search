@@ -30,7 +30,7 @@ namespace ps
             min_ddq_ = -100*VecDf::Ones(6);
             max_ddq_ = 100*VecDf::Ones(6);
 
-            collision_delta_ = 4e-2; /// 4cm
+            collision_delta_ = 9e-2; /// 9cm
         }
     };
 }

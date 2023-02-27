@@ -68,7 +68,7 @@ namespace ps
 
         void updateStartAndGoal(StateVarsType& start, StateVarsType& goal);
 
-        bool isGoal(const VecDf& state);
+        bool isGoal(const VecDf& state) const;
 
         /// trajectory samplers with fixed time
         MatDf sampleTrajectory(const BSplineTraj::TrajInstanceType& traj, double dt) const;
@@ -87,7 +87,7 @@ namespace ps
         void addDurationConstraint(OptType& opt) const;
 
         std::vector<BSplineTraj::TrajInstanceType> optimizeWithCallback(const OptType& opt,
-                                                                        drake::solvers::MathematicalProgram& prog);
+                                                                        drake::solvers::MathematicalProgram& prog) const;
 
         BSplineTraj optimize(const InsatAction* act, const VecDf& s1, const VecDf& s2, int thread_id);
 
@@ -119,18 +119,30 @@ namespace ps
                              const VecDf& succ_state,
                              int thread_id);
 
-        /// Post processing
-        BSplineTraj optimizeWithWaypointConstraint(VecDf& st, VecDf& go, MatDf& wp, VecDf& wp_s) const;
+        BSplineTraj optimize(const InsatAction* act,
+                             const BSplineTraj& incoming_traj,
+                             const std::vector<StateVarsType> &ancestors,
+                             const StateVarsType& successor,
+                             int thread_id);
 
+        BSplineTraj optimizeWithWaypointConstraint(VecDf& st, VecDf& go, MatDf& wp, VecDf& s_wp) const;
+
+        BSplineTraj optimizeWithWaypointConstraintAndCallback(const InsatAction *act,
+                                                              VecDf& st, VecDf& go,
+                                                              MatDf& wp, VecDf& s_wp,
+                                                              const BSplineTraj& init_traj,
+                                                              int thread_id) const;
+
+        BSplineTraj fitBestBSpline(const InsatAction *act,
+                                   MatDf &path, const BSplineTraj& init_traj,
+                                   int thread_id) const;
+
+        /// Post processing
         MatDf postProcess(std::vector<PlanElement>& path, double& cost, const InsatAction* act) const;
 
         virtual double calculateCost(const TrajType& traj) const;
 
         virtual double calculateCost(const MatDf& traj) const;
-
-//        int clearCosts();
-//
-//        int clearConstraints();
 
         /// Params
         InsatParams insat_params_;

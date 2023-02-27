@@ -23,6 +23,10 @@ namespace ps
                                   const StateVarsType &s1,
                                   const StateVarsType &s2,
                                   int thread_id=0) = 0;
+        virtual TrajType optimize(const TrajType& incoming_traj,
+                                  const std::vector<StateVarsType> &ancestors,
+                                  const StateVarsType& successor,
+                                  int thread_id=0) = 0;
         virtual double getCost(const TrajType& traj, int thread_id=0) const =0;
         virtual bool isFeasible(MatDf& traj, int thread_id) const =0;
         virtual std::vector<double> SampleFeasibleState(int thread_id){};
