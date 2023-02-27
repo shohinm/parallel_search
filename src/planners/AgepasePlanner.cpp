@@ -27,48 +27,88 @@ bool AgepasePlanner::Plan()
         terminate_ = false;
 
         resetClosed();
+        // cout << "Start state: " << start_state_ptr_->GetFValue() << endl;
         being_expanded_states_.clear();
         improvePath();
+        // cout << "Start state: " << start_state_ptr_->GetFValue() << endl;
+        // cout << "Heuristic weight: " << heuristic_w_ << endl;
+        // cout << "Goal state: " << goal_state_ptr_->GetFValue() << endl;
+        // cout << "Min edge open: " << edge_open_list_.min()->expansion_priority_ << endl;
+        // cout << "Min state BE: " << being_expanded_states_.min()->GetFValue() << endl;
 
         // Early termination if there's no solution
         if (goal_state_ptr_ == NULL)
         {
+            cout << "Breaking out" << endl;
             break;
         }
         heuristic_w_ -= 1;
-        // append inconsistent list's edges into Eopen
-        for(auto it_edge = edge_incon_list_.begin(); it_edge != edge_incon_list_.end(); it_edge++)
-        {
-            edge_open_list_.push(*it_edge);
-        }
-        edge_incon_list_.clear();
         
-        EdgeQueueMinType edge_open_list;
-        while (!edge_open_list_.empty())
+        if (NAIVE)
         {
-            auto edge = edge_open_list_.min();
-            edge_open_list_.pop();
+            // auto plan = move(plan_);
+            // exit();
+            // initialize();
+            // plan_ = move(plan);
+            edge_incon_list_.clear();
+            while (!edge_open_list_.empty())
+            {
+                auto edge = edge_open_list_.min();
+                edge_open_list_.pop();
+            }
 
-            edge->parent_state_ptr_->SetFValue(edge->parent_state_ptr_->GetGValue() + heuristic_w_*edge->parent_state_ptr_->GetHValue());
-            edge->expansion_priority_ = edge->parent_state_ptr_->GetFValue();
+            auto edge_ptr = Edge(start_state_ptr_, dummy_action_ptr_);
+            auto edge_key = getEdgeKey(&edge_ptr);
+            auto it_edge = edge_map_.find(edge_key);
+            it_edge->second->expansion_priority_ = heuristic_w_*it_edge->second->parent_state_ptr_->GetHValue();
+            start_state_ptr_->SetFValue(it_edge->second->expansion_priority_);
+
+            edge_open_list_.push(it_edge->second);
+            goal_state_ptr_ = NULL;
             
-            if (edge->action_ptr_ != dummy_action_ptr_)
-            {
-                auto edge_temp = Edge(edge->parent_state_ptr_, dummy_action_ptr_);
-                auto edge_key = getEdgeKey(&edge_temp);
-                edge = edge_map_.find(edge_key)->second;
-            }
+            // resetStates();
+            // cleanUp();
 
-            if (edge_open_list.contains(edge))
-            {
-                edge_open_list.decrease(edge);
-            }
-            else
-            {
-                edge_open_list.push(edge);
-            }
+            // auto plan = move(plan_);
+            // initialize();
+            // plan_ = move(plan);
         }
-        edge_open_list_ = move(edge_open_list);
+        else
+        {
+            // append inconsistent list's edges into Eopen
+            for(auto it_edge = edge_incon_list_.begin(); it_edge != edge_incon_list_.end(); it_edge++)
+            {
+                edge_open_list_.push(*it_edge);
+            }
+            edge_incon_list_.clear();
+            
+            EdgeQueueMinType edge_open_list;
+            while (!edge_open_list_.empty())
+            {
+                auto edge = edge_open_list_.min();
+                edge_open_list_.pop();
+
+                edge->parent_state_ptr_->SetFValue(edge->parent_state_ptr_->GetGValue() + heuristic_w_*edge->parent_state_ptr_->GetHValue());
+                edge->expansion_priority_ = edge->parent_state_ptr_->GetFValue();
+                
+                if (edge->action_ptr_ != dummy_action_ptr_)
+                {
+                    auto edge_temp = Edge(edge->parent_state_ptr_, dummy_action_ptr_);
+                    auto edge_key = getEdgeKey(&edge_temp);
+                    edge = edge_map_.find(edge_key)->second;
+                }
+
+                if (edge_open_list.contains(edge))
+                {
+                    edge_open_list.decrease(edge);
+                }
+                else
+                {
+                    edge_open_list.push(edge);
+                }
+            }
+            edge_open_list_ = move(edge_open_list);
+        }
     
     }
     
@@ -78,7 +118,7 @@ bool AgepasePlanner::Plan()
     auto t_end = chrono::steady_clock::now();
     double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start_).count();
     planner_stats_.total_time_ = 1e-9*t_elapsed;
-    if (goal_state_ptr_ != NULL) {
+    if (!plan_.empty()) {
         exit();
         return true;
     }
@@ -120,6 +160,20 @@ void AgepasePlanner::improvePath()
                         return;
                     }
                 }
+                else if (!being_expanded_states_.empty())
+                {
+                    // Terminate condition: no state in open/be has f-value < goal's g-value
+                    if (goal_state_ptr_->GetFValue() < being_expanded_states_.min()->GetFValue())
+                    {
+                        // Construct path
+                        auto goal_state_ptr = goal_state_ptr_;
+                        plan_.clear();
+                        constructPlan(goal_state_ptr);
+                        lock_.unlock();
+                        exitMultiThread();
+                        return;
+                    }
+                }
                 else // Edge case: when open is empty but goal_state just got set
                 {
                     // Construct path
@@ -134,6 +188,8 @@ void AgepasePlanner::improvePath()
 
             if (edge_open_list_.empty() && being_expanded_states_.empty())
             {
+                cout << "No solution found!\n";
+                cin.get();
                 lock_.unlock();
                 exitMultiThread();
                 return;
@@ -322,11 +378,6 @@ void AgepasePlanner::expand(EdgePtrType edge_ptr, int thread_id)
                     }
                     else
                     {
-                        if (edge_ptr_next == NULL)
-                        {
-                            cout << "Pushing NULL !!\n";
-                            cin.get();
-                        }
                         edge_open_list_.push(edge_ptr_next);
                     }
                     notifyMainThread();
@@ -364,6 +415,7 @@ void AgepasePlanner::expand(EdgePtrType edge_ptr, int thread_id)
     else
     {
         if (VERBOSE) edge_ptr->Print("Expansion completed ");
+        // if (1) edge_ptr->Print("Expansion completed ");
     }
 
     auto t_end_expansion = chrono::steady_clock::now();
@@ -374,32 +426,102 @@ void AgepasePlanner::expand(EdgePtrType edge_ptr, int thread_id)
 
 void AgepasePlanner::expandEdge(EdgePtrType edge_ptr, int thread_id)
 {
-
-    auto action_ptr = edge_ptr->action_ptr_;
-
-    lock_.unlock();
-    // Evaluate the edge
-    auto t_start = chrono::steady_clock::now();
-    auto action_successor = action_ptr->GetSuccessor(edge_ptr->parent_state_ptr_->GetStateVars(), thread_id);
-    auto t_end = chrono::steady_clock::now();
-    
-    auto t_lock_s = chrono::steady_clock::now();
-    lock_.lock();
-    auto t_lock_e = chrono::steady_clock::now();
-    planner_stats_.lock_time_ += 1e-9*chrono::duration_cast<chrono::nanoseconds>(t_lock_e-t_lock_s).count();
-
-    planner_stats_.num_evaluated_edges_++; // Only the edges controllers that satisfied pre-conditions and args are in the open list
-
-    if (action_successor.success_)
+    if (!edge_ptr->is_eval_)
     {
-        auto successor_state_ptr = constructState(action_successor.successor_state_vars_costs_.back().first);
-        double cost = action_successor.successor_state_vars_costs_.back().second;                
+        auto action_ptr = edge_ptr->action_ptr_;
 
-        // Set successor and cost in expanded edge
-        edge_ptr->child_state_ptr_ = successor_state_ptr;
-        edge_ptr->SetCost(cost);
+        lock_.unlock();
+        // Evaluate the edge
+        auto t_start = chrono::steady_clock::now();
+        auto action_successor = action_ptr->GetSuccessor(edge_ptr->parent_state_ptr_->GetStateVars(), thread_id);
+        auto t_end = chrono::steady_clock::now();
+        
+        auto t_lock_s = chrono::steady_clock::now();
+        lock_.lock();
+        auto t_lock_e = chrono::steady_clock::now();
+        planner_stats_.lock_time_ += 1e-9*chrono::duration_cast<chrono::nanoseconds>(t_lock_e-t_lock_s).count();
 
-        double new_g_val = edge_ptr->parent_state_ptr_->GetGValue() + cost;
+        planner_stats_.num_evaluated_edges_++; // Only the edges controllers that satisfied pre-conditions and args are in the open list
+
+        if (action_successor.success_)
+        {
+            auto successor_state_ptr = constructState(action_successor.successor_state_vars_costs_.back().first);
+            double cost = action_successor.successor_state_vars_costs_.back().second;                
+
+            // Set successor and cost in expanded edge
+            edge_ptr->child_state_ptr_ = successor_state_ptr;
+            edge_ptr->SetCost(cost);
+            edge_ptr->is_eval_ = true;
+
+            double new_g_val = edge_ptr->parent_state_ptr_->GetGValue() + cost;
+
+            if (successor_state_ptr->GetGValue() > new_g_val)
+            {
+                double h_val = successor_state_ptr->GetHValue();
+                
+                if (h_val == -1)
+                {
+                    h_val = computeHeuristic(successor_state_ptr);
+                    successor_state_ptr->SetHValue(h_val);        
+                }
+
+                if (h_val != DINF)
+                {
+                    h_val_min_ = h_val < h_val_min_ ? h_val : h_val_min_;
+                    successor_state_ptr->SetGValue(new_g_val);
+                    successor_state_ptr->SetFValue(new_g_val + heuristic_w_*h_val);
+                    successor_state_ptr->SetIncomingEdgePtr(edge_ptr);
+                    
+                    // Insert poxy edge
+                    auto edge_temp = Edge(successor_state_ptr, dummy_action_ptr_);
+                    auto edge_key = getEdgeKey(&edge_temp);
+                    auto it_edge = edge_map_.find(edge_key); 
+                    EdgePtrType proxy_edge_ptr;
+
+                    if (it_edge == edge_map_.end())
+                    {
+                        proxy_edge_ptr = new Edge(successor_state_ptr, dummy_action_ptr_);
+                        edge_map_.insert(make_pair(edge_key, proxy_edge_ptr));
+                    }
+                    else
+                    {
+                        proxy_edge_ptr = it_edge->second;
+                    }
+
+                    proxy_edge_ptr->expansion_priority_ = new_g_val + heuristic_w_*h_val;
+                    
+                    if (!successor_state_ptr->IsVisited())
+                    {
+                        if (edge_open_list_.contains(proxy_edge_ptr))
+                        {
+                            edge_open_list_.decrease(proxy_edge_ptr);
+                        }
+                        else
+                        {
+                            edge_open_list_.push(proxy_edge_ptr);
+                        }
+                    }
+                    else
+                    {
+                        if (find(edge_incon_list_.begin(), edge_incon_list_.end(), proxy_edge_ptr) == edge_incon_list_.end())
+                        {
+                            edge_incon_list_.emplace_back(proxy_edge_ptr);
+                        }
+                    }
+
+                    notifyMainThread();
+                }       
+            }
+        }
+        else
+        {
+            if (VERBOSE) edge_ptr->Print("No successors for");
+        }
+    }
+    else
+    {
+        double new_g_val = edge_ptr->parent_state_ptr_->GetGValue() + edge_ptr->GetCost();
+        auto successor_state_ptr = edge_ptr->child_state_ptr_;
 
         if (successor_state_ptr->GetGValue() > new_g_val)
         {
@@ -444,11 +566,6 @@ void AgepasePlanner::expandEdge(EdgePtrType edge_ptr, int thread_id)
                     }
                     else
                     {
-                        if (proxy_edge_ptr == NULL)
-                        {
-                            cout << "Pushing NULL !!\n";
-                            cin.get();
-                        }
                         edge_open_list_.push(proxy_edge_ptr);
                     }
                 }
@@ -463,10 +580,6 @@ void AgepasePlanner::expandEdge(EdgePtrType edge_ptr, int thread_id)
                 notifyMainThread();
             }       
         }
-    }
-    else
-    {
-        if (VERBOSE) edge_ptr->Print("No successors for");
     }
 
     edge_ptr->parent_state_ptr_->num_expanded_successors_ += 1;

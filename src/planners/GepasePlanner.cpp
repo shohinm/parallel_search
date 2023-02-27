@@ -219,6 +219,7 @@ void GepasePlanner::initialize()
     dummy_action_ptr_ = NULL;
     auto edge_ptr = new Edge(start_state_ptr_, dummy_action_ptr_);
     edge_ptr->expansion_priority_ = heuristic_w_*computeHeuristic(start_state_ptr_);
+    start_state_ptr_->SetFValue(heuristic_w_*computeHeuristic(start_state_ptr_));
 
     edge_map_.insert(make_pair(getEdgeKey(edge_ptr), edge_ptr));
     edge_open_list_.push(edge_ptr);   

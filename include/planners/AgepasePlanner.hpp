@@ -1,6 +1,8 @@
 #ifndef AGEPASE_PLANNER_HPP
 #define AGEPASE_PLANNER_HPP
 
+#define NAIVE 1
+
 #include <future>
 #include <condition_variable>
 #include <planners/GepasePlanner.hpp>
