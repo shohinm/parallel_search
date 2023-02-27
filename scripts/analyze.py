@@ -33,7 +33,7 @@ def sanity_check(data, cost_thresh):
     return result
 
 
-def print_stats(insat, pinsat, rrt, epase, cost_thresh):
+def print_stats(insat, pinsat, rrt, epase, cost_thresh, time_thresh):
     print("\n\n--------------- Cost thresh: {} ---------------".format(cost_thresh))
 
     d = {}
@@ -42,10 +42,10 @@ def print_stats(insat, pinsat, rrt, epase, cost_thresh):
     d['rrt'] = {'id' : rrt[:, 0], 'time' : rrt[:, 1], 'cost' : rrt[:, 2], 'length' : rrt[:, 3], 'state_expansions' : rrt[:, 4], 'edge_expansions' : rrt[:, 5]} 
     d['epase'] = {'id' : epase[:, 0], 'time' : epase[:, 1], 'cost' : epase[:, 2], 'length' : epase[:, 3], 'state_expansions' : epase[:, 4], 'edge_expansions' : epase[:, 5]} 
 
-    insat_idx, insat_success, insat_success_idx = relevant_indices('insat', d['insat'], cost_thresh, 1000)
-    insat_adaptive_idx, insat_adaptive_success, insat_adaptive_success_idx = relevant_indices('rrt', d['rrt'], cost_thresh, 1000)
-    pinsat_idx, pinsat_success, pinsat_success_idx = relevant_indices('pinsat', d['pinsat'], cost_thresh, 1000)
-    pinsat_adaptive_idx, pinsat_adaptive_success, pinsat_adaptive_success_idx = relevant_indices('epase', d['epase'], cost_thresh, 1000)
+    insat_idx, insat_success, insat_success_idx = relevant_indices('insat', d['insat'], cost_thresh, time_thresh)
+    insat_adaptive_idx, insat_adaptive_success, insat_adaptive_success_idx = relevant_indices('rrt', d['rrt'], cost_thresh, time_thresh)
+    pinsat_idx, pinsat_success, pinsat_success_idx = relevant_indices('pinsat', d['pinsat'], cost_thresh, time_thresh)
+    pinsat_adaptive_idx, pinsat_adaptive_success, pinsat_adaptive_success_idx = relevant_indices('epase', d['epase'], cost_thresh, time_thresh)
 
     insat = insat[insat_idx, :]
     pinsat = pinsat[insat_idx, :]
@@ -205,7 +205,7 @@ if __name__ == "__main__":
     np.set_printoptions(suppress=True)
 
     stats = {}
-    stats[0] = print_stats(insat, pinsat, rrt, epase, 0)
+    stats[0] = print_stats(insat, pinsat, rrt, epase, 0, 10)
     # stats[5] =print_stats(wastar, pase, epase, gepase, 5000)
     # stats[10] =print_stats(wastar, pase, epase, gepase, 10000)
     # stats[15] =print_stats(wastar, pase, epase, gepase, 15000)

@@ -101,7 +101,7 @@ void RrtConnectPlanner::constructPlan(StatePtrType& connected_state_start, State
 
 void RrtConnectPlanner::rrtThread(int thread_id)
 {
-    while (!terminate_)
+    while (!terminate_ && !checkTimeout())
     {
         planner_stats_.num_jobs_per_thread_[thread_id] +=1;
 
@@ -171,6 +171,8 @@ void RrtConnectPlanner::rrtThread(int thread_id)
 
         start_goal_flag_[thread_id] = 1 - start_goal_flag_[thread_id];        
     }
+
+    terminate_ = true;
 }
 
 void RrtConnectPlanner::exit()
