@@ -119,7 +119,14 @@ namespace ps
                              const VecDf& succ_state,
                              int thread_id);
 
-        virtual double calculateCost(const TrajType& traj);
+        /// Post processing
+        BSplineTraj optimizeWithWaypointConstraint(VecDf& st, VecDf& go, MatDf& wp, VecDf& wp_s) const;
+
+        MatDf postProcess(std::vector<PlanElement>& path, double& cost, const InsatAction* act) const;
+
+        virtual double calculateCost(const TrajType& traj) const;
+
+        virtual double calculateCost(const MatDf& traj) const;
 
 //        int clearCosts();
 //
