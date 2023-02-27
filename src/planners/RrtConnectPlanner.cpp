@@ -91,7 +91,9 @@ void RrtConnectPlanner::constructPlan(StatePtrType& connected_state_start, State
 
     if (post_processor_)
     {
-        post_processor_(plan_, cost);
+        auto t_end = chrono::steady_clock::now();
+        double t_elapsed = 1e-9*chrono::duration_cast<chrono::nanoseconds>(t_end-t_start_).count();      
+        post_processor_(plan_, cost, planner_params_["timeout"]-t_elapsed);
     }
 
     planner_stats_.path_cost_= cost;

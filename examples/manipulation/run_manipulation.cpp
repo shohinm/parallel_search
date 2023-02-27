@@ -116,7 +116,7 @@ size_t EdgeKeyGenerator(const EdgePtrType& edge_ptr)
     return seed;
 }
 
-void postProcess(std::vector<PlanElement>& path, double& cost, const shared_ptr<Action>& act, BSplineOpt& opt)
+void postProcess(std::vector<PlanElement>& path, double& cost, double allowed_time, const shared_ptr<Action>& act, BSplineOpt& opt)
 {
     std::shared_ptr<InsatAction> ins_act = std::dynamic_pointer_cast<InsatAction>(act);
     opt.postProcess(path, cost, ins_act.get());
@@ -158,7 +158,7 @@ void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vec
     planner_ptr->SetHeuristicGenerator(bind(computeHeuristic, placeholders::_1));
     planner_ptr->SetStateToStateHeuristicGenerator(bind(computeHeuristicStateToState, placeholders::_1, placeholders::_2));
     planner_ptr->SetGoalChecker(bind(isGoalState, placeholders::_1, TERMINATION_DIST));
-    planner_ptr->SetPostProcessor(bind(postProcess, placeholders::_1, placeholders::_2, action_ptrs[0], opt));
+    planner_ptr->SetPostProcessor(bind(postProcess, placeholders::_1, placeholders::_2, placeholders::_3, action_ptrs[0], opt));
 }
 
 std::random_device rd;
