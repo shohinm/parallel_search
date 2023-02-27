@@ -341,7 +341,7 @@ int main(int argc, char* argv[])
 
 
     // Experiment parameters
-    int num_runs = 1;
+    int num_runs = 1000;
     vector<int> scale_vec = {5, 5, 5, 10, 5};
     bool visualize_plan = true;
     bool load_starts_goals_from_file = true;
@@ -427,7 +427,8 @@ int main(int argc, char* argv[])
     int num_success = 0;
     vector<vector<PlanElement>> plan_vec;
 
-    int run_offset = 14;
+    int run_offset = 0;
+    num_runs = starts.size();
     for (int run = run_offset; run < run_offset+num_runs; ++run)
     {
         // Set goal conditions
