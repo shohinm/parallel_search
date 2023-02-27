@@ -116,7 +116,7 @@ size_t EdgeKeyGenerator(const EdgePtrType& edge_ptr)
     return seed;
 }
 
-void postProcess(std::vector<PlanElement>& path, double& cost, const shared_ptr<Action>& act, BSplineOpt& opt)
+void postProcess(std::vector<PlanElement>& path, double& cost, double allowed_time, const shared_ptr<Action>& act, BSplineOpt& opt)
 {
     std::shared_ptr<InsatAction> ins_act = std::dynamic_pointer_cast<InsatAction>(act);
     opt.postProcess(path, cost, ins_act.get());
@@ -158,7 +158,7 @@ void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vec
     planner_ptr->SetHeuristicGenerator(bind(computeHeuristic, placeholders::_1));
     planner_ptr->SetStateToStateHeuristicGenerator(bind(computeHeuristicStateToState, placeholders::_1, placeholders::_2));
     planner_ptr->SetGoalChecker(bind(isGoalState, placeholders::_1, TERMINATION_DIST));
-    planner_ptr->SetPostProcessor(bind(postProcess, placeholders::_1, placeholders::_2, action_ptrs[0], opt));
+    planner_ptr->SetPostProcessor(bind(postProcess, placeholders::_1, placeholders::_2, placeholders::_3, action_ptrs[0], opt));
 }
 
 std::random_device rd;
@@ -341,7 +341,7 @@ int main(int argc, char* argv[])
 
 
     // Experiment parameters
-    int num_runs = 803;
+    int num_runs = 1000;
     vector<int> scale_vec = {5, 5, 5, 10, 5};
     bool visualize_plan = true;
     bool load_starts_goals_from_file = true;
@@ -350,7 +350,7 @@ int main(int argc, char* argv[])
     ParamsType planner_params;
     planner_params["num_threads"] = num_threads;
     planner_params["heuristic_weight"] = 10;
-    planner_params["timeout"] = 20;
+    planner_params["timeout"] = 10;
     planner_params["adaptive_opt"] = 1;
     planner_params["smart_opt"] = 0;
 
@@ -358,15 +358,15 @@ int main(int argc, char* argv[])
 
     if ((planner_params["smart_opt"] == 1) && ((planner_name == "insat") || (planner_name == "pinsat")))
     {
-        log_file.open("../logs/log_" + planner_name + "_smart.txt");
+        log_file.open("../logs/log_" + planner_name + "_smart_" + to_string(num_threads) + ".txt");
     }
     else if ((planner_params["adaptive_opt"] == 1) && ((planner_name == "insat") || (planner_name == "pinsat")))
     {
-       log_file.open("../logs/log_" + planner_name + "_adaptive.txt"); 
+       log_file.open("../logs/log_" + planner_name + "_adaptive_" + to_string(num_threads) + ".txt"); 
     }
     else
     {
-       log_file.open("../logs/log_" + planner_name + ".txt"); 
+        log_file.open("../logs/" + planner_name + "_" + to_string(num_threads) + ".txt");    
     }
 
     if ((planner_name == "rrt") || (planner_name == "rrtconnect"))
@@ -433,6 +433,7 @@ int main(int argc, char* argv[])
     vector<vector<PlanElement>> plan_vec;
 
     int run_offset = 0;
+    num_runs = starts.size();
     for (int run = run_offset; run < run_offset+num_runs; ++run)
     {
         // Set goal conditions
@@ -528,19 +529,19 @@ int main(int argc, char* argv[])
             cout << "Mean cost: " << accumulate(cost_vec.begin(), cost_vec.end(), 0.0)/cost_vec.size() << endl;
             cout << "Mean threads used: " << accumulate(threads_used_vec.begin(), threads_used_vec.end(), 0.0)/threads_used_vec.size() << "/" << planner_params["num_threads"] << endl;
             cout << "Mean evaluated edges: " << roundOff(accumulate(num_edges_vec.begin(), num_edges_vec.end(), 0.0)/double(num_edges_vec.size()), 2) << endl;
-            cout << endl << "------------- Mean jobs per thread -------------" << endl;
-            for (int tidx = 0; tidx < planner_params["num_threads"]; ++tidx)
-            {
-                cout << "thread: " << tidx << " jobs: " << jobs_per_thread[tidx]/num_success << endl;
-            }
-            cout << "************************" << endl;
+            // cout << endl << "------------- Mean jobs per thread -------------" << endl;
+            // for (int tidx = 0; tidx < planner_params["num_threads"]; ++tidx)
+            // {
+            //     cout << "thread: " << tidx << " jobs: " << jobs_per_thread[tidx]/num_success << endl;
+            // }
+            // cout << "************************" << endl;
 
-            cout << endl << "------------- Mean action eval times -------------" << endl;
-            for (auto [action, times] : action_eval_times)
-            {
-                cout << action << ": " << accumulate(times.begin(), times.end(), 0.0)/times.size() << endl;
-            }
-            cout << "************************" << endl;
+            // cout << endl << "------------- Mean action eval times -------------" << endl;
+            // for (auto [action, times] : action_eval_times)
+            // {
+            //     cout << action << ": " << accumulate(times.begin(), times.end(), 0.0)/times.size() << endl;
+            // }
+            // cout << "************************" << endl;
 
             /// track logs
             start_log.conservativeResize(start_log.rows()+1, insat_params.lowD_dims_);

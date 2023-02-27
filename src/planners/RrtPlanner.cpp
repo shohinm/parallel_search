@@ -34,6 +34,7 @@ void RrtPlanner::SetGoalState(const StateVarsType& state_vars)
 bool RrtPlanner::Plan()
 {
     initialize();
+    startTimer();
 
     if (VERBOSE) start_state_ptr_->Print("Start: ");
     if (VERBOSE) PrintStateVars(goal_state_vars_, "Goal:");
@@ -132,7 +133,7 @@ EdgePtrType RrtPlanner::addEdge(StatePtrType parent_state, StatePtrType child_st
 void RrtPlanner::rrtThread(int thread_id)
 {
     double min_d = DINF;
-    while (!terminate_)
+    while (!terminate_ && !checkTimeout())
     {
         planner_stats_.num_jobs_per_thread_[thread_id] +=1;
 
@@ -175,7 +176,7 @@ void RrtPlanner::rrtThread(int thread_id)
         }        
     }
 
-
+    terminate_ = true;
 }
 
 double RrtPlanner::getRandomNumberBetween(double min, double max)

@@ -56,7 +56,7 @@ void Planner::SetStateToStateHeuristicGenerator(function<double(const StateVarsT
     binary_heuristic_generator_ = callback;
 }
 
-void Planner::SetPostProcessor(std::function<void(vector<PlanElement>& plan, double& cost)> callback)
+void Planner::SetPostProcessor(std::function<void(vector<PlanElement>&, double&, double)> callback)
 {
     post_processor_ = callback;
 }
@@ -182,7 +182,9 @@ void Planner::constructPlan(StatePtrType& state_ptr)
 
     if (post_processor_)
     {
-        post_processor_(plan_, cost);
+        auto t_end = chrono::steady_clock::now();
+        double t_elapsed = 1e-9*chrono::duration_cast<chrono::nanoseconds>(t_end-t_start_).count();      
+        post_processor_(plan_, cost, planner_params_["timeout"]-t_elapsed);
     }
 
     planner_stats_.path_cost_= cost;

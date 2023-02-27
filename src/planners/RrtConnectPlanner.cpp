@@ -54,13 +54,13 @@ bool RrtConnectPlanner::connect(StatePtrType state_ptr, StatePtrMapType& state_m
 
 void RrtConnectPlanner::constructPlan(StatePtrType& connected_state_start, StatePtrType& connected_state_goal)
 {
-
+    double cost = 0;
     while(connected_state_start)
     {
         if (connected_state_start->GetIncomingEdgePtr())
         {
             plan_.insert(plan_.begin(), PlanElement(connected_state_start->GetStateVars(), connected_state_start->GetIncomingEdgePtr()->action_ptr_, connected_state_start->GetIncomingEdgePtr()->GetCost()));        
-            planner_stats_.path_cost_ += connected_state_start->GetIncomingEdgePtr()->GetCost();
+            cost += connected_state_start->GetIncomingEdgePtr()->GetCost();
             connected_state_start = connected_state_start->GetIncomingEdgePtr()->parent_state_ptr_;     
 
         } // For start connected_state_start, there is no incoming edge
@@ -77,7 +77,7 @@ void RrtConnectPlanner::constructPlan(StatePtrType& connected_state_start, State
         if (connected_state_goal->GetIncomingEdgePtr())
         {
             plan_.insert(plan_.end(), PlanElement(connected_state_goal->GetStateVars(), connected_state_goal->GetIncomingEdgePtr()->action_ptr_, connected_state_goal->GetIncomingEdgePtr()->GetCost()));        
-            planner_stats_.path_cost_ += connected_state_goal->GetIncomingEdgePtr()->GetCost();
+            cost += connected_state_goal->GetIncomingEdgePtr()->GetCost();
             connected_state_goal = connected_state_goal->GetIncomingEdgePtr()->parent_state_ptr_;     
 
         } // For start connected_state_goal, there is no incoming edge
@@ -89,12 +89,21 @@ void RrtConnectPlanner::constructPlan(StatePtrType& connected_state_start, State
 
     }
 
+    if (post_processor_)
+    {
+        auto t_end = chrono::steady_clock::now();
+        double t_elapsed = 1e-9*chrono::duration_cast<chrono::nanoseconds>(t_end-t_start_).count();      
+        post_processor_(plan_, cost, planner_params_["timeout"]-t_elapsed);
+    }
+
+    planner_stats_.path_cost_= cost;
     planner_stats_.path_length_ = plan_.size();
+
 }
 
 void RrtConnectPlanner::rrtThread(int thread_id)
 {
-    while (!terminate_)
+    while (!terminate_ && !checkTimeout())
     {
         planner_stats_.num_jobs_per_thread_[thread_id] +=1;
 
@@ -164,6 +173,8 @@ void RrtConnectPlanner::rrtThread(int thread_id)
 
         start_goal_flag_[thread_id] = 1 - start_goal_flag_[thread_id];        
     }
+
+    terminate_ = true;
 }
 
 void RrtConnectPlanner::exit()
