@@ -116,6 +116,12 @@ size_t EdgeKeyGenerator(const EdgePtrType& edge_ptr)
     return seed;
 }
 
+void postProcess(std::vector<PlanElement>& path, double& cost, const shared_ptr<Action>& act, BSplineOpt& opt)
+{
+    std::shared_ptr<InsatAction> ins_act = std::dynamic_pointer_cast<InsatAction>(act);
+    opt.postProcess(path, cost, ins_act.get());
+}
+
 void constructActions(vector<shared_ptr<Action>>& action_ptrs,
                       ParamsType& action_params, std::string& mj_modelpath,
                       VecDf& ang_discretization,
@@ -131,7 +137,7 @@ void constructActions(vector<shared_ptr<Action>>& action_ptrs,
     }
 }
 
-void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vector<shared_ptr<Action>>& action_ptrs, ParamsType& planner_params, ParamsType& action_params)
+void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vector<shared_ptr<Action>>& action_ptrs, ParamsType& planner_params, ParamsType& action_params, BSplineOpt& opt)
 {
     if (planner_name == "epase")
 	planner_ptr = std::make_shared<EpasePlanner>(planner_params);	
@@ -152,6 +158,7 @@ void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vec
     planner_ptr->SetHeuristicGenerator(bind(computeHeuristic, placeholders::_1));
     planner_ptr->SetStateToStateHeuristicGenerator(bind(computeHeuristicStateToState, placeholders::_1, placeholders::_2));
     planner_ptr->SetGoalChecker(bind(isGoalState, placeholders::_1, TERMINATION_DIST));
+    planner_ptr->SetPostProcessor(bind(postProcess, placeholders::_1, placeholders::_2, action_ptrs[0], opt));
 }
 
 std::random_device rd;
@@ -334,7 +341,7 @@ int main(int argc, char* argv[])
 
 
     // Experiment parameters
-    int num_runs = 1000;
+    int num_runs = 1;
     vector<int> scale_vec = {5, 5, 5, 10, 5};
     bool visualize_plan = true;
     bool load_starts_goals_from_file = true;
@@ -420,7 +427,7 @@ int main(int argc, char* argv[])
     int num_success = 0;
     vector<vector<PlanElement>> plan_vec;
 
-    int run_offset = 0;
+    int run_offset = 14;
     for (int run = run_offset; run < run_offset+num_runs; ++run)
     {
         // Set goal conditions
@@ -437,19 +444,9 @@ int main(int argc, char* argv[])
             m->setGoal(goals[run]);
         }
 
-        // print start and goal
-        std::cout << "start: ";
-        for (double i: starts[run])
-            std::cout << i << ' ';
-        std::cout << std::endl;
-        std::cout << "goal: ";
-        for (double i: goals[run])
-            std::cout << i << ' ';
-        std::cout << std::endl;
-
         // Construct planner
         shared_ptr<Planner> planner_ptr;
-        constructPlanner(planner_name, planner_ptr, action_ptrs, planner_params, action_params);
+        constructPlanner(planner_name, planner_ptr, action_ptrs, planner_params, action_params, opt_vec[0]);
 
         // Run experiments
         vector<double> time_vec, cost_vec;
@@ -465,6 +462,16 @@ int main(int argc, char* argv[])
         cout <<  "---------------------------------------------------" << endl;
 
         cout << "Experiment: " << run << endl;
+        // print start and goal
+        std::cout << "start: ";
+        for (double i: starts[run])
+            std::cout << i << ' ';
+        std::cout << std::endl;
+        std::cout << "goal: ";
+        for (double i: goals[run])
+            std::cout << i << ' ';
+        std::cout << std::endl;
+
 
         // Set start state
         planner_ptr->SetStartState(start);
