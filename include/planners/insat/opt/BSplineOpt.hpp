@@ -138,7 +138,7 @@ namespace ps
                                    int thread_id) const;
 
         /// Post processing
-        MatDf postProcess(std::vector<PlanElement>& path, double& cost, const InsatAction* act) const;
+        MatDf postProcess(std::vector<PlanElement>& path, double& cost, double time_limit, const InsatAction* act) const;
 
         virtual double calculateCost(const TrajType& traj) const;
 

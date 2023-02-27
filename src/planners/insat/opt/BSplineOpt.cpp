@@ -772,8 +772,18 @@ namespace ps
         return traj;
     }
 
-    MatDf BSplineOpt::postProcess(std::vector<PlanElement>& path, double& cost, const InsatAction* act) const {
+    MatDf BSplineOpt::postProcess(std::vector<PlanElement>& path, double& cost, double time_limit, const InsatAction* act) const {
         MatDf disc_traj;
+
+        if (time_limit < 0.0)
+        {
+            cost = 0.0;
+            return disc_traj;
+        }
+
+        typedef std::chrono::high_resolution_clock Clock;
+        using namespace std::chrono;
+        auto start_time = Clock::now();
 
         MatDf eig_path(insat_params_.lowD_dims_, path.size());
         for (int i=0; i<path.size(); ++i)
@@ -784,7 +794,6 @@ namespace ps
             }
         }
         assert(eig_path.cols()>=2);
-//        eig_path.rowwise().reverseInPlace();
 
         VecDf rs(eig_path.cols());
         rs(0) = 0.0;
@@ -827,11 +836,19 @@ namespace ps
                         VecDf::Map(&pt[0], time_traj.col(i).size()) = time_traj.col(i);
                         path.emplace_back(pt, nullptr, cost);
                     }
+                    break;
                 }
                 else
                 {
                     cost = 0.0;
                 }
+            }
+            auto end_time = Clock::now();
+            double time_elapsed = duration_cast<duration<double> >(end_time - start_time).count();
+            if (time_elapsed > time_limit)
+            {
+                cost = 0.0;
+                break;
             }
         }
 
