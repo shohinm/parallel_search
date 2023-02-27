@@ -105,6 +105,10 @@ namespace ps
                       const StateVarsType &s1,
                       const StateVarsType &s2,
                       int thread_id);
+    TrajType optimize(const TrajType& incoming_traj,
+                      const std::vector<StateVarsType> &ancestors,
+                      const StateVarsType& successor,
+                      int thread_id);
     double getCost(const TrajType& traj, int thread_id) const;
     MatDf linInterp(const VecDf& p1, const VecDf& p2, int N) const;
 

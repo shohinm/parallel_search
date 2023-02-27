@@ -44,6 +44,10 @@ namespace ps
                                   const StateVarsType &s1,
                                   const StateVarsType &s2,
                                   int thread_id=0) {}
+        virtual TrajType optimize(const TrajType& incoming_traj,
+                                  const std::vector<StateVarsType> &ancestors,
+                                  const StateVarsType& successor,
+                                  int thread_id=0) {};
         double getCost(const TrajType& traj, int thread_id=0) const;
 
     protected:
