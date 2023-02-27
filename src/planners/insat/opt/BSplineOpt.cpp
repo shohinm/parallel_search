@@ -775,6 +775,7 @@ namespace ps
     MatDf BSplineOpt::postProcess(std::vector<PlanElement>& path, double& cost, double time_limit, const InsatAction* act) const {
         MatDf disc_traj;
 
+        /// Return already if the time length is negative (means time limit already elapsed)
         if (time_limit < 0.0)
         {
             cost = 0.0;
@@ -804,6 +805,7 @@ namespace ps
         rs /= rs(rs.size() - 1);
 
         cost = 0.0;
+        bool success = false;
         for (int i=2; i<=eig_path.cols(); ++i)
         {
             VecDi ctrl_idx = VecDf::LinSpaced(i, 0, eig_path.cols()-1).cast<int>();
@@ -825,6 +827,7 @@ namespace ps
                 auto samp_traj = sampleTrajectory(traj);
                 if (act->isFeasible(samp_traj, 0))
                 {
+                    success = true;
                     disc_traj = samp_traj;
                     cost = calculateCost(disc_traj);
 
@@ -841,6 +844,7 @@ namespace ps
                 }
                 else
                 {
+                    path.clear();
                     cost = 0.0;
                 }
             }
@@ -848,6 +852,7 @@ namespace ps
             double time_elapsed = duration_cast<duration<double> >(end_time - start_time).count();
             if (time_elapsed > time_limit)
             {
+                path.clear();
                 cost = 0.0;
                 break;
             }
