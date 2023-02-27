@@ -634,7 +634,6 @@ namespace ps
             rs(i+1) = rs(i) + (eig_path.col(i + 1) - eig_path.col(i)).norm();
         }
         rs /= rs(rs.size() - 1);
-        std::cout << "rs " << rs.transpose() << std::endl;
 
         for (int i=2; i<eig_path.cols(); ++i)
         {
