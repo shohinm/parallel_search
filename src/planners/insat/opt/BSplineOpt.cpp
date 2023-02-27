@@ -698,26 +698,26 @@ namespace ps
                 traj.disc_traj_ = disc_traj;
                 is_feasible = true;
             }
-            else
-            {
-                /// re-solve with callback
-                if (init_traj.result_.is_success())
-                {
-                    opt.SetInitialGuess(init_traj.traj_);
-                }
-                std::vector<BSplineTraj::TrajInstanceType> traj_trace = optimizeWithCallback(opt, prog);
-                for (int i=traj_trace.size()-1; i>=0; --i)
-                {
-                    auto samp_traj = sampleTrajectory(traj_trace[i]);
-                    if (act->isFeasible(samp_traj, thread_id))
-                    {
-                        traj.traj_ = traj_trace[i];
-                        traj.disc_traj_ = samp_traj;
-                        is_feasible = true;
-                        break;
-                    }
-                }
-            }
+//            else
+//            {
+//                /// re-solve with callback
+//                if (init_traj.result_.is_success())
+//                {
+//                    opt.SetInitialGuess(init_traj.traj_);
+//                }
+//                std::vector<BSplineTraj::TrajInstanceType> traj_trace = optimizeWithCallback(opt, prog);
+//                for (int i=traj_trace.size()-1; i>=0; --i)
+//                {
+//                    auto samp_traj = sampleTrajectory(traj_trace[i]);
+//                    if (act->isFeasible(samp_traj, thread_id))
+//                    {
+//                        traj.traj_ = traj_trace[i];
+//                        traj.disc_traj_ = samp_traj;
+//                        is_feasible = true;
+//                        break;
+//                    }
+//                }
+//            }
         }
 
         if (!is_feasible)
