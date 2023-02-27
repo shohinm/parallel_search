@@ -160,9 +160,9 @@ namespace ps
 //            opt.AddAccelerationBounds(robot_params_.min_ddq_, robot_params_.max_ddq_);
     }
 
-    void BSplineOpt::addDurationConstraint(BSplineOpt::OptType &opt) const {
+    void BSplineOpt::addDurationConstraint(BSplineOpt::OptType &opt, double min_t, double max_t) const {
 //            opt.AddDurationConstraint(opt_params_.max_duration_, opt_params_.max_duration_);
-        opt.AddDurationConstraint(opt_params_.min_duration_, opt_params_.max_duration_);
+        opt.AddDurationConstraint(min_t, max_t);
     }
 
     std::vector<BSplineTraj::TrajInstanceType>
@@ -231,7 +231,7 @@ namespace ps
 
         addDurationAndPathCost(opt);
         addStateSpaceBounds(opt);
-        addDurationConstraint(opt);
+        addDurationConstraint(opt, opt_params_.min_duration_, opt_params_.max_duration_);
 
         /// Start constraint
         opt.AddPathPositionConstraint(q0, q0, 0); // Linear constraint
@@ -325,7 +325,7 @@ namespace ps
 
         addDurationAndPathCost(opt);
         addStateSpaceBounds(opt);
-        addDurationConstraint(opt);
+        addDurationConstraint(opt, T, T);
 
         /// Terminal position constraint
         opt.AddPathPositionConstraint(q0, q0, 0); // Linear constraint
@@ -401,7 +401,7 @@ namespace ps
 
         addDurationAndPathCost(opt);
         addStateSpaceBounds(opt);
-        addDurationConstraint(opt);
+        addDurationConstraint(opt, T, T);
 
         /// Terminal position constraint
         opt.AddPathPositionConstraint(q0, q0, 0); // Linear constraint
@@ -589,7 +589,7 @@ namespace ps
 
         addDurationAndPathCost(opt);
         addStateSpaceBounds(opt);
-        addDurationConstraint(opt);
+        addDurationConstraint(opt, opt_params_.min_duration_, opt_params_.min_duration_);
 
         VecDf dq0(insat_params_.aux_dims_), dqF(insat_params_.aux_dims_);
         dq0.setZero(); dqF.setZero();
@@ -648,7 +648,7 @@ namespace ps
 
         addDurationAndPathCost(opt);
         addStateSpaceBounds(opt);
-        addDurationConstraint(opt);
+        addDurationConstraint(opt, opt_params_.min_duration_, opt_params_.max_duration_);
 
         VecDf dq0(insat_params_.aux_dims_), dqF(insat_params_.aux_dims_);
         dq0.setZero(); dqF.setZero();

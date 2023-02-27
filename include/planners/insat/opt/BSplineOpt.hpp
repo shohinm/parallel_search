@@ -84,7 +84,7 @@ namespace ps
 
         void addStateSpaceBounds(OptType& opt) const;
 
-        void addDurationConstraint(OptType& opt) const;
+        void addDurationConstraint(OptType& opt, double min_t, double max_t) const;
 
         std::vector<BSplineTraj::TrajInstanceType> optimizeWithCallback(const OptType& opt,
                                                                         drake::solvers::MathematicalProgram& prog) const;
