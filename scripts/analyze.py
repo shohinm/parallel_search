@@ -142,12 +142,16 @@ def print_stats(insat, pinsat, rrt, epase, cost_thresh):
     stats['epase']['mean_edge_expansions'] = np.mean(d['epase']['edge_expansions'])
 
 
-    for alg in ['insat', 'pinsat', 'rrt', 'epase']:
+    for alg in ['rrt', 'epase', 'insat', 'pinsat']:
         print("------------------")
         print(alg)
         print("------------------")
-        for stat in np.sort(list(stats[alg])):
-            print('{}: {}'.format(stat, stats[alg][stat]))
+        # for stat in np.sort(list(stats[alg])):
+        for stat in ['success_rate', 'mean_time', 'std_time', 'mean_cost', 'std_cost']:
+            # if stat in ['mean_time', 'std_time', 'mean_cost', 'std_cost']:
+            print('{}: {}'.format(stat, np.round(stats[alg][stat],2)))
+            # else:
+            #     print('{}: {}'.format(stat, stats[alg][stat]))
 
 
     # pdb.set_trace()
@@ -189,10 +193,12 @@ if __name__ == "__main__":
     
     base_dir = "../logs"
 
-    insat = np.loadtxt(os.path.join(base_dir, "insat_1.txt"))
-    pinsat = np.loadtxt(os.path.join(base_dir, "pinsat_" + str(args.num_threads) + ".txt"))
-    rrt = np.loadtxt(os.path.join(base_dir, "rrt_" + str(args.num_threads) + ".txt"))
-    epase = np.loadtxt(os.path.join(base_dir, "epase_" + str(args.num_threads) + ".txt"))
+    end_d = 800
+
+    insat = np.loadtxt(os.path.join(base_dir, "insat_1.txt"))[0:end_d]
+    pinsat = np.loadtxt(os.path.join(base_dir, "pinsat_" + str(args.num_threads) + ".txt"))[0:end_d]
+    rrt = np.loadtxt(os.path.join(base_dir, "rrtconnect_" + str(args.num_threads) + ".txt"))[0:end_d]
+    epase = np.loadtxt(os.path.join(base_dir, "epase_" + str(args.num_threads) + ".txt"))[0:end_d]
 
 
     # pdb.set_trace()
