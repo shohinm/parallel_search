@@ -7,21 +7,21 @@ using namespace ps;
 ArastarPlanner::ArastarPlanner(ParamsType planner_params):
 WastarPlanner(planner_params)
 {    
-    time_budget_ = planner_params_["time_budget"];
+
 }
 
 ArastarPlanner::~ArastarPlanner()
 {
-    
+
 }
 
 bool ArastarPlanner::Plan()
 {
     initialize();
-    auto t_start = chrono::steady_clock::now();
+
+    startTimer();
     double heuristic_w = heuristic_w_;
-    double time_budget = time_budget_;
-    while (heuristic_w_>=1 && time_budget_>0)
+    while (heuristic_w_>=1 && !checkTimeout())
     {
         resetClosed();
         improvePath();
@@ -55,9 +55,8 @@ bool ArastarPlanner::Plan()
 
     // Reset heuristic weight & time budget
     heuristic_w_ = heuristic_w;
-    time_budget_ = time_budget;
     auto t_end = chrono::steady_clock::now();
-    double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
+    double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start_).count();
     planner_stats_.total_time_ = 1e-9*t_elapsed;
     if (goal_state_ptr_ != NULL) {
         exit();
@@ -75,9 +74,7 @@ void ArastarPlanner::initialize()
 
 void ArastarPlanner::improvePath()
 {
-    auto t_start = chrono::steady_clock::now();
-    double t_spent = 0;
-    while (t_spent <= time_budget_)
+    while (!checkTimeout())
     {
         // Terminate condition check
         if (goal_state_ptr_ != NULL)
@@ -90,9 +87,6 @@ void ArastarPlanner::improvePath()
                     auto goal_state_ptr = goal_state_ptr_;
                     plan_.clear();
                     constructPlan(goal_state_ptr);
-                    auto t_end = chrono::steady_clock::now();
-                    double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
-                    time_budget_ -= 1e-9*t_elapsed;
                     return;
                 }
             }
@@ -102,18 +96,12 @@ void ArastarPlanner::improvePath()
                 auto goal_state_ptr = goal_state_ptr_;
                 plan_.clear();
                 constructPlan(goal_state_ptr);
-                auto t_end = chrono::steady_clock::now();
-                double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
-                time_budget_ -= 1e-9*t_elapsed;
                 return;
             }
         }
 
         if (state_open_list_.empty())
         {
-            auto t_end = chrono::steady_clock::now();
-            double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
-            time_budget_ -= 1e-9*t_elapsed;
             return;
         }
 
@@ -130,16 +118,8 @@ void ArastarPlanner::improvePath()
         }
 
         expandState(state_ptr);        
-
-        // Time budget check
-        auto t_curr = chrono::steady_clock::now();
-        double t_spent = 1e-9*chrono::duration_cast<chrono::nanoseconds>(t_curr-t_start).count();
     }
 
-    auto t_end = chrono::steady_clock::now();
-    double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
-    time_budget_ -= 1e-9*t_elapsed;
-    return;
 }
 
 void ArastarPlanner::expandState(StatePtrType state_ptr)

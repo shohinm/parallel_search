@@ -9,7 +9,7 @@ using namespace ps;
 AgepasePlanner::AgepasePlanner(ParamsType planner_params):
 GepasePlanner(planner_params)
 {    
-    time_budget_ = planner_params_["time_budget"];
+
 }
 
 AgepasePlanner::~AgepasePlanner()
@@ -20,10 +20,10 @@ AgepasePlanner::~AgepasePlanner()
 bool AgepasePlanner::Plan()
 {
     initialize();
-    auto t_start = chrono::steady_clock::now();
+
+    startTimer();
     double heuristic_w = heuristic_w_;
-    double time_budget = time_budget_;
-    while (heuristic_w_>=1 && time_budget_>0) {
+    while (heuristic_w_>=1 && !checkTimeout()) {
         terminate_ = false;
 
         resetClosed();
@@ -75,9 +75,8 @@ bool AgepasePlanner::Plan()
     terminate_ = true;
     // Reset heuristic weight & time budget
     heuristic_w_ = heuristic_w;
-    time_budget_ = time_budget;
     auto t_end = chrono::steady_clock::now();
-    double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
+    double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start_).count();
     planner_stats_.total_time_ = 1e-9*t_elapsed;
     if (goal_state_ptr_ != NULL) {
         exit();
@@ -95,13 +94,11 @@ void AgepasePlanner::initialize()
 
 void AgepasePlanner::improvePath() 
 {
-    auto t_start = chrono::steady_clock::now();
-    double t_spent = 0;
     vector<EdgePtrType> popped_edges;
 
     lock_.lock();
 
-    while(t_spent <= time_budget_)
+    while(!checkTimeout())
     {
         EdgePtrType curr_edge_ptr = NULL;
 
@@ -118,9 +115,6 @@ void AgepasePlanner::improvePath()
                         auto goal_state_ptr = goal_state_ptr_;
                         plan_.clear();
                         constructPlan(goal_state_ptr);
-                        auto t_end = chrono::steady_clock::now();
-                        double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
-                        time_budget_ -= 1e-9*t_elapsed;
                         lock_.unlock();
                         exitMultiThread();
                         return;
@@ -132,9 +126,6 @@ void AgepasePlanner::improvePath()
                     auto goal_state_ptr = goal_state_ptr_;
                     plan_.clear();
                     constructPlan(goal_state_ptr);
-                    auto t_end = chrono::steady_clock::now();
-                    double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
-                    time_budget_ -= 1e-9*t_elapsed;
                     lock_.unlock();
                     exitMultiThread();
                     return;
@@ -143,9 +134,6 @@ void AgepasePlanner::improvePath()
 
             if (edge_open_list_.empty() && being_expanded_states_.empty())
             {
-                auto t_end = chrono::steady_clock::now();
-                double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
-                time_budget_ -= 1e-9*t_elapsed;
                 lock_.unlock();
                 exitMultiThread();
                 return;
@@ -279,14 +267,7 @@ void AgepasePlanner::improvePath()
 
         lock_.lock();
 
-        // Time budget check
-        auto t_curr = chrono::steady_clock::now();
-        double t_spent = 1e-9*chrono::duration_cast<chrono::nanoseconds>(t_curr-t_start).count();
     }
-
-    auto t_end = chrono::steady_clock::now();
-    double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
-    time_budget_ -= 1e-9*t_elapsed;
 
     lock_.unlock();
     exitMultiThread();

@@ -22,7 +22,6 @@ class ArastarPlanner : public WastarPlanner
         void exit();
 
         std::vector<StatePtrType> state_incon_list_;
-        double time_budget_;
 
 };
 
