@@ -341,7 +341,7 @@ int main(int argc, char* argv[])
 
 
     // Experiment parameters
-    int num_runs = 1;
+    int num_runs = 803;
     vector<int> scale_vec = {5, 5, 5, 10, 5};
     bool visualize_plan = true;
     bool load_starts_goals_from_file = true;
@@ -352,10 +352,15 @@ int main(int argc, char* argv[])
     planner_params["heuristic_weight"] = 10;
     planner_params["timeout"] = 20;
     planner_params["adaptive_opt"] = 1;
-    
+    planner_params["smart_opt"] = 0;
+
     ofstream log_file;
 
-    if ((planner_params["adaptive_opt"] == 1) && ((planner_name == "insat") || (planner_name == "pinsat")))
+    if ((planner_params["smart_opt"] == 1) && ((planner_name == "insat") || (planner_name == "pinsat")))
+    {
+        log_file.open("../logs/log_" + planner_name + "_smart.txt");
+    }
+    else if ((planner_params["adaptive_opt"] == 1) && ((planner_name == "insat") || (planner_name == "pinsat")))
     {
        log_file.open("../logs/log_" + planner_name + "_adaptive.txt"); 
     }
@@ -427,7 +432,7 @@ int main(int argc, char* argv[])
     int num_success = 0;
     vector<vector<PlanElement>> plan_vec;
 
-    int run_offset = 14;
+    int run_offset = 0;
     for (int run = run_offset; run < run_offset+num_runs; ++run)
     {
         // Set goal conditions
