@@ -28,6 +28,9 @@ namespace ps_drake
             max_q_ << 3.14159, 1.9198, 0.9599, 3.4906, 2.0071, 6.9813;
             min_dq_ << -2.618, -2.7925, -2.967, -5.585, -6.9813, -7.854;
             max_dq_ << 2.618, 2.7925, 2.967, 5.585, 6.9813, 7.854;
+
+//            min_dq_*=5;
+//            max_dq_*=5;
         }
 
         VecDf min_q_, max_q_, min_dq_, max_dq_;
@@ -130,14 +133,16 @@ namespace ps_drake
                                                                                                  prog_(opt_->get_mutable_prog())
         {
             opt_->AddDurationCost(1.0);
-            opt_->AddPathLengthCost(1.0);
+//            opt_->AddPathLengthCost(1.0);
+            opt_->AddPathLengthCost(0.1);
 
             opt_->AddPositionBounds(robot_params_.min_q_, robot_params_.max_q_);
             opt_->AddVelocityBounds(robot_params_.min_dq_, robot_params_.max_dq_);
 
-            opt_->AddDurationConstraint(2, 2);
+            opt_->AddDurationConstraint(duration, duration);
 
-            std::string mj_modelpath = "/home/gaussian/cmu_ri_phd/phd_research/parallel_search/third_party/mujoco-2.3.2/model/abb/irb_1600/irb1600_6_12.xml";
+//            std::string mj_modelpath = "../third_party/mujoco-2.3.2/model/abb/irb_1600/irb1600_6_12_shield.xml";
+            std::string mj_modelpath = "../third_party/mujoco-2.3.2/model/abb/irb_1600/irb1600_6_12.xml";
             m_ = mj_loadXML(mj_modelpath.c_str(), nullptr, nullptr, 0);
             d_ = mj_makeData(m_);
 
@@ -249,17 +254,39 @@ namespace ps_drake
 //        }
 
 
-        int clearCosts()
-        {
-        }
+        MatDf sampleTrajectory(const drake::trajectories::BsplineTrajectory<double> &traj) {
+            int n = static_cast<int>(traj.end_time()/1e-2);
+            double dt = n>=2? 1e-2: traj.end_time()/3.0;
+            double collision_delta = 0.9;
 
-        int clearConstraints()
-        {
-            auto lin_constraints = prog_.linear_constraints();
-            for (auto& cn : lin_constraints)
+            MatDf sampled_traj;
+            /// save the init state
+            VecDf x1 = traj.value(0.0);
+            sampled_traj.conservativeResize(insat_params_.lowD_dims_, sampled_traj.cols()+1);
+            sampled_traj.rightCols(1) = x1;
+            /// loop over t
+            for (double t=0; t<traj.end_time(); )
             {
-                prog_.RemoveConstraint(cn);
+                /// adaptive dt called ddt
+                double ddt = dt;
+
+                VecDf x2 = traj.value(std::min(t+ddt, traj.end_time()));
+
+                /// keep decreasing adaptive t until distance is smaller than threshold
+                while ((x2-x1).norm() > collision_delta && ddt > traj.end_time()/5.0)
+                {
+                    ddt /= 2.0;
+                    x2 = traj.value(std::min(t+ddt, traj.end_time()));
+                }
+
+                /// once distance smaller than threshold collect the sample
+                sampled_traj.conservativeResize(insat_params_.lowD_dims_, sampled_traj.cols()+1);
+                sampled_traj.rightCols(1) = x2;
+
+                /// update t with adaptive t
+                t=t+ddt;
             }
+            return sampled_traj;
         }
 
         /// Mj
@@ -344,8 +371,28 @@ void writeToCSVfile(std::string& fname, const MatDf& matrix)
     }
 }
 
+template<typename M>
+M load_csv (const std::string & path, char delim=' ') {
+    using namespace Eigen;
+    std::ifstream indata;
+    indata.open(path);
+    std::string line;
+    std::vector<double> values;
+    uint rows = 0;
+    while (std::getline(indata, line)) {
+        std::stringstream lineStream(line);
+        std::string cell;
+        while (std::getline(lineStream, cell, delim)) {
+            values.push_back(std::stod(cell));
+        }
+        ++rows;
+    }
+    return Map<const Matrix<typename M::Scalar, M::RowsAtCompileTime, M::ColsAtCompileTime, RowMajor>>(values.data(), rows, values.size()/rows);
+}
+
 std::random_device rd;
-std::mt19937 gen(rd());  //here you could set the seed, but std::random_device already does that
+//std::mt19937 gen(rd());  //here you could set the seed, but std::random_device already does that
+std::mt19937 gen(0);  //here you could set the seed, but std::random_device already does that
 std::uniform_real_distribution<float> dis(-1.0, 1.0);
 VecDf genRandomVector(VecDf& low, VecDf& high, int size)
 {
@@ -387,7 +434,7 @@ void printTraj(drake::trajectories::BsplineTrajectory<double> traj, double dt)
     std::cout << "num_basis_functions: " << traj.basis().num_basis_functions() << std::endl;
 }
 
-MatDf sampleTrajectory(const drake::trajectories::BsplineTrajectory<double>& traj, double dt=1e-1)
+MatDf sampleTrajectory(const drake::trajectories::BsplineTrajectory<double>& traj, double dt)
 {
     ps_drake::InsatParams insat_params;
 
@@ -402,6 +449,11 @@ MatDf sampleTrajectory(const drake::trajectories::BsplineTrajectory<double>& tra
     return sampled_traj;
 }
 
+void loadStartsAndGoalsFromFile(const std::string& start_path, const std::string& goal_path, MatDf& start_mat, MatDf& goal_mat)
+{
+    start_mat = load_csv<MatDf>(start_path);
+    goal_mat = load_csv<MatDf>(goal_path);
+}
 
 void runBVPTest(std::vector<double>& time_log, bool save=false, int test_size=1)
 {
@@ -419,34 +471,47 @@ void runBVPTest(std::vector<double>& time_log, bool save=false, int test_size=1)
     int i=0;
     while(i < test_size)
     {
-        ps_drake::BSplineOpt opt(insat_params.lowD_dims_, 8);
+        ps_drake::BSplineOpt opt(insat_params.lowD_dims_, 10, 5, 0.7);
         VecDf st(insat_params.fullD_dims_), go(insat_params.fullD_dims_);
         st.setZero();
         go.setZero();
-        VecDf r1 = genRandomVector(robot_params.min_q_, robot_params.max_q_, insat_params.lowD_dims_);
-        VecDf r2 = genRandomVector(robot_params.min_q_, robot_params.max_q_, insat_params.lowD_dims_);
+//        VecDf r1 = genRandomVector(robot_params.min_q_, robot_params.max_q_, insat_params.lowD_dims_);
+//        VecDf r2 = genRandomVector(robot_params.min_q_, robot_params.max_q_, insat_params.lowD_dims_);
+        std::string starts_path = "../examples/manipulation/resources/shield/starts.txt";
+        std::string goals_path = "../examples/manipulation/resources/shield/goals.txt";
+        MatDf ss, gg;
+        loadStartsAndGoalsFromFile(starts_path, goals_path, ss, gg);
+        VecDf r1, r2;
+        r1 = ss.row(i);
+        r2 = gg.row(i);
+
         st.topRows(insat_params.lowD_dims_) = r1;
         go.topRows(insat_params.lowD_dims_) = r2;
 
         if (!opt.isCollisionFree(st) || !opt.isCollisionFree(go))
         { continue;}
+        ++i;
 
-        std::cout << "---- TRIAL " << i+1 << "------" << "\nst: " << r1.transpose() << "\ngo: " << r2.transpose() << std::endl;
-
-//        opt.prog_.SetSol
         auto start_time = Clock::now();
         auto result = opt.optimize(st, go, true);
         auto end_time = Clock::now();
         if (result.is_success())
         {
-            std::cout << "solver name: " << result.get_solver_id().name() << std::endl;
-            auto traj = sampleTrajectory(opt.opt_->ReconstructTrajectory(result), 6e-3);
+//            std::cout << "solver name: " << result.get_solver_id().name() << std::endl;
+//            std::cout << "solver success: " << std::endl;
+            auto bspline_traj = opt.opt_->ReconstructTrajectory(result);
+            auto traj = opt.sampleTrajectory(bspline_traj);
             if (opt.isFeasible(traj))
             {
-                ++i;
-                std::cout << "SUCCESS" << " traj rows: " << traj.rows() << " cols: " << traj.cols() << std::endl;
+                std::cout << "---- TRIAL " << i+1 << "------" << "\nst: " << r1.transpose() << "\ngo: " << r2.transpose() << std::endl;
+                traj = sampleTrajectory(opt.opt_->ReconstructTrajectory(result), 5e-3);
                 double time_elapsed = duration_cast<duration<double> >(end_time - start_time).count();
                 time_log.emplace_back(time_elapsed);
+
+                for (auto& c: bspline_traj.control_points())
+                {
+                    std::cout << c.transpose() << std::endl;
+                }
 
                 starts.conservativeResize(starts.rows()+1, insat_params.lowD_dims_);
                 goals.conservativeResize(goals.rows()+1, insat_params.lowD_dims_);
@@ -455,20 +520,49 @@ void runBVPTest(std::vector<double>& time_log, bool save=false, int test_size=1)
 
                 all_traj.conservativeResize(insat_params.lowD_dims_, all_traj.cols()+traj.cols());
                 all_traj.rightCols(traj.cols()) = traj;
+
+                /// -1 for demarcating
+                all_traj.conservativeResize(insat_params.lowD_dims_, all_traj.cols()+1);
+                all_traj.rightCols(1) = -1*VecDf::Ones(insat_params.lowD_dims_);
+
+                auto bspline = opt.opt_->ReconstructTrajectory(result);
+                std::cout << "start error: " << (bspline.InitialValue() - r1).norm() << std::endl;
+                std::cout << "goal error: " << (bspline.FinalValue() - r2).norm() << std::endl;
+                std::cout << "time length: " << bspline.end_time() << std::endl;
+                std::cout << "Trace stats: " << std::endl;
+
+//                auto traj_trace = opt.getTrace();
+//                for (auto& t : traj_trace)
+//                {
+//                    std::cout << "start error: " << (t.InitialValue() - r1).norm() ;
+//                    std::cout << "  goal error: " << (t.FinalValue() - r2).norm() ;
+//                    std::cout << "  time length: " << t.end_time() ;
+//                    std::cout << " Feasibility: " << opt.isFeasible(traj) << std::endl;
+//
+//                    std::cout << "value at 0.5: " << t.value(0.5).transpose() << std::endl;
+//                }
+
             }
             else
             {
+                /// save trace
+//                std::cout << "Trace stats: " << std::endl;
+//                auto traj_trace = opt.getTrace();
+//                for (auto& t : traj_trace)
+//                {
+//                    std::cout << "start error: " << (t.InitialValue() - r1).norm() ;
+//                    std::cout << "  goal error: " << (t.FinalValue() - r2).norm() ;
+//                    std::cout << "  time length: " << t.end_time() ;
+//                    std::cout << " Feasibility: " << opt.isFeasible(traj) << std::endl;
+//
+//                    auto samp_t = opt.sampleTrajectory(t);
+//                    trace_log.conservativeResize(insat_params.lowD_dims_, trace_log.cols()+samp_t.cols());
+//                    trace_log.rightCols(samp_t.cols()) = samp_t;
+//                }
+
                 continue;
             }
 
-            /// save trace
-            auto traj_trace = opt.getTrace();
-            for (auto& t : traj_trace)
-            {
-                auto samp_t = sampleTrajectory(t, 6e-3);
-                trace_log.conservativeResize(insat_params.lowD_dims_, trace_log.cols()+samp_t.cols());
-                trace_log.rightCols(samp_t.cols()) = samp_t;
-            }
 
 //            printTraj(opt.opt_->ReconstructTrajectory(result), 1e-1);
 //            printControlPts(opt);
@@ -477,10 +571,10 @@ void runBVPTest(std::vector<double>& time_log, bool save=false, int test_size=1)
     }
     if (save)
     {
-        std::string traj_path ="/home/gaussian/cmu_ri_phd/phd_research/parallel_search/logs/abb_traj.txt";
-        std::string traj_trace_path ="/home/gaussian/cmu_ri_phd/phd_research/parallel_search/logs/abb_traj_trace.txt";
-        std::string starts_path ="/home/gaussian/cmu_ri_phd/phd_research/parallel_search/logs/abb_starts.txt";
-        std::string goals_path ="/home/gaussian/cmu_ri_phd/phd_research/parallel_search/logs/abb_goals.txt";
+        std::string traj_path ="../logs/test_abb_traj.txt";
+        std::string traj_trace_path ="../logs/test_abb_traj_trace.txt";
+        std::string starts_path ="../logs/test_abb_starts.txt";
+        std::string goals_path ="../logs/test_abb_goals.txt";
 
         all_traj.transposeInPlace();
         writeToCSVfile(traj_path, all_traj);
@@ -551,7 +645,7 @@ int main()
     ps_drake::InsatParams insat_params;
     ps_drake::ABBParams robot_params;
 
-    int test_size = 1;
+    int test_size = 20;
 
     std::vector<double> time_log;
     std::vector<double> init_time_log;
@@ -559,9 +653,10 @@ int main()
     runBVPTest(time_log, true, test_size);
 
     double mean = accumulate( time_log.begin(), time_log.end(), 0.0)/time_log.size();
-    for (auto i: time_log)
-        std::cout << i << ' ';
-    std::cout << std::endl;
+//    for (auto i: time_log)
+//        std::cout << i << ' ';
+//    std::cout << std::endl;
+    std::cout << "num success: " << time_log.size() << std::endl;
     std::cout << "Average: " << mean << std::endl;
 
 
