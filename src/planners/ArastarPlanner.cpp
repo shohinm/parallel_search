@@ -25,6 +25,8 @@ bool ArastarPlanner::Plan()
     {
         resetClosed();
         improvePath();
+        cout << "Heuristic weight: " << heuristic_w_ << endl;
+        cout << "Goal state: " << goal_state_ptr_->GetFValue() << endl;
 
         // Early termination if there's no solution
         if (goal_state_ptr_ == NULL)
