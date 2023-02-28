@@ -137,6 +137,7 @@ size_t EdgeKeyGenerator(const EdgePtrType& edge_ptr)
 
 void postProcess(std::vector<PlanElement>& path, double& cost, double allowed_time, const shared_ptr<Action>& act, BSplineOpt& opt)
 {
+    cout << "Post processing with timeout: " << allowed_time << endl;
     std::shared_ptr<InsatAction> ins_act = std::dynamic_pointer_cast<InsatAction>(act);
     opt.postProcess(path, cost, allowed_time, ins_act.get());
 }
@@ -398,7 +399,7 @@ int main(int argc, char* argv[])
     {
         planner_params["eps"] = 1.0;
         planner_params["goal_bias_probability"] = 0.05;
-        planner_params["termination_distance"] = TERMINATION_DIST;
+        planner_params["termination_distance"] = TERMINATION_DIST;  
     }
 
     // Generate random starts and goals
