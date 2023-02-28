@@ -14,6 +14,7 @@ namespace ps
         VecDf min_q_, max_q_;
         VecDf min_dq_, max_dq_;
         VecDf min_ddq_, max_ddq_;
+        VecDf min_dddq_, max_dddq_;
 
         double collision_delta_;
     };

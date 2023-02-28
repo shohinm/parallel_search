@@ -20,6 +20,8 @@ namespace ps
             max_dq_.resize(6);
             min_ddq_.resize(6);
             max_ddq_.resize(6);
+            min_dddq_.resize(6);
+            max_dddq_.resize(6);
 
             min_q_ << -3.14159, -1.0995, -4.1015, -3.4906, -2.0071, -6.9813;
             max_q_ << 3.14159, 1.9198, 0.9599, 3.4906, 2.0071, 6.9813;
@@ -27,8 +29,10 @@ namespace ps
             max_dq_ << 2.618, 2.7925, 2.967, 5.585, 6.9813, 7.854;
 //            min_dq_*=10;
 //            max_dq_*=10;
-            min_ddq_ = -100*VecDf::Ones(6);
-            max_ddq_ = 100*VecDf::Ones(6);
+            min_ddq_ = -10*VecDf::Ones(6);
+            max_ddq_ = 10*VecDf::Ones(6);
+            min_dddq_ = -100*VecDf::Ones(6);
+            max_dddq_ = 100*VecDf::Ones(6);
 
             collision_delta_ = 9e-2; /// 9cm
         }
