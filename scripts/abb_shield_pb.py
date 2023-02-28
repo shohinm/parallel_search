@@ -7,21 +7,23 @@ from time import sleep
 import numpy as np
 from numpy import genfromtxt
 
-# planner_name = 'insat'
-planner_name = 'pinsat'
+# planner_name = 'test'
+planner_name = 'insat'
+# planner_name = 'pinsat'
 # planner_name = 'rrt'
+# planner_name = 'rrtconnect'
 # planner_name = 'epase'
 
-static_planner = True if planner_name=='rrt' or planner_name=='epase' else False
+static_planner = True if not (planner_name=='insat' or planner_name=='pinsat' or planner_name=='test') else False
 
 if static_planner:
   # dt = 1e-2
-  # dt = 0.05
-  dt = 6e-3
+  dt = 0.05
+  # dt = 6e-3
 else:
-  dt = 6e-3
-  # dt = 5e-2
-  # dt = 0.05
+  # dt = 6e-3
+  dt = 5e-3
+  # dt = 0.5
   # dt = 1
 
 model_dir = '/home/gaussian/cmu_ri_phd/phd_research/parallel_search/third_party/mujoco-2.3.2/model/abb/irb_1600'
@@ -64,6 +66,7 @@ def upsampleTraj(traj, dx=0.1):
   uptraj = np.empty((0, col))
   for i in range(np.shape(traj)[0]-1):
     if np.array_equal(traj[i,:], -1*np.ones((arm_model.nq,))):
+      uptraj = np.append(uptraj, traj[i,:][np.newaxis,:], axis=0)
       continue
     if np.array_equal(traj[i+1,:], -1*np.ones((arm_model.nq,))):
       continue
@@ -82,10 +85,11 @@ if static_planner:
 
 for i in range(np.shape(traj)[0]):
   if np.array_equal(traj[i,:], -1*np.ones((arm_model.nq,))):
+    sleep(2)
     continue
   if viewer.is_alive:
     arm_data.qpos[:] = traj[i,:]
-    print(traj[i,:])
+    # print(traj[i,:])
     mp.mj_step(arm_model, arm_data)
     viewer.render()
     sleep(dt)
