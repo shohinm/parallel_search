@@ -50,7 +50,8 @@
 using namespace std;
 using namespace ps;
 
-#define TERMINATION_DIST 0.1
+#define TERMINATION_DIST 0.05
+#define DISCRETIZATION 0.05
 
 vector<double> goal;
 int dof;
@@ -67,9 +68,9 @@ double computeHeuristicStateToState(const StateVarsType& state_vars_1, const Sta
     double dist = 0.0;
     for (int i=0; i<dof-1; ++i)
     {
-        dist += std::sqrt((state_vars_2[i]-state_vars_1[i])*(state_vars_2[i]-state_vars_1[i]));
+        dist += pow(state_vars_2[i]-state_vars_1[i], 2);
     }
-    return dist;
+    return std::sqrt(dist);
 
 //    VecDf ds(dof);
 //    for (int i=0; i<dof; ++i)
@@ -430,10 +431,8 @@ int main(int argc, char* argv[])
     // discretization
     discretization.resize(dof);
     discretization.setOnes();
-//    discretization *= 0.02;
-    discretization *= 0.05;
-//    discretization.resize(dof);
-//    discretization = (robot_params.max_q_ - robot_params.min_q_)/50.0;
+    discretization *= DISCRETIZATION;
+    // discretization = (robot_params.max_q_ - robot_params.min_q_)/50.0;
 
     vector<double> all_maps_time_vec, all_maps_cost_vec;
     vector<int> all_maps_num_edges_vec;
