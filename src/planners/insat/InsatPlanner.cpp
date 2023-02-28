@@ -193,6 +193,10 @@ namespace ps
                                                     successor_state_ptr->GetStateVars());
                         inc_cost = action_ptr->getCost(traj);
                     }
+                    if (traj.isValid())
+                    {
+                        best_anc = start_state_ptr_;
+                    }
                 }
                 else
                 {
@@ -214,12 +218,6 @@ namespace ps
                                                             successor_state_ptr->GetStateVars());
                                 inc_cost = action_ptr->getCost(traj);
                             }
-
-                            if (traj.isValid())
-                            {
-                                best_anc = anc;
-                                break;
-                            }
                         }
                         else
                         {
@@ -235,12 +233,6 @@ namespace ps
                                 {
                                     traj = action_ptr->warmOptimize(inc_traj);
                                 }
-
-                                if (traj.isValid())
-                                {
-                                    best_anc = anc;
-                                    break;
-                                }
                             }
                             else
                             {
@@ -248,9 +240,12 @@ namespace ps
                             }
 
                         }
+                        if (traj.isValid())
+                        {
+                            best_anc = anc;
+                        }
                     }
                 }
-
 
                 if (traj.disc_traj_.cols()<=2)
                 {
