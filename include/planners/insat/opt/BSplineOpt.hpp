@@ -26,25 +26,31 @@ namespace ps
 
         struct BSplineOptParams
         {
+            enum ConstraintMode
+            {
+                WAYPT = 0,
+                CONTROLPT
+            };
+
             BSplineOptParams();
 
             BSplineOptParams(int num_positions, int num_control_points,
-                             int spline_order, double min_duration, double max_duration);
+                             int spline_order, double min_duration, double max_duration, ConstraintMode mode);
 
-            BSplineOptParams(int min_ctrl_points,
-                             int max_ctrl_points,
-                             VecDf& start,
-                             VecDf& goal,
-                             double total_duration);
 
             void setAdaptiveParams(int min_ctrl_points,
                                    int max_ctrl_points);
+
+            void setDurationCostWeight(double duration_cost_w);
+
+            void setTrajLengthCostWeight(double length_cost_w);
 
             int num_positions_;
             int num_control_points_;
             int spline_order_;
             double min_duration_;
             double max_duration_;
+            ConstraintMode constraint_mode_;
 
             double duration_cost_w_ = 1.0;
             double length_cost_w_ = 0.1;
@@ -86,9 +92,11 @@ namespace ps
 
         void addDurationConstraint(OptType& opt, double min_t, double max_t) const;
 
+        /// callback for optimization trace
         std::vector<BSplineTraj::TrajInstanceType> optimizeWithCallback(const OptType& opt,
                                                                         drake::solvers::MathematicalProgram& prog) const;
 
+        /// non adaptive standard version
         BSplineTraj optimize(const InsatAction* act, const VecDf& s1, const VecDf& s2, int thread_id);
 
         BSplineTraj warmOptimize(const InsatAction* act, const TrajType& traj1, const TrajType & traj2, int thread_id);
@@ -96,6 +104,7 @@ namespace ps
         BSplineTraj warmOptimize(const InsatAction* act, const TrajType& traj, int thread_id);
 
 
+        /// adaptive version
         BSplineTraj runBSplineOpt(const InsatAction* act,
                                   const VecDf& q0, const VecDf& qF,
                                   VecDf& dq0, VecDf& dqF,
@@ -119,6 +128,7 @@ namespace ps
                              const VecDf& succ_state,
                              int thread_id);
 
+        /// smart opt and magic opt entry point
         BSplineTraj optimize(const InsatAction* act,
                              const BSplineTraj& incoming_traj,
                              const std::vector<StateVarsType> &ancestors,
@@ -138,9 +148,23 @@ namespace ps
                                                               MatDf& wp, VecDf& s_wp,
                                                               int thread_id) const;
 
-        BSplineTraj fitBestBSpline(const InsatAction *act,
-                                   MatDf &path, const BSplineTraj& init_traj,
+        BSplineTraj fitBestWaypointBSpline(const InsatAction *act,
+                                           MatDf &path, const BSplineTraj& init_traj,
+                                           int thread_id) const;
+
+        /// magic opt
+        BSplineTraj fitBestControlPointBSpline(const InsatAction *act,
+                                               MatDf &path, const BSplineTraj& init_traj,
+                                               int thread_id) const;
+
+        BSplineTraj directOptimize(const InsatAction* act,
+                                   const VecDf& q0, const VecDf& qF,
                                    int thread_id) const;
+
+        BSplineTraj optimizeWithInitAndCallback(const InsatAction* act,
+                                                const VecDf& q0, const VecDf& qF,
+                                                BSplineTraj::TrajInstanceType& init_traj,
+                                                int thread_id) const;
 
         /// Post processing
         MatDf postProcess(std::vector<PlanElement>& path, double& cost, double time_limit, const InsatAction* act) const;
