@@ -127,10 +127,15 @@ namespace ps
 
         BSplineTraj optimizeWithWaypointConstraint(VecDf& st, VecDf& go, MatDf& wp, VecDf& s_wp) const;
 
+        BSplineTraj optimizeWithWaypointConstraintAndInit(const InsatAction *act,
+                                                          VecDf& st, VecDf& go,
+                                                          MatDf& wp, VecDf& s_wp,
+                                                          const BSplineTraj& init_traj,
+                                                          int thread_id) const;
+
         BSplineTraj optimizeWithWaypointConstraintAndCallback(const InsatAction *act,
                                                               VecDf& st, VecDf& go,
                                                               MatDf& wp, VecDf& s_wp,
-                                                              const BSplineTraj& init_traj,
                                                               int thread_id) const;
 
         BSplineTraj fitBestBSpline(const InsatAction *act,
