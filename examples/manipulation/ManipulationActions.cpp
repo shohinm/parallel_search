@@ -171,7 +171,7 @@ namespace ps
     }
     else
     {
-//        return goal_;
+        return goal_;
         /// Direct edge to goal
       VecDf free_state(m_[thread_id]->nq);
       if (isCollisionFree(state, goal_, free_state, thread_id))
