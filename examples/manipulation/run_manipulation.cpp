@@ -50,10 +50,11 @@
 using namespace std;
 using namespace ps;
 
-#define TERMINATION_DIST 1.5
+#define TERMINATION_DIST 0.1
 
 vector<double> goal;
 int dof;
+VecDf discretization;
 
 double roundOff(double value, unsigned char prec)
 {
@@ -61,30 +62,48 @@ double roundOff(double value, unsigned char prec)
     return round(value * pow_10) / pow_10;
 }
 
-double computeHeuristic(const StateVarsType& state_vars)
-{
-    double dist_to_goal_region = 0.0;
-    for (int i=0; i<dof; ++i)
-    {
-        dist_to_goal_region += std::sqrt((goal[i]-state_vars[i])*(goal[i]-state_vars[i]));
-    }
-
-    return dist_to_goal_region;
-}
-
 double computeHeuristicStateToState(const StateVarsType& state_vars_1, const StateVarsType& state_vars_2)
 {
     double dist = 0.0;
-    for (int i=0; i<dof; ++i)
+    for (int i=0; i<dof-1; ++i)
     {
         dist += std::sqrt((state_vars_2[i]-state_vars_1[i])*(state_vars_2[i]-state_vars_1[i]));
     }
     return dist;
+
+//    VecDf ds(dof);
+//    for (int i=0; i<dof; ++i)
+//    {
+//        ds(i) = state_vars_2[2] - state_vars_1[i];
+//        ds(i) /= discretization(i);
+//    }
+//    return ds.norm();
+}
+
+double computeHeuristic(const StateVarsType& state_vars)
+{
+    return computeHeuristicStateToState(state_vars, goal);
 }
 
 bool isGoalState(const StateVarsType& state_vars, double dist_thresh)
 {
-    return (computeHeuristic(state_vars) < dist_thresh);
+    for (int i=0; i<dof-2; ++i)
+    {
+        if (fabs(goal[i]-state_vars[i]) > dist_thresh)
+        {
+            return false;
+        }
+    }
+    return true;
+
+//    double dist=0;
+//    for (int i=0; i<state_vars.size()-2; ++i)
+//    {
+//        dist += std::sqrt((goal[i]-state_vars[i])*(goal[i]-state_vars[i]));
+//    }
+//    return (dist < dist_thresh);
+
+//    return (computeHeuristic(state_vars) < dist_thresh);
 }
 
 size_t StateKeyGenerator(const StateVarsType& state_vars)
@@ -158,7 +177,7 @@ void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vec
     planner_ptr->SetHeuristicGenerator(bind(computeHeuristic, placeholders::_1));
     planner_ptr->SetStateToStateHeuristicGenerator(bind(computeHeuristicStateToState, placeholders::_1, placeholders::_2));
     planner_ptr->SetGoalChecker(bind(isGoalState, placeholders::_1, TERMINATION_DIST));
-    planner_ptr->SetPostProcessor(bind(postProcess, placeholders::_1, placeholders::_2, placeholders::_3, action_ptrs[0], opt));
+//    planner_ptr->SetPostProcessor(bind(postProcess, placeholders::_1, placeholders::_2, placeholders::_3, action_ptrs[0], opt));
 }
 
 std::random_device rd;
@@ -341,7 +360,7 @@ int main(int argc, char* argv[])
 
 
     // Experiment parameters
-    int num_runs = 1000;
+    int num_runs;
     vector<int> scale_vec = {5, 5, 5, 10, 5};
     bool visualize_plan = true;
     bool load_starts_goals_from_file = true;
@@ -350,10 +369,15 @@ int main(int argc, char* argv[])
     ParamsType planner_params;
     planner_params["num_threads"] = num_threads;
     planner_params["heuristic_weight"] = 10;
-    planner_params["timeout"] = 10;
-    planner_params["adaptive_opt"] = 1;
-    planner_params["smart_opt"] = 0;
-    planner_params["execution_duration"] = 0.5;
+    planner_params["timeout"] = 20;
+    planner_params["adaptive_opt"] = 0;
+    planner_params["smart_opt"] = 1;
+    planner_params["min_exec_duration"] = 0.2;
+    planner_params["max_exec_duration"] = 1.2;
+    planner_params["num_ctrl_points"] = 7;
+    planner_params["min_ctrl_points"] = 6;
+    planner_params["max_ctrl_points"] = 7;
+    planner_params["spline_order"] = 4;
 
     ofstream log_file;
 
@@ -395,12 +419,20 @@ int main(int argc, char* argv[])
     // Insat Params
     InsatParams insat_params(dof, 2*dof, dof);
     // spline params
-    BSplineOpt::BSplineOptParams spline_params(dof, 7, 4, planner_params["execution_duration"], planner_params["execution_duration"]);
-    spline_params.setAdaptiveParams(4, 7);
+    BSplineOpt::BSplineOptParams spline_params(dof,
+                                               planner_params["num_ctrl_points"],
+                                               planner_params["spline_order"],
+                                               planner_params["min_exec_duration"],
+                                               planner_params["max_exec_duration"],
+                                               BSplineOpt::BSplineOptParams::ConstraintMode::CONTROLPT);
+    spline_params.setAdaptiveParams(planner_params["min_ctrl_points"], planner_params["max_ctrl_points"]);
     // discretization
-    VecDf discretization(dof);
+    discretization.resize(dof);
     discretization.setOnes();
-    discretization *= 0.2;
+//    discretization *= 0.02;
+    discretization *= 0.05;
+//    discretization.resize(dof);
+//    discretization = (robot_params.max_q_ - robot_params.min_q_)/50.0;
 
     vector<double> all_maps_time_vec, all_maps_cost_vec;
     vector<int> all_maps_num_edges_vec;
@@ -434,7 +466,8 @@ int main(int argc, char* argv[])
     vector<vector<PlanElement>> plan_vec;
 
     int run_offset = 0;
-    num_runs = starts.size();
+//    num_runs = starts.size();
+    num_runs = 20;
     for (int run = run_offset; run < run_offset+num_runs; ++run)
     {
         // Set goal conditions
