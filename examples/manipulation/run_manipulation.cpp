@@ -196,7 +196,8 @@ void postProcess(std::vector<PlanElement>& path, double& cost, double allowed_ti
 {
     cout << "Post processing with timeout: " << allowed_time << endl;
     std::shared_ptr<InsatAction> ins_act = std::dynamic_pointer_cast<InsatAction>(act);
-    opt.postProcess(path, cost, allowed_time, ins_act.get());
+//    opt.postProcess(path, cost, allowed_time, ins_act.get());
+    opt.postProcessWithControlPoints(path, cost, allowed_time, ins_act.get());
 }
 
 void constructActions(vector<shared_ptr<Action>>& action_ptrs,
@@ -237,7 +238,7 @@ void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vec
 //    planner_ptr->SetHeuristicGenerator(bind(computeShieldHeuristic, placeholders::_1));
     planner_ptr->SetStateToStateHeuristicGenerator(bind(computeHeuristicStateToState, placeholders::_1, placeholders::_2));
     planner_ptr->SetGoalChecker(bind(isGoalState, placeholders::_1, TERMINATION_DIST));
-//    planner_ptr->SetPostProcessor(bind(postProcess, placeholders::_1, placeholders::_2, placeholders::_3, action_ptrs[0], opt));
+    planner_ptr->SetPostProcessor(bind(postProcess, placeholders::_1, placeholders::_2, placeholders::_3, action_ptrs[0], opt));
 }
 
 std::random_device rd;
@@ -432,7 +433,7 @@ int main(int argc, char* argv[])
     ParamsType planner_params;
     planner_params["num_threads"] = num_threads;
     planner_params["heuristic_weight"] = 10;
-    planner_params["timeout"] = 20;
+    planner_params["timeout"] = 15;
     planner_params["adaptive_opt"] = 0;
     planner_params["smart_opt"] = 1;
     planner_params["min_exec_duration"] = 0.2;
@@ -529,8 +530,8 @@ int main(int argc, char* argv[])
     vector<vector<PlanElement>> plan_vec;
 
     int run_offset = 0;
-//    num_runs = starts.size();
-    num_runs = 100;
+    num_runs = starts.size();
+//    num_runs = 10;
     for (int run = run_offset; run < run_offset+num_runs; ++run)
     {
         // Set goal conditions
