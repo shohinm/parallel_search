@@ -179,12 +179,16 @@ double computeLoSHeuristic(const StateVarsType& state_vars)
 double computeShieldHeuristic(const StateVarsType& state_vars)
 {
 
+//    double cost = shield_h_w(0) * pow((goal[0] - state_vars[0]),2) +
+//                  shield_h_w(1) * pow((state_vars[1]),2) +
+//                  shield_h_w(2) * pow((goal[2] - state_vars[2]),2) +
+//                  shield_h_w(3) * pow((goal[3] - state_vars[3]),2) +
+//                  shield_h_w(4) * pow((goal[4] - state_vars[4]),2) +
+//                  shield_h_w(5) * pow((goal[5] - state_vars[5]),2);
+
     double cost = shield_h_w(0) * pow((goal[0] - state_vars[0]),2) +
                   shield_h_w(1) * pow((state_vars[1]),2) +
-                  shield_h_w(2) * pow((goal[2] - state_vars[2]),2) +
-                  shield_h_w(3) * pow((goal[3] - state_vars[3]),2) +
-                  shield_h_w(4) * pow((goal[4] - state_vars[4]),2) +
-                  shield_h_w(5) * pow((goal[5] - state_vars[5]),2);
+                  shield_h_w(2) * pow((-M_PI/2 - state_vars[2]),2);
     return std::sqrt(cost);
 }
 
@@ -229,8 +233,8 @@ void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vec
     planner_ptr->SetStateMapKeyGenerator(bind(StateKeyGenerator, placeholders::_1));
     planner_ptr->SetEdgeKeyGenerator(bind(EdgeKeyGenerator, placeholders::_1));
 //    planner_ptr->SetHeuristicGenerator(bind(computeHeuristic, placeholders::_1));
-//    planner_ptr->SetHeuristicGenerator(bind(computeLoSHeuristic, placeholders::_1));
-    planner_ptr->SetHeuristicGenerator(bind(computeShieldHeuristic, placeholders::_1));
+    planner_ptr->SetHeuristicGenerator(bind(computeLoSHeuristic, placeholders::_1));
+//    planner_ptr->SetHeuristicGenerator(bind(computeShieldHeuristic, placeholders::_1));
     planner_ptr->SetStateToStateHeuristicGenerator(bind(computeHeuristicStateToState, placeholders::_1, placeholders::_2));
     planner_ptr->SetGoalChecker(bind(isGoalState, placeholders::_1, TERMINATION_DIST));
 //    planner_ptr->SetPostProcessor(bind(postProcess, placeholders::_1, placeholders::_2, placeholders::_3, action_ptrs[0], opt));
@@ -403,7 +407,7 @@ int main(int argc, char* argv[])
     setupMujoco(&global_m, &global_d, modelpath);
     dof = m->nq;
     shield_h_w.resize(dof);
-    shield_h_w << 5, 4, 0, 0.1, 1, 0.1;
+    shield_h_w << 0, 10, 7, 0.1, 1, 0.1;
 
     ManipulationAction::MjModelVecType m_vec;
     ManipulationAction::MjDataVecType d_vec;
@@ -432,9 +436,9 @@ int main(int argc, char* argv[])
     planner_params["adaptive_opt"] = 0;
     planner_params["smart_opt"] = 1;
     planner_params["min_exec_duration"] = 0.2;
-    planner_params["max_exec_duration"] = 1.2;
+    planner_params["max_exec_duration"] = 1.5;
     planner_params["num_ctrl_points"] = 7;
-    planner_params["min_ctrl_points"] = 6;
+    planner_params["min_ctrl_points"] = 4;
     planner_params["max_ctrl_points"] = 7;
     planner_params["spline_order"] = 4;
 
@@ -494,6 +498,7 @@ int main(int argc, char* argv[])
     vector<double> all_maps_time_vec, all_maps_cost_vec;
     vector<int> all_maps_num_edges_vec;
     unordered_map<string, vector<double>> all_action_eval_times;
+    vector<double> all_execution_time;
 
     /// save logs
     MatDf start_log, goal_log, traj_log;
@@ -502,7 +507,7 @@ int main(int argc, char* argv[])
     std::string goals_path ="../logs/" + planner_name +"_abb_goals.txt";
 
     // create opt
-    auto opt = BSplineOpt(insat_params, robot_params, spline_params);
+    auto opt = BSplineOpt(insat_params, robot_params, spline_params, planner_params);
     opt.SetGoalChecker(bind(isGoalState, placeholders::_1, TERMINATION_DIST));
     std::vector<BSplineOpt> opt_vec(num_threads, opt);
     auto opt_vec_ptr = std::make_shared<ManipulationAction::OptVecType>(opt_vec);
@@ -525,7 +530,7 @@ int main(int argc, char* argv[])
 
     int run_offset = 0;
 //    num_runs = starts.size();
-    num_runs = 20;
+    num_runs = 100;
     for (int run = run_offset; run < run_offset+num_runs; ++run)
     {
         // Set goal conditions
@@ -542,11 +547,8 @@ int main(int argc, char* argv[])
             m->setGoal(goals[run]);
         }
 
-        //// los testing
-//        double tst[] = {-1.16254, 0.5, -1.06526, 0.180956, 0.17619, -0.178209};
-//        std::vector<double> vtst(tst, tst + sizeof(tst) / sizeof(double) );
-//        std::cout << "los heur: " << computeLoSHeuristic(vtst) << std::endl;
-
+        // Clear heuristic cache
+        heuristic_cache.clear();
 
         // Construct planner
         shared_ptr<Planner> planner_ptr;
@@ -659,6 +661,8 @@ int main(int argc, char* argv[])
                 auto samp_traj = sampleTrajectory(soln_traj.traj_, 5e-3);
                 traj_log.conservativeResize(insat_params.lowD_dims_, traj_log.cols()+samp_traj.cols());
                 traj_log.rightCols(samp_traj.cols()) = samp_traj;
+                all_execution_time.push_back(soln_traj.traj_.end_time());
+                cout << "Execution time: " << soln_traj.traj_.end_time() << endl;
             }
             else
             {
@@ -728,6 +732,7 @@ int main(int argc, char* argv[])
     cout << "Mean time: " << accumulate(all_maps_time_vec.begin(), all_maps_time_vec.end(), 0.0)/all_maps_time_vec.size() << endl;
     cout << "Mean cost: " << accumulate(all_maps_cost_vec.begin(), all_maps_cost_vec.end(), 0.0)/all_maps_cost_vec.size() << endl;
     cout << "Mean evaluated edges: " << roundOff(accumulate(all_maps_num_edges_vec.begin(), all_maps_num_edges_vec.end(), 0.0)/double(all_maps_num_edges_vec.size()), 2) << endl;
+    cout << "Mean trajectory duration: " << roundOff(reduce(all_execution_time.begin(), all_execution_time.end())/double(all_execution_time.size()), 2) << endl;
     cout << endl << "************************" << endl;
 
     cout << endl << "------------- Mean action eval times -------------" << endl;
