@@ -165,7 +165,7 @@ double computeLoSHeuristic(const StateVarsType& state_vars)
 
         if (global_d->ncon>0)
         {
-            heuristic_cache[state_key] = std::numeric_limits<double>::infinity();
+            heuristic_cache[state_key] = 100;
             break;
         }
     }
