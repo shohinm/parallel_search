@@ -29,8 +29,8 @@ namespace ps
             max_dq_ << 2.618, 2.7925, 2.967, 5.585, 6.9813, 7.854;
 //            min_dq_*=10;
 //            max_dq_*=10;
-            min_ddq_ = -10*VecDf::Ones(6);
-            max_ddq_ = 10*VecDf::Ones(6);
+            min_ddq_ = -100*VecDf::Ones(6);
+            max_ddq_ = 100*VecDf::Ones(6);
             min_dddq_ = -100*VecDf::Ones(6);
             max_dddq_ = 100*VecDf::Ones(6);
 

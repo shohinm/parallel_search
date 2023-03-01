@@ -949,15 +949,15 @@ namespace ps
 
         /// Start constraint
         opt.AddPathPositionConstraint(q0, q0, 0); // Linear constraint
-        opt.AddPathVelocityConstraint(dq0, dq0, 0); // Linear constraint
+        // opt.AddPathVelocityConstraint(dq0, dq0, 0); // Linear constraint
         /// Goal constraint
         opt.AddPathPositionConstraint(qF, qF, 1); // Linear constraint
-        if (isGoal(qF))
-        {
-            VecDf dqF(insat_params_.aux_dims_);
-            dqF.setZero();
-            opt.AddPathVelocityConstraint(dqF, dqF, 1); // Linear constraint
-        }
+        // if (isGoal(qF))
+        // {
+        //     VecDf dqF(insat_params_.aux_dims_);
+        //     dqF.setZero();
+        //     opt.AddPathVelocityConstraint(dqF, dqF, 1); // Linear constraint
+        // }
 
         /// Cost
         prog.AddQuadraticErrorCost(MatDf::Identity(insat_params_.lowD_dims_, insat_params_.lowD_dims_),
@@ -1029,15 +1029,15 @@ namespace ps
 
         /// Start constraint
         opt.AddPathPositionConstraint(q0, q0, 0); // Linear constraint
-        opt.AddPathVelocityConstraint(dq0, dq0, 0); // Linear constraint
+        // opt.AddPathVelocityConstraint(dq0, dq0, 0); // Linear constraint
         /// Goal constraint
         opt.AddPathPositionConstraint(qF, qF, 1); // Linear constraint
-        if (isGoal(qF))
-        {
-            VecDf dqF(insat_params_.aux_dims_);
-            dqF.setZero();
-            opt.AddPathVelocityConstraint(dqF, dqF, 1); // Linear constraint
-        }
+        // if (isGoal(qF))
+        // {
+        //     VecDf dqF(insat_params_.aux_dims_);
+        //     dqF.setZero();
+        //     opt.AddPathVelocityConstraint(dqF, dqF, 1); // Linear constraint
+        // }
 
         /// Cost
         prog.AddQuadraticErrorCost(MatDf::Identity(insat_params_.lowD_dims_, insat_params_.lowD_dims_),

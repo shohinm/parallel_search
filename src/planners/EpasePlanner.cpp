@@ -120,6 +120,7 @@ bool EpasePlanner::Plan()
                 
                 // Construct path
                 goal_state_ptr_ = curr_edge_ptr->parent_state_ptr_;
+                goal_state_ptr_->Print("Goal: ");
                 constructPlan(goal_state_ptr_);   
                 terminate_ = true;
                 recheck_flag_ = true;
@@ -226,7 +227,7 @@ void EpasePlanner::expandEdge(EdgePtrType edge_ptr, int thread_id)
     auto t_lock_e = chrono::steady_clock::now();
     planner_stats_.lock_time_ += 1e-9*chrono::duration_cast<chrono::nanoseconds>(t_lock_e-t_start).count();
 
-    if (VERBOSE) edge_ptr->Print("Expanding");
+    if (1) edge_ptr->Print("Expanding");
 
     planner_stats_.num_jobs_per_thread_[thread_id] +=1;
 
@@ -344,7 +345,8 @@ void EpasePlanner::expandEdge(EdgePtrType edge_ptr, int thread_id)
         }
 
         edge_ptr->parent_state_ptr_->num_expanded_successors_ += 1;
-
+            cout << "Num expansion: " << planner_stats_.num_state_expansions_
+            << " min h: " << h_val_min_ << endl;
         if (edge_ptr->parent_state_ptr_->num_expanded_successors_ == edge_ptr->parent_state_ptr_->num_successors_)
         {
             edge_ptr->parent_state_ptr_->UnsetBeingExpanded();

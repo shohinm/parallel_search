@@ -50,7 +50,7 @@
 using namespace std;
 using namespace ps;
 
-#define TERMINATION_DIST 0.05
+#define TERMINATION_DIST 0.2
 #define DISCRETIZATION 0.05
 
 vector<double> goal;
@@ -371,11 +371,11 @@ int main(int argc, char* argv[])
     ParamsType planner_params;
     planner_params["num_threads"] = num_threads;
     planner_params["heuristic_weight"] = 10;
-    planner_params["timeout"] = 20;
+    planner_params["timeout"] = DINF;
     planner_params["adaptive_opt"] = 0;
     planner_params["smart_opt"] = 1;
     planner_params["min_exec_duration"] = 0.2;
-    planner_params["max_exec_duration"] = 1.2;
+    planner_params["max_exec_duration"] = 0.8;
     planner_params["num_ctrl_points"] = 7;
     planner_params["min_ctrl_points"] = 6;
     planner_params["max_ctrl_points"] = 7;
@@ -467,7 +467,7 @@ int main(int argc, char* argv[])
 
     int run_offset = 0;
 //    num_runs = starts.size();
-    num_runs = 20;
+    num_runs = 1;
     for (int run = run_offset; run < run_offset+num_runs; ++run)
     {
         // Set goal conditions
@@ -512,7 +512,7 @@ int main(int argc, char* argv[])
             std::cout << i << ' ';
         std::cout << std::endl;
 
-
+        getchar();
         // Set start state
         planner_ptr->SetStartState(start);
         if ((planner_name == "rrt") || (planner_name == "rrtconnect"))
@@ -612,6 +612,8 @@ int main(int argc, char* argv[])
         {
             cout << " | Plan not found!" << endl;
         }
+        // getchar();
+
 
         log_file << run << " " 
         << planner_stats.total_time_ << " " 

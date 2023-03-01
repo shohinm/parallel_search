@@ -5,8 +5,8 @@ add_compile_options(-std=c++17)
 
 list(APPEND CMAKE_PREFIX_PATH /opt/drake)
 list(APPEND CMAKE_PREFIX_PATH /opt/ros/noetic)
-set(MUJOCO_INCLUDE_DIR "/home/gaussian/cmu_ri_phd/phd_research/parallel_search/third_party/mujoco-2.3.2/include")
-set(MUJOCO_LIB_DIR "/home/gaussian/cmu_ri_phd/phd_research/parallel_search/third_party/mujoco-2.3.2/lib")
+set(MUJOCO_INCLUDE_DIR "/home/shohinm/code/parallel_search/third_party/mujoco-2.3.2/include")
+set(MUJOCO_LIB_DIR "/home/shohinm/code/parallel_search/third_party/mujoco-2.3.2/lib")
 
 find_package(OpenCV REQUIRED)
 find_package(SBPL REQUIRED)
