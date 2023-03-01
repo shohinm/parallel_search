@@ -166,6 +166,11 @@ namespace ps
                                                 BSplineTraj::TrajInstanceType& init_traj,
                                                 int thread_id) const;
 
+        BSplineTraj blendWithHigherOrderAndControl(const InsatAction* act,
+                                                   const BSplineTraj& t1,
+                                                   const BSplineTraj& t2,
+                                                   int thread_id) const;
+
         /// Post processing
         MatDf postProcess(std::vector<PlanElement>& path, double& cost, double time_limit, const InsatAction* act) const;
 

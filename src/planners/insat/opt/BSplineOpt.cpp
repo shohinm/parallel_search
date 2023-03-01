@@ -878,6 +878,7 @@ namespace ps
         return traj;
     }
 
+    /// magic opt
     BSplineTraj BSplineOpt::fitBestControlPointBSpline(const InsatAction *act,
                                                        MatDf &path, const BSplineTraj& init_traj,
                                                        int thread_id) const {
@@ -885,6 +886,15 @@ namespace ps
         VecDf st = path.leftCols(1);
         VecDf go = path.rightCols(1);
 
+        if (isGoal(go))
+        {
+            auto snap_traj = directOptimize(act, path.leftCols(1), path.rightCols(1), thread_id);
+            traj = blendWithHigherOrderAndControl(act, init_traj, snap_traj, thread_id);
+            if (traj.disc_traj_.size() > 0)
+            {
+                return traj;
+            }
+        }
 
         if (!init_traj.isValid())
         {
@@ -945,11 +955,15 @@ namespace ps
         addDurationConstraint(opt, opt_params_.min_duration_, opt_params_.max_duration_);
 
         VecDf dq0(insat_params_.aux_dims_);
-        dq0.setZero();
 
         /// Start constraint
         opt.AddPathPositionConstraint(q0, q0, 0); // Linear constraint
-        opt.AddPathVelocityConstraint(dq0, dq0, 0); // Linear constraint
+        if (q0.isApprox(opt_params_.global_start_, 5e-3))
+        {
+            dq0.setZero();
+            opt.AddPathVelocityConstraint(dq0, dq0, 0); // Linear constraint
+        }
+
         /// Goal constraint
         opt.AddPathPositionConstraint(qF, qF, 1); // Linear constraint
         if (isGoal(qF))
@@ -1086,6 +1100,25 @@ namespace ps
         }
 
         return traj;
+    }
+
+    BSplineTraj BSplineOpt::blendWithHigherOrderAndControl(const InsatAction *act,
+                                                           const BSplineTraj &t1, const BSplineTraj &t2,
+                                                           int thread_id) const {
+
+        int nc1 = t1.traj_.num_control_points();
+        int nc2 = t2.traj_.num_control_points();
+        int total_c = nc1+nc2;
+
+        /// set up the basis functions
+        auto basis = drake::math::BsplineBasis<double>(opt_params_.spline_order_, total_c,
+                                                       drake::math::KnotVectorType::kClampedUniform);
+
+        auto total_ctrl_pts = t1.traj_.control_points();
+        total_ctrl_pts.insert(total_ctrl_pts.end(), t2.traj_.control_points().begin(), t2.traj_.control_points().end());
+        auto init_guess = BSplineTraj::TrajInstanceType(basis, total_ctrl_pts);
+
+        return optimizeWithInitAndCallback(act, t1.traj_.InitialValue(), t2.traj_.FinalValue(), init_guess, thread_id);
     }
 
     MatDf BSplineOpt::postProcess(std::vector<PlanElement>& path, double& cost, double time_limit, const InsatAction* act) const {
