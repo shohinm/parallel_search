@@ -491,6 +491,7 @@ int main(int argc, char* argv[])
 
     // Construct actions
     ParamsType action_params;
+    action_params["planner_name"] = planner_name=="insat" || planner_name=="pinsat"? 1: -1;
     vector<shared_ptr<Action>> action_ptrs;
     constructActions(action_ptrs, action_params, modelpath, discretization, opt_vec_ptr, m_vec, d_vec, num_threads);
 
