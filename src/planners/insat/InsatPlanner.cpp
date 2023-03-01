@@ -274,7 +274,7 @@ namespace ps
                         auto edge_ptr = new InsatEdge(state_ptr, action_ptr, best_anc, successor_state_ptr);
                         edge_ptr->SetTraj(traj);
                         edge_ptr->SetTrajCost(cost);
-                        edge_ptr->SetCost(inc_cost);
+                        edge_ptr->SetCost(cost);
                         edge_map_.insert(std::make_pair(getEdgeKey(edge_ptr), edge_ptr));
                         successor_state_ptr->SetIncomingEdgePtr(edge_ptr); //
 
