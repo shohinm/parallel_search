@@ -14,7 +14,7 @@ class RrtPlanner : public Planner
         RrtPlanner(ParamsType planner_params);
         ~RrtPlanner();
         virtual void SetGoalState(const StateVarsType& state_vars);
-        bool Plan();
+        virtual bool Plan();
 
     protected:
         void initialize();
@@ -35,7 +35,18 @@ class RrtPlanner : public Planner
             bool& is_collision, int thread_id);
         StatePtrType extend(const StatePtrType& nearest_neighbor, const StateVarsType& sampled_state, 
             bool& is_collision, StatePtrMapType& state_map, int thread_id);
+        void exitThreads();
         void exit();
+
+        void PrintStateVars(const StateVarsType& state_vars, const std::string& prefix="")
+        {
+            if (prefix.size())
+                std::cout << prefix << " ";
+
+            for (auto& s : state_vars)
+                std::cout << s << " ";
+            std::cout << std::endl;
+        }
 
         std::random_device random_device_;
         mutable LockType lock_;
@@ -44,6 +55,10 @@ class RrtPlanner : public Planner
         std::atomic<bool> terminate_;
         std::atomic<bool> plan_found_;
         std::vector<std::future<void>> rrt_futures_;
+
+        StatePtrType start_rrt_state_;
+        StatePtrType goal_rrt_state_;
+
 };
 
 }
