@@ -141,8 +141,8 @@ namespace ps_drake
 
             opt_->AddDurationConstraint(duration, duration);
 
-//            std::string mj_modelpath = "../third_party/mujoco-2.3.2/model/abb/irb_1600/irb1600_6_12_shield.xml";
-            std::string mj_modelpath = "../third_party/mujoco-2.3.2/model/abb/irb_1600/irb1600_6_12.xml";
+            std::string mj_modelpath = "../third_party/mujoco-2.3.2/model/abb/irb_1600/irb1600_6_12_shield.xml";
+//            std::string mj_modelpath = "../third_party/mujoco-2.3.2/model/abb/irb_1600/irb1600_6_12.xml";
             m_ = mj_loadXML(mj_modelpath.c_str(), nullptr, nullptr, 0);
             d_ = mj_makeData(m_);
 
@@ -471,7 +471,7 @@ void runBVPTest(std::vector<double>& time_log, bool save=false, int test_size=1)
     int i=0;
     while(i < test_size)
     {
-        ps_drake::BSplineOpt opt(insat_params.lowD_dims_, 10, 5, 0.7);
+        ps_drake::BSplineOpt opt(insat_params.lowD_dims_, 7, 4, 0.7);
         VecDf st(insat_params.fullD_dims_), go(insat_params.fullD_dims_);
         st.setZero();
         go.setZero();
@@ -484,6 +484,9 @@ void runBVPTest(std::vector<double>& time_log, bool save=false, int test_size=1)
         VecDf r1, r2;
         r1 = ss.row(i);
         r2 = gg.row(i);
+
+        r1 << 0.0, 0.0, -1.57, 0.0, 0.0, 0.0;
+//        r1 << 0.0, -1.05, 0.7, 0.0, 0.0, 0.0;
 
         st.topRows(insat_params.lowD_dims_) = r1;
         go.topRows(insat_params.lowD_dims_) = r2;
@@ -508,10 +511,10 @@ void runBVPTest(std::vector<double>& time_log, bool save=false, int test_size=1)
                 double time_elapsed = duration_cast<duration<double> >(end_time - start_time).count();
                 time_log.emplace_back(time_elapsed);
 
-                for (auto& c: bspline_traj.control_points())
-                {
-                    std::cout << c.transpose() << std::endl;
-                }
+//                for (auto& c: bspline_traj.control_points())
+//                {
+//                    std::cout << c.transpose() << std::endl;
+//                }
 
                 starts.conservativeResize(starts.rows()+1, insat_params.lowD_dims_);
                 goals.conservativeResize(goals.rows()+1, insat_params.lowD_dims_);
@@ -529,7 +532,7 @@ void runBVPTest(std::vector<double>& time_log, bool save=false, int test_size=1)
                 std::cout << "start error: " << (bspline.InitialValue() - r1).norm() << std::endl;
                 std::cout << "goal error: " << (bspline.FinalValue() - r2).norm() << std::endl;
                 std::cout << "time length: " << bspline.end_time() << std::endl;
-                std::cout << "Trace stats: " << std::endl;
+//                std::cout << "Trace stats: " << std::endl;
 
 //                auto traj_trace = opt.getTrace();
 //                for (auto& t : traj_trace)
@@ -645,7 +648,7 @@ int main()
     ps_drake::InsatParams insat_params;
     ps_drake::ABBParams robot_params;
 
-    int test_size = 20;
+    int test_size = 100;
 
     std::vector<double> time_log;
     std::vector<double> init_time_log;
