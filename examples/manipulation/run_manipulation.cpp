@@ -50,12 +50,17 @@
 using namespace std;
 using namespace ps;
 
-#define TERMINATION_DIST 0.05
+#define TERMINATION_DIST 0.1
 #define DISCRETIZATION 0.05
 
 vector<double> goal;
 int dof;
 VecDf discretization;
+
+// Mujoco and LoS heuristic
+mjModel* global_m = nullptr;
+mjData* global_d = nullptr;
+std::unordered_map<size_t, double> heuristic_cache;
 
 double roundOff(double value, unsigned char prec)
 {
@@ -136,6 +141,38 @@ size_t EdgeKeyGenerator(const EdgePtrType& edge_ptr)
     return seed;
 }
 
+double computeLoSHeuristic(const StateVarsType& state_vars)
+{
+    size_t state_key = StateKeyGenerator(state_vars);
+    if (heuristic_cache.find(state_key) != heuristic_cache.end())
+    {
+        return heuristic_cache[state_key];
+    }
+
+    double h = computeHeuristic(state_vars);
+    heuristic_cache[state_key] = h;
+    int N = static_cast<int>(h)/9e-1;
+    Eigen::Map<const VecDf> p1(&state_vars[0], state_vars.size());
+    Eigen::Map<const VecDf> p2(&goal[0], goal.size());
+
+    for (int i=0; i<N; ++i)
+    {
+        double j = i/static_cast<double>(N);
+        VecDf intp_pt = p1*(1-j) + p2*j;
+
+        mju_copy(global_d->qpos, intp_pt.data(), global_m->nq);
+        mj_fwdPosition(global_m, global_d);
+
+        if (global_d->ncon>0)
+        {
+            heuristic_cache[state_key] = std::numeric_limits<double>::infinity();
+            break;
+        }
+    }
+
+    return heuristic_cache[state_key];
+}
+
 void postProcess(std::vector<PlanElement>& path, double& cost, double allowed_time, const shared_ptr<Action>& act, BSplineOpt& opt)
 {
     cout << "Post processing with timeout: " << allowed_time << endl;
@@ -176,7 +213,8 @@ void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vec
     planner_ptr->SetActions(action_ptrs);
     planner_ptr->SetStateMapKeyGenerator(bind(StateKeyGenerator, placeholders::_1));
     planner_ptr->SetEdgeKeyGenerator(bind(EdgeKeyGenerator, placeholders::_1));
-    planner_ptr->SetHeuristicGenerator(bind(computeHeuristic, placeholders::_1));
+//    planner_ptr->SetHeuristicGenerator(bind(computeHeuristic, placeholders::_1));
+    planner_ptr->SetHeuristicGenerator(bind(computeLoSHeuristic, placeholders::_1));
     planner_ptr->SetStateToStateHeuristicGenerator(bind(computeHeuristicStateToState, placeholders::_1, placeholders::_2));
     planner_ptr->SetGoalChecker(bind(isGoalState, placeholders::_1, TERMINATION_DIST));
 //    planner_ptr->SetPostProcessor(bind(postProcess, placeholders::_1, placeholders::_2, placeholders::_3, action_ptrs[0], opt));
@@ -346,6 +384,7 @@ int main(int argc, char* argv[])
     mjData *d = nullptr;
 
     setupMujoco(&m,&d,modelpath);
+    setupMujoco(&global_m, &global_d, modelpath);
     dof = m->nq;
 
     ManipulationAction::MjModelVecType m_vec;
