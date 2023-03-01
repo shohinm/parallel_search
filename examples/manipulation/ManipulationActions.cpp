@@ -171,8 +171,14 @@ namespace ps
     }
     else
     {
-        return goal_;
         /// Direct edge to goal
+      /// If successor is the same as the state. This will happen if the joint angle is close its limit.
+      /// if expanded state is too close to goal
+      if (state.isApprox(goal_, 1e-3) || params_["planner_name"]==1) /// assuming discretization is never finer than 1e-3.
+      {
+          return goal_;
+      }
+      /// if goal is in LoS then return it
       VecDf free_state(m_[thread_id]->nq);
       if (isCollisionFree(state, goal_, free_state, thread_id))
       {
@@ -384,7 +390,7 @@ namespace ps
     {
         goal_.resize(m_[0]->nq);
         for (int i=0; i<goal.size(); ++i) { goal_(i) = goal[i]; }
-        goal_ = contToDisc(goal_, 0);
+//        goal_ = contToDisc(goal_, 0);
     }
 
 
