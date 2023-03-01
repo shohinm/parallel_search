@@ -43,6 +43,7 @@
 #include <planners/RrtPlanner.hpp>
 #include <planners/RrtConnectPlanner.hpp>
 #include <planners/EpasePlanner.hpp>
+#include <planners/WastarPlanner.hpp>
 #include "ManipulationActions.hpp"
 #include <mujoco/mujoco.h>
 #include <planners/insat/opt/BSplineOpt.hpp>
@@ -227,6 +228,8 @@ void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vec
         planner_ptr = std::make_shared<RrtPlanner>(planner_params);
     else if (planner_name == "rrtconnect")
         planner_ptr = std::make_shared<RrtConnectPlanner>(planner_params);
+    else if (planner_name == "wastar")
+        planner_ptr = std::make_shared<WastarPlanner>(planner_params);
     else
         throw runtime_error("Planner type not identified!");
 
@@ -381,7 +384,7 @@ int main(int argc, char* argv[])
 {
     int num_threads;
 
-    if (!strcmp(argv[1], "insat"))
+    if (!strcmp(argv[1], "insat") || !strcmp(argv[1], "wastar"))
     {
       if (argc != 2) throw runtime_error("Format: run_robot_nav_2d insat");
       num_threads = 1;
