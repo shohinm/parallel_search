@@ -886,7 +886,7 @@ namespace ps
         VecDf go = path.rightCols(1);
 
 
-        if (path.cols() < opt_params_.min_ctrl_points_)
+        if (!init_traj.isValid())
         {
             /// Do direct optimization
             /// This shouldn't be failing (at least the assumption is)
