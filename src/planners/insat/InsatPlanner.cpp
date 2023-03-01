@@ -275,6 +275,12 @@ namespace ps
                         edge_ptr->SetTraj(traj);
                         edge_ptr->SetTrajCost(cost);
                         edge_ptr->SetCost(cost);
+                        if (isGoalState(successor_state_ptr))
+                        {
+                            edge_ptr->SetTrajCost(0);
+                            edge_ptr->SetCost(0);
+                            successor_state_ptr->SetFValue(0.0);
+                        }
                         edge_map_.insert(std::make_pair(getEdgeKey(edge_ptr), edge_ptr));
                         successor_state_ptr->SetIncomingEdgePtr(edge_ptr); //
 

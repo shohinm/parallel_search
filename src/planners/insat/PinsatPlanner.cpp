@@ -485,6 +485,12 @@ void PinsatPlanner::expandEdge(InsatEdgePtrType edge_ptr, int thread_id)
                         edge_ptr->SetTraj(traj);
                         edge_ptr->SetTrajCost(cost);
                         edge_ptr->SetCost(cost);
+                        if (isGoalState(successor_state_ptr))
+                        {
+                            edge_ptr->SetTrajCost(0);
+                            edge_ptr->SetCost(0);
+                            successor_state_ptr->SetFValue(0.0);
+                        }
                         edge_ptr->fullD_parent_state_ptr_ = best_anc;
                         // Insert poxy edge
                         auto edge_temp = Edge(successor_state_ptr, dummy_action_ptr_);
