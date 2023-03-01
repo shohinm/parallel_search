@@ -86,9 +86,10 @@ namespace ps
     /////////////////////////////////////////// BSplineOpt /////////////////////////////////////////////////
 
     BSplineOpt::BSplineOpt(const InsatParams &insat_params, const BSplineOpt::RobotParamsType &robot_params,
-                           const BSplineOpt::BSplineOptParams &opt_params) : insat_params_(insat_params),
-                                                                             robot_params_(robot_params),
-                                                                             opt_params_(opt_params)
+                           const BSplineOpt::BSplineOptParams &opt_params, ParamsType& search_params) : insat_params_(insat_params),
+                                                                                                        robot_params_(robot_params),
+                                                                                                        opt_params_(opt_params),
+                                                                                                        search_params_(search_params)
     {
     }
 
@@ -891,11 +892,9 @@ namespace ps
             auto snap_traj = directOptimize(act, path.leftCols(1), path.rightCols(1), thread_id);
             if (snap_traj.disc_traj_.size() > 0)
             {
-                std::cout << "snap successful... now blending" << std::endl;
                 traj = blendWithHigherOrderAndControl(act, init_traj, snap_traj, thread_id);
                 if (traj.disc_traj_.size() > 0)
                 {
-                    std::cout << "blending successful" << std::endl;
                     return traj;
                 }
             }
@@ -963,7 +962,7 @@ namespace ps
 
         /// Start constraint
         opt.AddPathPositionConstraint(q0, q0, 0); // Linear constraint
-        if (q0.isApprox(opt_params_.global_start_, 5e-3))
+        if (q0.isApprox(opt_params_.global_start_, 5e-3) && opt_params_.zero_vel_start)
         {
             dq0.setZero();
             opt.AddPathVelocityConstraint(dq0, dq0, 0); // Linear constraint
@@ -971,7 +970,7 @@ namespace ps
 
         /// Goal constraint
         opt.AddPathPositionConstraint(qF, qF, 1); // Linear constraint
-        if (isGoal(qF))
+        if (isGoal(qF) && opt_params_.zero_vel_goal)
         {
             VecDf dqF(insat_params_.aux_dims_);
             dqF.setZero();
@@ -1048,10 +1047,13 @@ namespace ps
 
         /// Start constraint
         opt.AddPathPositionConstraint(q0, q0, 0); // Linear constraint
-        opt.AddPathVelocityConstraint(dq0, dq0, 0); // Linear constraint
+        if (opt_params_.zero_vel_start)
+        {
+            opt.AddPathVelocityConstraint(dq0, dq0, 0); // Linear constraint
+        }
         /// Goal constraint
         opt.AddPathPositionConstraint(qF, qF, 1); // Linear constraint
-        if (isGoal(qF))
+        if (isGoal(qF) && opt_params_.zero_vel_goal)
         {
             VecDf dqF(insat_params_.aux_dims_);
             dqF.setZero();
@@ -1123,7 +1125,25 @@ namespace ps
         total_ctrl_pts.insert(total_ctrl_pts.end(), t2.traj_.control_points().begin(), t2.traj_.control_points().end());
         auto init_guess = BSplineTraj::TrajInstanceType(basis, total_ctrl_pts);
 
-        return optimizeWithInitAndCallback(act, t1.traj_.InitialValue(), t2.traj_.FinalValue(), init_guess, thread_id);
+        assert(t1.disc_traj_.size()>0 || t2.disc_traj_.size()>0);
+        VecDf q0, qF;
+        if (t1.disc_traj_.size()>0 && t2.disc_traj_.size()>0)
+        {
+            q0 = t1.disc_traj_.leftCols(1);
+            qF = t2.disc_traj_.rightCols(1);
+        }
+        else if (t1.disc_traj_.size()>0 && t2.disc_traj_.size()==0)
+        {
+            q0 = t1.disc_traj_.leftCols(1);
+            qF = t1.disc_traj_.rightCols(1);
+        }
+        else if (t1.disc_traj_.size()==0 && t2.disc_traj_.size()>0)
+        {
+            q0 = t2.disc_traj_.leftCols(1);
+            qF = t2.disc_traj_.rightCols(1);
+        }
+
+        return optimizeWithInitAndCallback(act, q0, qF, init_guess, thread_id);
     }
 
     MatDf BSplineOpt::postProcess(std::vector<PlanElement>& path, double& cost, double time_limit, const InsatAction* act) const {
@@ -1214,6 +1234,12 @@ namespace ps
         }
 
         return disc_traj;
+    }
+
+    MatDf BSplineOpt::postProcessWithControlPoints(std::vector<PlanElement> &path,
+                                                   double &cost, double time_limit,
+                                                   const InsatAction *act) const {
+
     }
 
     double BSplineOpt::calculateCost(const TrajType &traj) const {

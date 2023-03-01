@@ -55,6 +55,9 @@ namespace ps
             double duration_cost_w_ = 1.0;
             double length_cost_w_ = 0.1;
 
+            bool zero_vel_start = false;
+            bool zero_vel_goal = false;
+
             /// Adaptive BSpline optimization
             int min_ctrl_points_;
             int max_ctrl_points_;
@@ -68,7 +71,8 @@ namespace ps
 
         BSplineOpt(const InsatParams& insat_params,
                    const RobotParamsType& robot_params,
-                   const BSplineOptParams& opt_params);
+                   const BSplineOptParams& opt_params,
+                   ParamsType& search_params);
 
         void SetGoalChecker(std::function<bool(const StateVarsType&)> callback);
 
@@ -174,6 +178,10 @@ namespace ps
         /// Post processing
         MatDf postProcess(std::vector<PlanElement>& path, double& cost, double time_limit, const InsatAction* act) const;
 
+        MatDf postProcessWithControlPoints(std::vector<PlanElement>& path,
+                                           double& cost, double time_limit,
+                                           const InsatAction* act) const;
+
         virtual double calculateCost(const TrajType& traj) const;
 
         virtual double calculateCost(const MatDf& traj) const;
@@ -182,6 +190,7 @@ namespace ps
         InsatParams insat_params_;
         IRB1600 robot_params_;
         BSplineOptParams opt_params_;
+        ParamsType search_params_;
 
         /// Adaptive BSplineOpt
         std::function<double(const StateVarsType&)> goal_checker_;
