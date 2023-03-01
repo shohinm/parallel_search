@@ -889,10 +889,15 @@ namespace ps
         if (isGoal(go))
         {
             auto snap_traj = directOptimize(act, path.leftCols(1), path.rightCols(1), thread_id);
-            traj = blendWithHigherOrderAndControl(act, init_traj, snap_traj, thread_id);
-            if (traj.disc_traj_.size() > 0)
+            if (snap_traj.disc_traj_.size() > 0)
             {
-                return traj;
+                std::cout << "snap successful... now blending" << std::endl;
+                traj = blendWithHigherOrderAndControl(act, init_traj, snap_traj, thread_id);
+                if (traj.disc_traj_.size() > 0)
+                {
+                    std::cout << "blending successful" << std::endl;
+                    return traj;
+                }
             }
         }
 
