@@ -62,6 +62,9 @@ mjModel* global_m = nullptr;
 mjData* global_d = nullptr;
 std::unordered_map<size_t, double> heuristic_cache;
 
+// shield heuristic weight
+VecDf shield_h_w;
+
 double roundOff(double value, unsigned char prec)
 {
     double pow_10 = pow(10.0, (double)prec);
@@ -173,6 +176,18 @@ double computeLoSHeuristic(const StateVarsType& state_vars)
     return heuristic_cache[state_key];
 }
 
+double computeShieldHeuristic(const StateVarsType& state_vars)
+{
+
+    double cost = shield_h_w(0) * pow((goal[0] - state_vars[0]),2) +
+                  shield_h_w(1) * pow((state_vars[1]),2) +
+                  shield_h_w(2) * pow((goal[2] - state_vars[2]),2) +
+                  shield_h_w(3) * pow((goal[3] - state_vars[3]),2) +
+                  shield_h_w(4) * pow((goal[4] - state_vars[4]),2) +
+                  shield_h_w(5) * pow((goal[5] - state_vars[5]),2);
+    return std::sqrt(cost);
+}
+
 void postProcess(std::vector<PlanElement>& path, double& cost, double allowed_time, const shared_ptr<Action>& act, BSplineOpt& opt)
 {
     cout << "Post processing with timeout: " << allowed_time << endl;
@@ -214,7 +229,8 @@ void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vec
     planner_ptr->SetStateMapKeyGenerator(bind(StateKeyGenerator, placeholders::_1));
     planner_ptr->SetEdgeKeyGenerator(bind(EdgeKeyGenerator, placeholders::_1));
 //    planner_ptr->SetHeuristicGenerator(bind(computeHeuristic, placeholders::_1));
-    planner_ptr->SetHeuristicGenerator(bind(computeLoSHeuristic, placeholders::_1));
+//    planner_ptr->SetHeuristicGenerator(bind(computeLoSHeuristic, placeholders::_1));
+    planner_ptr->SetHeuristicGenerator(bind(computeShieldHeuristic, placeholders::_1));
     planner_ptr->SetStateToStateHeuristicGenerator(bind(computeHeuristicStateToState, placeholders::_1, placeholders::_2));
     planner_ptr->SetGoalChecker(bind(isGoalState, placeholders::_1, TERMINATION_DIST));
 //    planner_ptr->SetPostProcessor(bind(postProcess, placeholders::_1, placeholders::_2, placeholders::_3, action_ptrs[0], opt));
@@ -386,6 +402,8 @@ int main(int argc, char* argv[])
     setupMujoco(&m,&d,modelpath);
     setupMujoco(&global_m, &global_d, modelpath);
     dof = m->nq;
+    shield_h_w.resize(dof);
+    shield_h_w << 5, 4, 0, 0.1, 1, 0.1;
 
     ManipulationAction::MjModelVecType m_vec;
     ManipulationAction::MjDataVecType d_vec;
@@ -523,6 +541,12 @@ int main(int argc, char* argv[])
         {
             m->setGoal(goals[run]);
         }
+
+        //// los testing
+//        double tst[] = {-1.16254, 0.5, -1.06526, 0.180956, 0.17619, -0.178209};
+//        std::vector<double> vtst(tst, tst + sizeof(tst) / sizeof(double) );
+//        std::cout << "los heur: " << computeLoSHeuristic(vtst) << std::endl;
+
 
         // Construct planner
         shared_ptr<Planner> planner_ptr;
