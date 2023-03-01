@@ -165,6 +165,15 @@ namespace ps
                                    const VecDf& q0, const VecDf& qF,
                                    int thread_id) const;
 
+        BSplineTraj directOptimizeWithCallback(const InsatAction* act,
+                                               const VecDf& q0, const VecDf& qF,
+                                               int thread_id) const;
+
+        BSplineTraj optimizeWithInit(const InsatAction* act,
+                                     const VecDf& q0, const VecDf& qF,
+                                     BSplineTraj::TrajInstanceType& init_traj,
+                                     int thread_id) const;
+
         BSplineTraj optimizeWithInitAndCallback(const InsatAction* act,
                                                 const VecDf& q0, const VecDf& qF,
                                                 BSplineTraj::TrajInstanceType& init_traj,
