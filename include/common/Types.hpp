@@ -43,22 +43,22 @@ namespace ps
 
     struct PlannerStats
     {
-        double total_time_=  0; // seconds
-        double path_cost_ = 0;
-        double path_length_ = 0;
-        double processed_path_cost_ = 0;
-        double processed_path_length_ = 0;
+        double total_time =  0; // seconds
+        double path_cost = 0;
+        double path_length = 0;
+        double processed_path_cost = 0;
+        double processed_path_length = 0;
         
         int num_state_expansions_ = 0;
-        int num_evaluated_edges_ = 0;
-        int num_threads_spawned_ = 0;
+        int num_evaluated_edges = 0;
+        int num_threads_spawned = 0;
         
-        std::vector<int> num_jobs_per_thread_;
+        std::vector<int> num_jobs_per_thread;
         
-	    double lock_time_ = 0;
-        double cumulative_expansions_time_ = 0;
+	    double lock_time = 0;
+        double cumulative_expansions_time = 0;
 
-        std::unordered_map<std::string, std::vector<double>> action_eval_times_;
+        std::unordered_map<std::string, std::vector<double>> action_eval_times;
     };
 }
 

@@ -309,8 +309,8 @@ void intrusive_heap<T, Compare>::make_heap(
     const size_type right = right_child(root);
 
     auto f = ilog2(n) - 1;
-    size_type f2 = ipow2(f);
-    size_type l = f2 - 1 + std::min(n - 2 * f2 + 1, f2);
+size_type f2 = ipow2(f);
+size_type l = f2 - 1 + std::min(n - 2 * f2 + 1, f2);
     size_type r = n - 1 - l;
 
     InputIt new_start = std::next(first);
