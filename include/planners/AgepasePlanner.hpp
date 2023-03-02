@@ -1,7 +1,7 @@
 #ifndef AGEPASE_PLANNER_HPP
 #define AGEPASE_PLANNER_HPP
 
-#define NAIVE 0
+#define NAIVE 1
 #define ADAPTIVE 1
 
 #include <future>
@@ -30,6 +30,9 @@ class AgepasePlanner : public GepasePlanner
         double delta_w_;
         double best_cost_;
         std::vector<PlanElement> best_plan_;
+
+        // Experiment
+        std::vector<double> data_list_;
 };
 
 }

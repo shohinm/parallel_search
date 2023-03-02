@@ -1,5 +1,8 @@
 #include <iostream>
 #include <planners/ArastarPlanner.hpp>
+#include <fstream>
+
+#define EXPERIMENT 1
 
 using namespace std;
 using namespace ps;
@@ -25,15 +28,23 @@ bool ArastarPlanner::Plan()
     {
         resetClosed();
         improvePath();
-        cout << "Heuristic weight: " << heuristic_w_ << endl;
-        cout << "Goal state: " << goal_state_ptr_->GetFValue() << endl;
+        // cout << "Heuristic weight: " << heuristic_w_ << endl;
+        // cout << "Goal state: " << goal_state_ptr_->GetFValue() << endl;
 
+        if (EXPERIMENT)
+        {
+            auto t_end = chrono::steady_clock::now();
+            double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start_).count();
+            data_list_.push_back(heuristic_w_);
+            data_list_.push_back(1e-9*t_elapsed);
+            data_list_.push_back(goal_state_ptr_->GetFValue());
+        }
         // Early termination if there's no solution
         if (goal_state_ptr_ == NULL)
         {
             break;
         }
-        heuristic_w_ -= 1;
+        heuristic_w_ -= delta_w_;
 
         // Append inconsistent list to open
         for(auto it_state = state_incon_list_.begin(); it_state != state_incon_list_.end(); it_state++)
@@ -55,6 +66,16 @@ bool ArastarPlanner::Plan()
 
     }
 
+    if (EXPERIMENT)
+    {
+        string filename = "experiment_0_arastar_" + to_string(heuristic_w) + "_" + to_string(delta_w_)+ ".txt";
+        std::ofstream newFile(filename);
+        for (auto data : data_list_)
+        {
+            newFile << data << endl;
+        }
+    }
+
     // Reset heuristic weight & time budget
     heuristic_w_ = heuristic_w;
     auto t_end = chrono::steady_clock::now();
@@ -72,6 +93,7 @@ void ArastarPlanner::initialize()
 {
     WastarPlanner::initialize();
     state_incon_list_.clear();
+    delta_w_ = 0.5;
 }
 
 void ArastarPlanner::improvePath()

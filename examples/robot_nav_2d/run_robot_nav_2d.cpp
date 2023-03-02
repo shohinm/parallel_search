@@ -305,8 +305,9 @@ int main(int argc, char* argv[])
     ParamsType planner_params;
     string planner_name = argv[1];
     planner_params["num_threads"] = num_threads;
-    planner_params["heuristic_weight"] = 50;
-    // planner_params["heuristic_weight"] = 3;
+    // planner_params["heuristic_weight"] = 50;
+    // planner_params["heuristic_weight"] = 5;
+    planner_params["heuristic_weight"] = 1;
     if (time_budget)
     {
         planner_params["timeout"] = time_budget;
@@ -346,7 +347,8 @@ int main(int argc, char* argv[])
     vector<int> all_maps_num_edges_vec;
     unordered_map<string, vector<double>> all_action_eval_times;
 
-    for (int m_idx = 0; m_idx < map_vec.size(); ++m_idx)
+    // for (int m_idx = 0; m_idx < map_vec.size(); ++m_idx)
+    for (int m_idx = 0; m_idx < 1; ++m_idx) // anytime experiment
     // for (int m_idx = 2; m_idx < 3; ++m_idx) // Fail case for optimality (thread=10)
     {
         auto map = map_vec[m_idx];
@@ -391,7 +393,8 @@ int main(int argc, char* argv[])
         if (visualize_plan) cv::namedWindow("Plan", cv::WINDOW_AUTOSIZE );// Create a window for display.
         
         int num_success = 0;
-        // for (int exp_idx = 45; exp_idx < 46; ++exp_idx )
+        // for (int exp_idx = 45; exp_idx < 46; ++exp_idx ) // Fail case to find optimal (thread=10, h_weight=1)
+        // for (int exp_idx = 23; exp_idx < 24; ++exp_idx ) // anytime experiment map 0, run 23 (0 index)
         for (int exp_idx = 0; exp_idx < num_runs; ++exp_idx)
         {
             cout << "Experiment: " << exp_idx;
@@ -481,6 +484,8 @@ int main(int argc, char* argv[])
                 img2.setTo(cv::Scalar(0,0,0));
                 cv::imshow("Plan", img2);
 
+                // Halt for image display
+                // cin.get();
             }  
         }
 

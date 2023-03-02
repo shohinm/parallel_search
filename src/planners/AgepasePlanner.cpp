@@ -2,10 +2,14 @@
 #include <algorithm>
 #include <cmath>
 #include <planners/AgepasePlanner.hpp>
+ 
+#include <fstream>
+#define DEBUG 0
+#define EXPERIMENT 1
 
 using namespace std;
 using namespace ps;
-
+    
 AgepasePlanner::AgepasePlanner(ParamsType planner_params):
 GepasePlanner(planner_params)
 {    
@@ -23,22 +27,37 @@ bool AgepasePlanner::Plan()
 
     startTimer();
     double heuristic_w = heuristic_w_;
-    while (heuristic_w_>=1 && !checkTimeout()) {
+    while ((heuristic_w_>1 || fabs(heuristic_w_ - 1)<0.001f) && !checkTimeout())
+    {
         terminate_ = false;
 
         resetClosed();
         // cout << "Start state: " << start_state_ptr_->GetFValue() << endl;
         being_expanded_states_.clear();
         improvePath();
-        cout << "Start state: " << start_state_ptr_->GetFValue() << endl;
-        cout << "Heuristic weight: " << heuristic_w_ << endl;
-        cout << "Goal state: " << goal_state_ptr_->GetFValue() << endl;
-        cout << "Best Cost: " << best_cost_ << endl;
+        // cout << "Start state: " << start_state_ptr_->GetFValue() << endl;
+        if (DEBUG)
+        {
+            cout << "Heuristic weight: " << heuristic_w_ << endl;
+            cout << "Goal state: " << goal_state_ptr_->GetFValue() << endl;
+            cout << "Best Cost: " << best_cost_ << endl;
+            cout << "Open list size: " << edge_open_list_.size() << endl;
+            cout << "min edge open list:" << edge_open_list_.min()->expansion_priority_ << endl;
+            cout << "Incon list size: " << edge_incon_list_.size() << endl;
+        }
         if (goal_state_ptr_->GetFValue() < best_cost_)
         {
             best_cost_ = goal_state_ptr_->GetFValue();
             best_plan_.clear();
             best_plan_ = plan_;
+        }
+        if (EXPERIMENT)
+        {
+            auto t_end = chrono::steady_clock::now();
+            double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start_).count();
+            data_list_.push_back(heuristic_w_);
+            data_list_.push_back(1e-9*t_elapsed);
+            data_list_.push_back(best_cost_);
         }
         // cout << "Min edge open: " << edge_open_list_.min()->expansion_priority_ << endl;
         // cout << "Min state BE: " << being_expanded_states_.min()->GetFValue() << endl;
@@ -49,14 +68,14 @@ bool AgepasePlanner::Plan()
             break;
         }
 
-        if (!NAIVE)
-        {
-            // append inconsistent list's edges into Eopen
-            for(auto it_edge = edge_incon_list_.begin(); it_edge != edge_incon_list_.end(); it_edge++)
-            {
-                edge_open_list_.push(*it_edge);
-            }
-        }
+        // if (!NAIVE)
+        // {
+        //     // append inconsistent list's edges into Eopen
+        //     for(auto it_edge = edge_incon_list_.begin(); it_edge != edge_incon_list_.end(); it_edge++)
+        //     {
+        //         edge_open_list_.push(*it_edge);
+        //     }
+        // }
         
         // Update heuristic weight
         if (ADAPTIVE)
@@ -65,8 +84,8 @@ bool AgepasePlanner::Plan()
             double max_e_value = std::numeric_limits<double>::min();
 
             // debug
-            size_t edge_key;
-            EdgePtrMapType::iterator it_edge;
+            // size_t edge_key;
+            // EdgePtrMapType::iterator it_edge;
 
             // Iterate through open list
             for(auto it_edge = edge_open_list_.begin(); it_edge != edge_open_list_.end(); it_edge++)
@@ -80,20 +99,20 @@ bool AgepasePlanner::Plan()
                         max_e_value = e_value;
 
                         // debug
-                        edge_key = getEdgeKey(edge);
+                        // edge_key = getEdgeKey(edge);
                     }
                 // }
             }
 
             // edge with max e-value
-            it_edge = edge_map_.find(edge_key);
-            it_edge->second->Print("Edge max e-value");
-            cout << it_edge->second->expansion_priority_ << endl;
-            cout << best_cost_ << endl;
-            if (best_cost_ + 1e-4 < it_edge->second->expansion_priority_)
-            {
-                cout << "Rounding error????" << endl;
-            }
+            // it_edge = edge_map_.find(edge_key);
+            // it_edge->second->Print("Edge max e-value");
+            // cout << it_edge->second->expansion_priority_ << endl;
+            // cout << best_cost_ << endl;
+            // if (best_cost_ + 1e-4 < it_edge->second->expansion_priority_)
+            // {
+            //     cout << "Rounding error????" << endl;
+            // }
             
             if (max_e_value != std::numeric_limits<double>::min())
             {
@@ -148,7 +167,7 @@ bool AgepasePlanner::Plan()
             }
 
             edge_incon_list_.clear();
-
+            
             while (!edge_open_list_.empty())
             {
                 auto edge = edge_open_list_.min();
@@ -165,10 +184,10 @@ bool AgepasePlanner::Plan()
                 }
 
                 // Prune if g(s) + h(s) > best_cost
-                if ((edge->parent_state_ptr_->GetGValue() + edge->parent_state_ptr_->GetHValue()) > best_cost_)
-                {
-                    continue;
-                }
+                // if ((edge->parent_state_ptr_->GetGValue() + edge->parent_state_ptr_->GetHValue()) > best_cost_)
+                // {
+                //     continue;
+                // }
 
                 if (edge_open_list.contains(edge))
                 {
@@ -183,11 +202,25 @@ bool AgepasePlanner::Plan()
         }
 
         // Print min in open list
-        // cout << "Min edge open: " << edge_open_list_.min()->expansion_priority_ << endl;
+        if (DEBUG)
+        {
+            cout << "Min edge open: " << edge_open_list_.min()->expansion_priority_ << endl;
+            cout << heuristic_w_ << endl;
+        }
         // edge_open_list_.min()->Print("MIN EDGE OPEN");
     
     }
     
+    if (EXPERIMENT)
+    {
+        string filename = "experiment_" + to_string(num_threads_) + "_aepase_" + to_string(heuristic_w) + "_" + to_string(delta_w_) + "_" + to_string(NAIVE) + "_" + to_string(ADAPTIVE) + ".txt";
+        std::ofstream newFile(filename);
+        for (auto data : data_list_)
+        {
+            newFile << data << endl;
+        }
+    }
+
     terminate_ = true;
     plan_ = best_plan_;
     // Reset heuristic weight & time budget
@@ -207,8 +240,8 @@ void AgepasePlanner::initialize()
 {
     GepasePlanner::initialize();
     edge_incon_list_.clear();
-    // delta_w_ = 0.02;
-    delta_w_ = 1;
+    delta_w_ = 0.5;
+    // delta_w_ = 1;
     best_cost_ = numeric_limits<double>::max();
 }
 
@@ -230,7 +263,8 @@ void AgepasePlanner::improvePath()
                 if (!edge_open_list_.empty())
                 {
                     // Terminate condition: no state in open/be has f-value < goal's g-value
-                    if (goal_state_ptr_->GetFValue() + 1e-2 < edge_open_list_.min()->expansion_priority_)
+                    if (goal_state_ptr_->GetFValue() + 1e-1 < edge_open_list_.min()->expansion_priority_)
+                    // if (goal_state_ptr_->GetFValue() < edge_open_list_.min()->expansion_priority_)
                     {
                         // Construct path
                         auto goal_state_ptr = goal_state_ptr_;
@@ -244,7 +278,8 @@ void AgepasePlanner::improvePath()
                 else if (!being_expanded_states_.empty())
                 {
                     // Terminate condition: no state in open/be has f-value < goal's g-value
-                    if (goal_state_ptr_->GetFValue() + 1e-2 < being_expanded_states_.min()->GetFValue())
+                    if (goal_state_ptr_->GetFValue() + 1e-1 < being_expanded_states_.min()->GetFValue())
+                    // if (goal_state_ptr_->GetFValue() < being_expanded_states_.min()->GetFValue())
                     {
                         // Construct path
                         auto goal_state_ptr = goal_state_ptr_;
@@ -517,8 +552,8 @@ void AgepasePlanner::expand(EdgePtrType edge_ptr, int thread_id)
 
 void AgepasePlanner::expandEdge(EdgePtrType edge_ptr, int thread_id)
 {
-    if (!edge_ptr->is_eval_)
-    {
+    // if (!edge_ptr->is_eval_)
+    // {
         auto action_ptr = edge_ptr->action_ptr_;
 
         lock_.unlock();
@@ -608,70 +643,70 @@ void AgepasePlanner::expandEdge(EdgePtrType edge_ptr, int thread_id)
         {
             if (VERBOSE) edge_ptr->Print("No successors for");
         }
-    }
-    else
-    {
-        double new_g_val = edge_ptr->parent_state_ptr_->GetGValue() + edge_ptr->GetCost();
-        auto successor_state_ptr = edge_ptr->child_state_ptr_;
+    // }
+    // else
+    // {
+    //     double new_g_val = edge_ptr->parent_state_ptr_->GetGValue() + edge_ptr->GetCost();
+    //     auto successor_state_ptr = edge_ptr->child_state_ptr_;
 
-        if (successor_state_ptr->GetGValue() > new_g_val)
-        {
-            double h_val = successor_state_ptr->GetHValue();
+    //     if (successor_state_ptr->GetGValue() > new_g_val)
+    //     {
+    //         double h_val = successor_state_ptr->GetHValue();
             
-            if (h_val == -1)
-            {
-                h_val = computeHeuristic(successor_state_ptr);
-                successor_state_ptr->SetHValue(h_val);        
-            }
+    //         if (h_val == -1)
+    //         {
+    //             h_val = computeHeuristic(successor_state_ptr);
+    //             successor_state_ptr->SetHValue(h_val);        
+    //         }
 
-            if (h_val != DINF)
-            {
-                h_val_min_ = h_val < h_val_min_ ? h_val : h_val_min_;
-                successor_state_ptr->SetGValue(new_g_val);
-                successor_state_ptr->SetFValue(new_g_val + heuristic_w_*h_val);
-                successor_state_ptr->SetIncomingEdgePtr(edge_ptr);
+    //         if (h_val != DINF)
+    //         {
+    //             h_val_min_ = h_val < h_val_min_ ? h_val : h_val_min_;
+    //             successor_state_ptr->SetGValue(new_g_val);
+    //             successor_state_ptr->SetFValue(new_g_val + heuristic_w_*h_val);
+    //             successor_state_ptr->SetIncomingEdgePtr(edge_ptr);
                 
-                // Insert poxy edge
-                auto edge_temp = Edge(successor_state_ptr, dummy_action_ptr_);
-                auto edge_key = getEdgeKey(&edge_temp);
-                auto it_edge = edge_map_.find(edge_key); 
-                EdgePtrType proxy_edge_ptr;
+    //             // Insert poxy edge
+    //             auto edge_temp = Edge(successor_state_ptr, dummy_action_ptr_);
+    //             auto edge_key = getEdgeKey(&edge_temp);
+    //             auto it_edge = edge_map_.find(edge_key); 
+    //             EdgePtrType proxy_edge_ptr;
 
-                if (it_edge == edge_map_.end())
-                {
-                    proxy_edge_ptr = new Edge(successor_state_ptr, dummy_action_ptr_);
-                    edge_map_.insert(make_pair(edge_key, proxy_edge_ptr));
-                }
-                else
-                {
-                    proxy_edge_ptr = it_edge->second;
-                }
+    //             if (it_edge == edge_map_.end())
+    //             {
+    //                 proxy_edge_ptr = new Edge(successor_state_ptr, dummy_action_ptr_);
+    //                 edge_map_.insert(make_pair(edge_key, proxy_edge_ptr));
+    //             }
+    //             else
+    //             {
+    //                 proxy_edge_ptr = it_edge->second;
+    //             }
 
-                proxy_edge_ptr->expansion_priority_ = new_g_val + heuristic_w_*h_val;
+    //             proxy_edge_ptr->expansion_priority_ = new_g_val + heuristic_w_*h_val;
                 
-                if (!successor_state_ptr->IsVisited())
-                {
-                    if (edge_open_list_.contains(proxy_edge_ptr))
-                    {
-                        edge_open_list_.decrease(proxy_edge_ptr);
-                    }
-                    else
-                    {
-                        edge_open_list_.push(proxy_edge_ptr);
-                    }
-                }
-                else
-                {
-                    if (find(edge_incon_list_.begin(), edge_incon_list_.end(), proxy_edge_ptr) == edge_incon_list_.end())
-                    {
-                        edge_incon_list_.emplace_back(proxy_edge_ptr);
-                    }
-                }
+    //             if (!successor_state_ptr->IsVisited())
+    //             {
+    //                 if (edge_open_list_.contains(proxy_edge_ptr))
+    //                 {
+    //                     edge_open_list_.decrease(proxy_edge_ptr);
+    //                 }
+    //                 else
+    //                 {
+    //                     edge_open_list_.push(proxy_edge_ptr);
+    //                 }
+    //             }
+    //             else
+    //             {
+    //                 if (find(edge_incon_list_.begin(), edge_incon_list_.end(), proxy_edge_ptr) == edge_incon_list_.end())
+    //                 {
+    //                     edge_incon_list_.emplace_back(proxy_edge_ptr);
+    //                 }
+    //             }
 
-                notifyMainThread();
-            }       
-        }
-    }
+    //             notifyMainThread();
+    //         }       
+        // }
+    // }
 
     edge_ptr->parent_state_ptr_->num_expanded_successors_ += 1;
 
