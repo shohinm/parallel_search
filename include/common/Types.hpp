@@ -45,7 +45,9 @@ namespace ps
     {
         double total_time_=  0; // seconds
         double path_cost_ = 0;
-        double path_length_  =0;
+        double path_length_ = 0;
+        double processed_path_cost_ = 0;
+        double processed_path_length_ = 0;
         
         int num_state_expansions_ = 0;
         int num_evaluated_edges_ = 0;

@@ -175,13 +175,16 @@ void Planner::constructPlan(StatePtrType& state_ptr)
         }
     }
 
+    planner_stats_.path_cost_= cost;
+    planner_stats_.path_length_ = plan_.size();
+
     if (post_processor_)
     {
         post_processor_(plan_, cost);
     }
 
-    planner_stats_.path_cost_= cost;
-    planner_stats_.path_length_ = plan_.size();
+    planner_stats_.processed_path_cost_= cost;
+    planner_stats_.processed_path_length_ = plan_.size();
 }
 
 double Planner::roundOff(double value, int prec)
