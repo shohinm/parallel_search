@@ -1393,9 +1393,14 @@ namespace ps
         }
         assert(eig_path.cols()>=2);
 
+        std::cout << "gl st" << opt_params_.global_start_ << std::endl;
+        std::cout << "gl st" << opt_params_.global_goal_ << std::endl;
+
         BSplineTraj traj;
         if (eig_path.cols() < opt_params_.min_ctrl_points_)
         {
+            std::cout << "gl st" << opt_params_.global_start_ << std::endl;
+            std::cout << "gl st" << opt_params_.global_goal_ << std::endl;
             traj = directOptimize(act, eig_path.leftCols(1), eig_path.rightCols(1), 0);
             auto end_time = Clock::now();
             double time_elapsed = duration_cast<duration<double> >(end_time - start_time).count();
@@ -1424,7 +1429,7 @@ namespace ps
 
         int max_ctrl = std::min(2*opt_params_.max_ctrl_points_, int(eig_path.cols()));
         /// For min to max control points
-        for (int ctrl=opt_params_.min_ctrl_points_; ctrl<2*max_ctrl; ++ctrl)
+        for (int ctrl=opt_params_.min_ctrl_points_; ctrl<max_ctrl; ++ctrl)
         {
             auto basis = drake::math::BsplineBasis<double>(opt_params_.spline_order_, ctrl,
                                                            drake::math::KnotVectorType::kClampedUniform);
@@ -1432,9 +1437,9 @@ namespace ps
             VecDi ctrl_idx = VecDf::LinSpaced(ctrl, 0, eig_path.cols()-1).cast<int>();
 
             std::vector<MatDf> ctrl_pts;
-            for (auto c : ctrl_idx)
+            for (int i=0; i<ctrl_idx.size(); ++i)
             {
-                ctrl_pts.push_back(eig_path.col(c));
+                ctrl_pts.push_back(eig_path.col(ctrl_idx(i)));
             }
 
             auto init_guess = BSplineTraj::TrajInstanceType(basis, ctrl_pts);
