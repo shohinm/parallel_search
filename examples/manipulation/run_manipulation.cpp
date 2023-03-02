@@ -436,7 +436,7 @@ int main(int argc, char* argv[])
     ParamsType planner_params;
     planner_params["num_threads"] = num_threads;
     planner_params["heuristic_weight"] = 10;
-    planner_params["timeout"] = 1500;
+    planner_params["timeout"] = 15;
     planner_params["adaptive_opt"] = 0;
     planner_params["smart_opt"] = 1;
     planner_params["min_exec_duration"] = 0.2;
@@ -555,7 +555,7 @@ int main(int argc, char* argv[])
 
         // Construct planner
         shared_ptr<Planner> planner_ptr;
-        constructPlanner(planner_name, planner_ptr, action_ptrs, planner_params, action_params, opt_vec[0]);
+        constructPlanner(planner_name, planner_ptr, action_ptrs, planner_params, action_params, opt_vec_ptr->at(0));
 
         // Run experiments
         vector<double> time_vec, cost_vec;

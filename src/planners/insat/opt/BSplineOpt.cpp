@@ -1393,14 +1393,9 @@ namespace ps
         }
         assert(eig_path.cols()>=2);
 
-        std::cout << "gl st" << opt_params_.global_start_ << std::endl;
-        std::cout << "gl st" << opt_params_.global_goal_ << std::endl;
-
         BSplineTraj traj;
         if (eig_path.cols() < opt_params_.min_ctrl_points_)
         {
-            std::cout << "gl st" << opt_params_.global_start_ << std::endl;
-            std::cout << "gl st" << opt_params_.global_goal_ << std::endl;
             traj = directOptimize(act, eig_path.leftCols(1), eig_path.rightCols(1), 0);
             auto end_time = Clock::now();
             double time_elapsed = duration_cast<duration<double> >(end_time - start_time).count();
