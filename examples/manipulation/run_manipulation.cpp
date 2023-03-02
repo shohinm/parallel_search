@@ -436,7 +436,7 @@ int main(int argc, char* argv[])
     ParamsType planner_params;
     planner_params["num_threads"] = num_threads;
     planner_params["heuristic_weight"] = 10;
-    planner_params["timeout"] = 15;
+    planner_params["timeout"] = 1500;
     planner_params["adaptive_opt"] = 0;
     planner_params["smart_opt"] = 1;
     planner_params["min_exec_duration"] = 0.2;
