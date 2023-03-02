@@ -513,8 +513,7 @@ int main(int argc, char* argv[])
     // create opt
     auto opt = BSplineOpt(insat_params, robot_params, spline_params, planner_params);
     opt.SetGoalChecker(bind(isGoalState, placeholders::_1, TERMINATION_DIST));
-    std::vector<BSplineOpt> opt_vec(num_threads, opt);
-    auto opt_vec_ptr = std::make_shared<ManipulationAction::OptVecType>(opt_vec);
+    auto opt_vec_ptr = std::make_shared<ManipulationAction::OptVecType>(std::vector<BSplineOpt>(num_threads, opt));
 
     // Construct actions
     ParamsType action_params;
