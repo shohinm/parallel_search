@@ -5,6 +5,16 @@
 using namespace std;
 using namespace ps;
 
+// void PrintStateVars(const StateVarsType& state_vars, const string& prefix="")
+// {
+//     if (prefix.size())
+//         cout << prefix << " ";
+
+//     for (auto& s : state_vars)
+//         cout << s << " ";
+//     cout << endl;
+// }
+
 RrtConnectPlanner::RrtConnectPlanner(ParamsType planner_params):
 RrtPlanner(planner_params)
 {    
@@ -21,10 +31,50 @@ void RrtConnectPlanner::SetGoalState(const StateVarsType& state_vars)
     goal_state_ptr_ = constructState(state_vars, state_map_goal_);
 }
 
+bool RrtConnectPlanner::Plan()
+{
+    initialize();
+    startTimer();
+
+    if (VERBOSE) start_state_ptr_->Print("Start: ");
+    if (VERBOSE) PrintStateVars(goal_state_vars_, "Goal:");
+
+    auto t_start = chrono::steady_clock::now();
+
+    if (planner_params_["num_threads"] == 1)
+    {
+        rrtThread(0);
+    }
+    else
+    {
+        for (int thread_id = 0; thread_id < planner_params_["num_threads"]-1; ++thread_id)
+        {
+            if (VERBOSE) cout << "Spawining state expansion thread " << thread_id << endl;
+            rrt_futures_.emplace_back(async(launch::async, &RrtConnectPlanner::rrtThread, this, thread_id));
+        }        
+        
+        planner_stats_.num_threads_spawned_ += rrt_futures_.size();
+    }
+
+    // Spin till termination, should be replaced by conditional variable
+    while(!terminate_){}
+
+    exitThreads();
+    constructPlan(start_rrt_state_, goal_rrt_state_);   
+    auto t_end = chrono::steady_clock::now();
+    double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
+    planner_stats_.total_time_ = 1e-9*t_elapsed;
+    exit();
+
+    return plan_found_;
+}
+
 void RrtConnectPlanner::initialize()
 {
     RrtPlanner::initialize();
     start_goal_flag_.resize(planner_params_["num_threads"], 0);
+    start_rrt_state_ = NULL;
+    goal_rrt_state_ = NULL;
 }
 
 
@@ -132,9 +182,11 @@ void RrtConnectPlanner::rrtThread(int thread_id)
                 if (!terminate_)
                 {
                      if (VERBOSE) cout << "Connect succeeded from start_graph to goal_graph" << endl;
-                    constructPlan(state_ptr, connected_state);   
                     terminate_ = true;
                     plan_found_ = true;
+                    start_rrt_state_ = state_ptr;
+                    goal_rrt_state_ = connected_state;
+                    // constructPlan(state_ptr, connected_state);   
                 }
                 lock_.unlock();                    
                 return;
@@ -162,9 +214,11 @@ void RrtConnectPlanner::rrtThread(int thread_id)
                 if (!terminate_)
                 {
                     if (VERBOSE) cout << "Connect succeeded from goal_graph to start_graph" << endl;
-                    constructPlan(connected_state, state_ptr);   
                     terminate_ = true;
                     plan_found_ = true;
+                    start_rrt_state_ = connected_state;
+                    goal_rrt_state_ = state_ptr;
+                    // constructPlan(connected_state, state_ptr);   
                 }
                 lock_.unlock();                    
                 return;
@@ -177,9 +231,8 @@ void RrtConnectPlanner::rrtThread(int thread_id)
     terminate_ = true;
 }
 
-void RrtConnectPlanner::exit()
+void RrtConnectPlanner::exitThreads()
 {
-
     bool all_rrt_threads_terminated = false;
     while (!all_rrt_threads_terminated)
     {
@@ -194,8 +247,10 @@ void RrtConnectPlanner::exit()
         }
     }
     rrt_futures_.clear();
+}
 
-
+void RrtConnectPlanner::exit()
+{
     cout << "Exiting!" << endl;
     for (auto& state_it : state_map_goal_)
     {        

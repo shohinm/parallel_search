@@ -5,15 +5,15 @@
 using namespace std;
 using namespace ps;
 
-void PrintStateVars(const StateVarsType& state_vars, const string& prefix="")
-{
-    if (prefix.size())
-        cout << prefix << " ";
+// void PrintStateVars(const StateVarsType& state_vars, const string& prefix="")
+// {
+//     if (prefix.size())
+//         cout << prefix << " ";
 
-    for (auto& s : state_vars)
-        cout << s << " ";
-    cout << endl;
-}
+//     for (auto& s : state_vars)
+//         cout << s << " ";
+//     cout << endl;
+// }
 
 RrtPlanner::RrtPlanner(ParamsType planner_params):
 Planner(planner_params)
@@ -59,10 +59,13 @@ bool RrtPlanner::Plan()
     // Spin till termination, should be replaced by conditional variable
     while(!terminate_){}
 
+    exitThreads();
+    constructPlan(goal_state_ptr_);   
+    exit();
     auto t_end = chrono::steady_clock::now();
     double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
     planner_stats_.total_time_ = 1e-9*t_elapsed;
-    exit();
+
 
     return plan_found_;
 }
@@ -167,7 +170,7 @@ void RrtPlanner::rrtThread(int thread_id)
             if (!terminate_)
             {
                 if (VERBOSE) state_ptr->Print("Goal reached | State: ");
-                constructPlan(state_ptr);   
+                goal_state_ptr_ = state_ptr;
                 terminate_ = true;
                 plan_found_ = true;                
             }
@@ -346,7 +349,7 @@ StatePtrType RrtPlanner::extend(const StatePtrType& nearest_neighbor, const Stat
     return constructState(final_valid_state_vars, state_map); 
 }
 
-void RrtPlanner::exit()
+void RrtPlanner::exitThreads()
 {
     bool all_rrt_threads_terminated = false;
     while (!all_rrt_threads_terminated)
@@ -362,6 +365,9 @@ void RrtPlanner::exit()
         }
     }
     rrt_futures_.clear();
-    
+}
+
+void RrtPlanner::exit()
+{
     Planner::exit();
 }
