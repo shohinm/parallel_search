@@ -197,7 +197,13 @@ void postProcess(std::vector<PlanElement>& path, double& cost, double allowed_ti
 {
     cout << "Post processing with timeout: " << allowed_time << endl;
     std::shared_ptr<InsatAction> ins_act = std::dynamic_pointer_cast<InsatAction>(act);
-//    opt.postProcess(path, cost, allowed_time, ins_act.get());
+    opt.postProcess(path, cost, allowed_time, ins_act.get());
+}
+
+void postProcessWithControlPoints(std::vector<PlanElement>& path, double& cost, double allowed_time, const shared_ptr<Action>& act, BSplineOpt& opt)
+{
+    cout << "Post processing with timeout: " << allowed_time << endl;
+    std::shared_ptr<InsatAction> ins_act = std::dynamic_pointer_cast<InsatAction>(act);
     opt.postProcessWithControlPoints(path, cost, allowed_time, ins_act.get());
 }
 
@@ -241,7 +247,14 @@ void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vec
 //    planner_ptr->SetHeuristicGenerator(bind(computeShieldHeuristic, placeholders::_1));
     planner_ptr->SetStateToStateHeuristicGenerator(bind(computeHeuristicStateToState, placeholders::_1, placeholders::_2));
     planner_ptr->SetGoalChecker(bind(isGoalState, placeholders::_1, TERMINATION_DIST));
-    planner_ptr->SetPostProcessor(bind(postProcess, placeholders::_1, placeholders::_2, placeholders::_3, action_ptrs[0], opt));
+    if ((planner_name == "insat") || (planner_name == "pinsat"))
+    {
+        planner_ptr->SetPostProcessor(bind(postProcess, placeholders::_1, placeholders::_2, placeholders::_3, action_ptrs[0], opt));
+    }
+    else
+    {
+        planner_ptr->SetPostProcessor(bind(postProcessWithControlPoints, placeholders::_1, placeholders::_2, placeholders::_3, action_ptrs[0], opt));        
+    }
 }
 
 std::random_device rd;
@@ -513,7 +526,7 @@ int main(int argc, char* argv[])
     // create opt
     auto opt = BSplineOpt(insat_params, robot_params, spline_params, planner_params);
     opt.SetGoalChecker(bind(isGoalState, placeholders::_1, TERMINATION_DIST));
-    auto opt_vec_ptr = std::make_shared<ManipulationAction::OptVecType>(std::vector<BSplineOpt>(num_threads, opt));
+    auto opt_vec_ptr = std::make_shared<ManipulationAction::OptVecType>(num_threads, opt);
 
     // Construct actions
     ParamsType action_params;
