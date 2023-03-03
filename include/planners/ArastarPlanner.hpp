@@ -23,9 +23,6 @@ class ArastarPlanner : public WastarPlanner
 
         std::vector<StatePtrType> state_incon_list_;
         double delta_w_;
-
-        // Experiment
-        std::vector<double> data_list_;
 };
 
 }

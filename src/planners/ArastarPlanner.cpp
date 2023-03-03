@@ -22,6 +22,9 @@ bool ArastarPlanner::Plan()
 {
     initialize();
 
+    // Experiment
+    std::vector<double> data_list;
+
     startTimer();
     double heuristic_w = heuristic_w_;
     while (heuristic_w_>=1 && !checkTimeout())
@@ -35,9 +38,9 @@ bool ArastarPlanner::Plan()
         {
             auto t_end = chrono::steady_clock::now();
             double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start_).count();
-            data_list_.push_back(heuristic_w_);
-            data_list_.push_back(1e-9*t_elapsed);
-            data_list_.push_back(goal_state_ptr_->GetFValue());
+            data_list.push_back(heuristic_w_);
+            data_list.push_back(1e-9*t_elapsed);
+            data_list.push_back(goal_state_ptr_->GetFValue());
         }
         // Early termination if there's no solution
         if (goal_state_ptr_ == NULL)
@@ -70,7 +73,7 @@ bool ArastarPlanner::Plan()
     {
         string filename = "experiment_1_arastar_" + to_string(heuristic_w) + "_" + to_string(delta_w_)+ ".txt";
         std::ofstream newFile(filename, std::ios::app);
-        for (auto data : data_list_)
+        for (auto data : data_list)
         {
             newFile << data << ",";
         }
@@ -94,7 +97,6 @@ void ArastarPlanner::initialize()
 {
     WastarPlanner::initialize();
     state_incon_list_.clear();
-    data_list_.clear();
     delta_w_ = 0.5;
 }
 

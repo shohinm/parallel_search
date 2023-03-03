@@ -25,6 +25,9 @@ bool AgepasePlanner::Plan()
 {
     initialize();
 
+    // Experiment
+    std::vector<double> data_list;
+
     startTimer();
     double heuristic_w = heuristic_w_;
     while ((heuristic_w_>1 || fabs(heuristic_w_ - 1)<0.001f) && !checkTimeout())
@@ -55,9 +58,9 @@ bool AgepasePlanner::Plan()
         {
             auto t_end = chrono::steady_clock::now();
             double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start_).count();
-            data_list_.push_back(heuristic_w_);
-            data_list_.push_back(1e-9*t_elapsed);
-            data_list_.push_back(best_cost_);
+            data_list.push_back(heuristic_w_);
+            data_list.push_back(1e-9*t_elapsed);
+            data_list.push_back(best_cost_);
         }
         // cout << "Min edge open: " << edge_open_list_.min()->expansion_priority_ << endl;
         // cout << "Min state BE: " << being_expanded_states_.min()->GetFValue() << endl;
@@ -215,7 +218,7 @@ bool AgepasePlanner::Plan()
     {
         string filename = "experiment_" + to_string(num_threads_) + "_aepase_" + to_string(heuristic_w) + "_" + to_string(delta_w_) + "_" + to_string(NAIVE) + "_" + to_string(ADAPTIVE) + ".txt";
         std::ofstream newFile(filename, std::ios::app);
-        for (auto data : data_list_)
+        for (auto data : data_list)
         {
             newFile << data << ",";
         }
@@ -241,7 +244,6 @@ void AgepasePlanner::initialize()
 {
     GepasePlanner::initialize();
     edge_incon_list_.clear();
-    data_list_.clear();
     delta_w_ = 0.5;
     // delta_w_ = 1;
     best_cost_ = numeric_limits<double>::max();

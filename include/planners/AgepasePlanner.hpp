@@ -31,8 +31,6 @@ class AgepasePlanner : public GepasePlanner
         double best_cost_;
         std::vector<PlanElement> best_plan_;
 
-        // Experiment
-        std::vector<double> data_list_;
 };
 
 }

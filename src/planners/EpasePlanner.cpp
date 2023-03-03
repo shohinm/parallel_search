@@ -1,6 +1,9 @@
 #include <iostream>
 #include <algorithm>
 #include <planners/EpasePlanner.hpp>
+#include <fstream>
+
+#define EXPERIMENT 1
 
 using namespace std;
 using namespace ps;
@@ -22,6 +25,9 @@ bool EpasePlanner::Plan()
     initialize();    
     
     vector<EdgePtrType> popped_edges;
+
+    // Experiment
+    std::vector<double> data_list;
 
     lock_.lock();
     startTimer();
@@ -122,6 +128,22 @@ bool EpasePlanner::Plan()
                 
                 // Construct path
                 goal_state_ptr_ = curr_edge_ptr->parent_state_ptr_;
+
+                if (EXPERIMENT)
+                {
+                    auto t_end = chrono::steady_clock::now();
+                    double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start_).count();
+                    data_list.push_back(1e-9*t_elapsed);
+                    data_list.push_back(goal_state_ptr_->GetGValue());
+                    string filename = "experiment_" + to_string(num_threads_) + "_epase_" + to_string(heuristic_w_) + ".txt";
+                    std::ofstream newFile(filename, std::ios::app);
+                    for (auto data : data_list)
+                    {
+                        newFile << data << ",";
+                    }
+                    newFile << endl;
+                }
+
                 constructPlan(goal_state_ptr_);   
                 terminate_ = true;
                 recheck_flag_ = true;
