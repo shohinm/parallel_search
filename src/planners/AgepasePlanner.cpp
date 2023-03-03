@@ -91,8 +91,8 @@ bool AgepasePlanner::Plan()
             for(auto it_edge = edge_open_list_.begin(); it_edge != edge_open_list_.end(); it_edge++)
             {
                 auto edge = *it_edge;
-                // if (edge->parent_state_ptr_->GetHValue() != 0 && edge->parent_state_ptr_->GetGValue() < best_cost_)
-                // {
+                if (edge->parent_state_ptr_->GetHValue() != 0 && edge->parent_state_ptr_->GetGValue() < best_cost_)
+                {
                     double e_value = (best_cost_ - edge->parent_state_ptr_->GetGValue())/edge->parent_state_ptr_->GetHValue();
                     if (e_value > max_e_value)
                     {
@@ -101,7 +101,7 @@ bool AgepasePlanner::Plan()
                         // debug
                         // edge_key = getEdgeKey(edge);
                     }
-                // }
+                }
             }
 
             // edge with max e-value
@@ -214,11 +214,12 @@ bool AgepasePlanner::Plan()
     if (EXPERIMENT)
     {
         string filename = "experiment_" + to_string(num_threads_) + "_aepase_" + to_string(heuristic_w) + "_" + to_string(delta_w_) + "_" + to_string(NAIVE) + "_" + to_string(ADAPTIVE) + ".txt";
-        std::ofstream newFile(filename);
+        std::ofstream newFile(filename, std::ios::app);
         for (auto data : data_list_)
         {
-            newFile << data << endl;
+            newFile << data << ",";
         }
+        newFile << endl;
     }
 
     terminate_ = true;
@@ -240,6 +241,7 @@ void AgepasePlanner::initialize()
 {
     GepasePlanner::initialize();
     edge_incon_list_.clear();
+    data_list_.clear();
     delta_w_ = 0.5;
     // delta_w_ = 1;
     best_cost_ = numeric_limits<double>::max();
@@ -552,8 +554,8 @@ void AgepasePlanner::expand(EdgePtrType edge_ptr, int thread_id)
 
 void AgepasePlanner::expandEdge(EdgePtrType edge_ptr, int thread_id)
 {
-    // if (!edge_ptr->is_eval_)
-    // {
+    if (!edge_ptr->is_eval_)
+    {
         auto action_ptr = edge_ptr->action_ptr_;
 
         lock_.unlock();
@@ -643,70 +645,70 @@ void AgepasePlanner::expandEdge(EdgePtrType edge_ptr, int thread_id)
         {
             if (VERBOSE) edge_ptr->Print("No successors for");
         }
-    // }
-    // else
-    // {
-    //     double new_g_val = edge_ptr->parent_state_ptr_->GetGValue() + edge_ptr->GetCost();
-    //     auto successor_state_ptr = edge_ptr->child_state_ptr_;
+    }
+    else
+    {
+        double new_g_val = edge_ptr->parent_state_ptr_->GetGValue() + edge_ptr->GetCost();
+        auto successor_state_ptr = edge_ptr->child_state_ptr_;
 
-    //     if (successor_state_ptr->GetGValue() > new_g_val)
-    //     {
-    //         double h_val = successor_state_ptr->GetHValue();
+        if (successor_state_ptr->GetGValue() > new_g_val)
+        {
+            double h_val = successor_state_ptr->GetHValue();
             
-    //         if (h_val == -1)
-    //         {
-    //             h_val = computeHeuristic(successor_state_ptr);
-    //             successor_state_ptr->SetHValue(h_val);        
-    //         }
+            if (h_val == -1)
+            {
+                h_val = computeHeuristic(successor_state_ptr);
+                successor_state_ptr->SetHValue(h_val);        
+            }
 
-    //         if (h_val != DINF)
-    //         {
-    //             h_val_min_ = h_val < h_val_min_ ? h_val : h_val_min_;
-    //             successor_state_ptr->SetGValue(new_g_val);
-    //             successor_state_ptr->SetFValue(new_g_val + heuristic_w_*h_val);
-    //             successor_state_ptr->SetIncomingEdgePtr(edge_ptr);
+            if (h_val != DINF)
+            {
+                h_val_min_ = h_val < h_val_min_ ? h_val : h_val_min_;
+                successor_state_ptr->SetGValue(new_g_val);
+                successor_state_ptr->SetFValue(new_g_val + heuristic_w_*h_val);
+                successor_state_ptr->SetIncomingEdgePtr(edge_ptr);
                 
-    //             // Insert poxy edge
-    //             auto edge_temp = Edge(successor_state_ptr, dummy_action_ptr_);
-    //             auto edge_key = getEdgeKey(&edge_temp);
-    //             auto it_edge = edge_map_.find(edge_key); 
-    //             EdgePtrType proxy_edge_ptr;
+                // Insert poxy edge
+                auto edge_temp = Edge(successor_state_ptr, dummy_action_ptr_);
+                auto edge_key = getEdgeKey(&edge_temp);
+                auto it_edge = edge_map_.find(edge_key); 
+                EdgePtrType proxy_edge_ptr;
 
-    //             if (it_edge == edge_map_.end())
-    //             {
-    //                 proxy_edge_ptr = new Edge(successor_state_ptr, dummy_action_ptr_);
-    //                 edge_map_.insert(make_pair(edge_key, proxy_edge_ptr));
-    //             }
-    //             else
-    //             {
-    //                 proxy_edge_ptr = it_edge->second;
-    //             }
+                if (it_edge == edge_map_.end())
+                {
+                    proxy_edge_ptr = new Edge(successor_state_ptr, dummy_action_ptr_);
+                    edge_map_.insert(make_pair(edge_key, proxy_edge_ptr));
+                }
+                else
+                {
+                    proxy_edge_ptr = it_edge->second;
+                }
 
-    //             proxy_edge_ptr->expansion_priority_ = new_g_val + heuristic_w_*h_val;
+                proxy_edge_ptr->expansion_priority_ = new_g_val + heuristic_w_*h_val;
                 
-    //             if (!successor_state_ptr->IsVisited())
-    //             {
-    //                 if (edge_open_list_.contains(proxy_edge_ptr))
-    //                 {
-    //                     edge_open_list_.decrease(proxy_edge_ptr);
-    //                 }
-    //                 else
-    //                 {
-    //                     edge_open_list_.push(proxy_edge_ptr);
-    //                 }
-    //             }
-    //             else
-    //             {
-    //                 if (find(edge_incon_list_.begin(), edge_incon_list_.end(), proxy_edge_ptr) == edge_incon_list_.end())
-    //                 {
-    //                     edge_incon_list_.emplace_back(proxy_edge_ptr);
-    //                 }
-    //             }
+                if (!successor_state_ptr->IsVisited())
+                {
+                    if (edge_open_list_.contains(proxy_edge_ptr))
+                    {
+                        edge_open_list_.decrease(proxy_edge_ptr);
+                    }
+                    else
+                    {
+                        edge_open_list_.push(proxy_edge_ptr);
+                    }
+                }
+                else
+                {
+                    if (find(edge_incon_list_.begin(), edge_incon_list_.end(), proxy_edge_ptr) == edge_incon_list_.end())
+                    {
+                        edge_incon_list_.emplace_back(proxy_edge_ptr);
+                    }
+                }
 
-    //             notifyMainThread();
-    //         }       
-        // }
-    // }
+                notifyMainThread();
+            }       
+        }
+    }
 
     edge_ptr->parent_state_ptr_->num_expanded_successors_ += 1;
 

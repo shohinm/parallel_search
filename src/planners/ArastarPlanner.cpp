@@ -68,12 +68,13 @@ bool ArastarPlanner::Plan()
 
     if (EXPERIMENT)
     {
-        string filename = "experiment_0_arastar_" + to_string(heuristic_w) + "_" + to_string(delta_w_)+ ".txt";
-        std::ofstream newFile(filename);
+        string filename = "experiment_1_arastar_" + to_string(heuristic_w) + "_" + to_string(delta_w_)+ ".txt";
+        std::ofstream newFile(filename, std::ios::app);
         for (auto data : data_list_)
         {
-            newFile << data << endl;
+            newFile << data << ",";
         }
+        newFile << endl;
     }
 
     // Reset heuristic weight & time budget
@@ -93,6 +94,7 @@ void ArastarPlanner::initialize()
 {
     WastarPlanner::initialize();
     state_incon_list_.clear();
+    data_list_.clear();
     delta_w_ = 0.5;
 }
 

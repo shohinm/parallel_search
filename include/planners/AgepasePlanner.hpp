@@ -1,8 +1,8 @@
 #ifndef AGEPASE_PLANNER_HPP
 #define AGEPASE_PLANNER_HPP
 
-#define NAIVE 1
-#define ADAPTIVE 1
+#define NAIVE 0
+#define ADAPTIVE 0
 
 #include <future>
 #include <condition_variable>
