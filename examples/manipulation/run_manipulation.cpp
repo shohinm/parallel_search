@@ -43,6 +43,7 @@
 #include <planners/RrtPlanner.hpp>
 #include <planners/RrtConnectPlanner.hpp>
 #include <planners/EpasePlanner.hpp>
+#include <planners/GepasePlanner.hpp>
 #include <planners/WastarPlanner.hpp>
 #include "ManipulationActions.hpp"
 #include <mujoco/mujoco.h>
@@ -197,7 +198,13 @@ void postProcess(std::vector<PlanElement>& path, double& cost, double allowed_ti
 {
     cout << "Post processing with timeout: " << allowed_time << endl;
     std::shared_ptr<InsatAction> ins_act = std::dynamic_pointer_cast<InsatAction>(act);
-//    opt.postProcess(path, cost, allowed_time, ins_act.get());
+    opt.postProcess(path, cost, allowed_time, ins_act.get());
+}
+
+void postProcessWithControlPoints(std::vector<PlanElement>& path, double& cost, double allowed_time, const shared_ptr<Action>& act, BSplineOpt& opt)
+{
+    cout << "Post processing with timeout: " << allowed_time << endl;
+    std::shared_ptr<InsatAction> ins_act = std::dynamic_pointer_cast<InsatAction>(act);
     opt.postProcessWithControlPoints(path, cost, allowed_time, ins_act.get());
 }
 
@@ -211,15 +218,25 @@ void constructActions(vector<shared_ptr<Action>>& action_ptrs,
 {
     for (int i=0; i<=2*dof; ++i)
     {
-        auto one_joint_action = std::make_shared<OneJointAtATime>(std::to_string(i), action_params, mj_modelpath, ang_discretization, opt, m_vec, d_vec, num_threads);
-        action_ptrs.emplace_back(one_joint_action);
+        if (i == 2*dof)
+        {
+            auto one_joint_action = std::make_shared<OneJointAtATime>(std::to_string(i), action_params, mj_modelpath, ang_discretization, opt, m_vec, d_vec, num_threads, 1);
+            action_ptrs.emplace_back(one_joint_action);
+        }
+        else
+        {
+            auto one_joint_action = std::make_shared<OneJointAtATime>(std::to_string(i), action_params, mj_modelpath, ang_discretization, opt, m_vec, d_vec, num_threads, 0);
+            action_ptrs.emplace_back(one_joint_action);
+        }
     }
 }
 
 void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vector<shared_ptr<Action>>& action_ptrs, ParamsType& planner_params, ParamsType& action_params, BSplineOpt& opt)
 {
     if (planner_name == "epase")
-	planner_ptr = std::make_shared<EpasePlanner>(planner_params);	
+       planner_ptr = std::make_shared<EpasePlanner>(planner_params);    
+    else if (planner_name == "gepase")
+       planner_ptr = std::make_shared<GepasePlanner>(planner_params);    
     else if (planner_name == "insat")
         planner_ptr = std::make_shared<InsatPlanner>(planner_params);
     else if (planner_name == "pinsat")
@@ -241,7 +258,14 @@ void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vec
 //    planner_ptr->SetHeuristicGenerator(bind(computeShieldHeuristic, placeholders::_1));
     planner_ptr->SetStateToStateHeuristicGenerator(bind(computeHeuristicStateToState, placeholders::_1, placeholders::_2));
     planner_ptr->SetGoalChecker(bind(isGoalState, placeholders::_1, TERMINATION_DIST));
-    planner_ptr->SetPostProcessor(bind(postProcess, placeholders::_1, placeholders::_2, placeholders::_3, action_ptrs[0], opt));
+    if ((planner_name == "insat") || (planner_name == "pinsat") || (planner_name == "epase") || (planner_name == "gepase"))
+    {
+        planner_ptr->SetPostProcessor(bind(postProcess, placeholders::_1, placeholders::_2, placeholders::_3, action_ptrs[0], opt));
+    }
+    else
+    {
+        planner_ptr->SetPostProcessor(bind(postProcessWithControlPoints, placeholders::_1, placeholders::_2, placeholders::_3, action_ptrs[0], opt));        
+    }
 }
 
 std::random_device rd;
@@ -389,7 +413,7 @@ int main(int argc, char* argv[])
       if (argc != 2) throw runtime_error("Format: run_robot_nav_2d insat");
       num_threads = 1;
     }
-    else if (!strcmp(argv[1], "pinsat") || !strcmp(argv[1], "rrt") || !strcmp(argv[1], "rrtconnect") || !strcmp(argv[1], "epase"))
+    else if (!strcmp(argv[1], "pinsat") || !strcmp(argv[1], "rrt") || !strcmp(argv[1], "rrtconnect") || !strcmp(argv[1], "epase") || !strcmp(argv[1], "gepase"))
     {
       if (argc != 3) throw runtime_error("Format: run_robot_nav_2d pinsat [num_threads]");
       num_threads = atoi(argv[2]);
@@ -436,7 +460,7 @@ int main(int argc, char* argv[])
     ParamsType planner_params;
     planner_params["num_threads"] = num_threads;
     planner_params["heuristic_weight"] = 10;
-    planner_params["timeout"] = 15;
+    planner_params["timeout"] = 10;
     planner_params["adaptive_opt"] = 0;
     planner_params["smart_opt"] = 1;
     planner_params["min_exec_duration"] = 0.2;
@@ -513,7 +537,7 @@ int main(int argc, char* argv[])
     // create opt
     auto opt = BSplineOpt(insat_params, robot_params, spline_params, planner_params);
     opt.SetGoalChecker(bind(isGoalState, placeholders::_1, TERMINATION_DIST));
-    auto opt_vec_ptr = std::make_shared<ManipulationAction::OptVecType>(std::vector<BSplineOpt>(num_threads, opt));
+    auto opt_vec_ptr = std::make_shared<ManipulationAction::OptVecType>(num_threads, opt);
 
     // Construct actions
     ParamsType action_params;
@@ -595,6 +619,31 @@ int main(int argc, char* argv[])
 
         bool plan_found = planner_ptr->Plan();
         auto planner_stats = planner_ptr->GetStats();
+    
+        cout << " | Time (s): " << planner_stats.total_time_
+             << " | Cost: " << planner_stats.path_cost_
+             << " | Length: " << planner_stats.path_length_
+             << " | State expansions: " << planner_stats.num_state_expansions_
+             << " | State expansions rate: " << planner_stats.num_state_expansions_/planner_stats.total_time_
+             << " | Lock time: " <<  planner_stats.lock_time_
+             << " | Expand time: " << planner_stats.cumulative_expansions_time_
+             << " | Threads: " << planner_stats.num_threads_spawned_ << "/" << planner_params["num_threads"] << endl;
+
+        for (auto& [action, times] : planner_stats.action_eval_times_)
+        {
+            auto total_time = accumulate(times.begin(), times.end(), 0.0);
+            cout << action << " mean time: " << total_time/times.size()  
+            << " | total: " << total_time 
+            << " | num: " << times.size()
+            << endl;
+        }
+        // cout << endl << "------------- Jobs per thread -------------" << endl;
+        // for (int tidx = 0; tidx < planner_params["num_threads"]; ++tidx)
+        // {
+        //     cout << "thread: " << tidx << " jobs: " << planner_stats.num_jobs_per_thread_[tidx] << endl;
+        // }
+        // cout << "************************" << endl;
+        // getchar();
 
         if (plan_found)
         {
@@ -613,14 +662,6 @@ int main(int argc, char* argv[])
             }
 
             threads_used_vec.emplace_back(planner_stats.num_threads_spawned_);
-            cout << " | Time (s): " << planner_stats.total_time_
-                 << " | Cost: " << planner_stats.path_cost_
-                 << " | Length: " << planner_stats.path_length_
-                 << " | State expansions: " << planner_stats.num_state_expansions_
-                 << " | Lock time: " <<  planner_stats.lock_time_
-                 << " | Expand time: " << planner_stats.cumulative_expansions_time_
-                 << " | Threads: " << planner_stats.num_threads_spawned_ << "/" << planner_params["num_threads"] << endl;
-
             for (int tidx = 0; tidx < planner_params["num_threads"]; ++tidx)
                 jobs_per_thread[tidx] += planner_stats.num_jobs_per_thread_[tidx];
 
