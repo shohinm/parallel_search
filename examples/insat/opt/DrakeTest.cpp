@@ -359,37 +359,6 @@ namespace ps_drake
 #include <iostream>
 #include <fstream>
 
-//https://eigen.tuxfamily.org/dox/structEigen_1_1IOFormat.html
-const static Eigen::IOFormat CSVFormat(Eigen::FullPrecision, Eigen::DontAlignCols, ", ", "\n");
-void writeToCSVfile(std::string& fname, const MatDf& matrix)
-{
-    std::ofstream file(fname);
-    if (file.is_open())
-    {
-        file << matrix.format(CSVFormat);
-        file.close();
-    }
-}
-
-template<typename M>
-M load_csv (const std::string & path, char delim=' ') {
-    using namespace Eigen;
-    std::ifstream indata;
-    indata.open(path);
-    std::string line;
-    std::vector<double> values;
-    uint rows = 0;
-    while (std::getline(indata, line)) {
-        std::stringstream lineStream(line);
-        std::string cell;
-        while (std::getline(lineStream, cell, delim)) {
-            values.push_back(std::stod(cell));
-        }
-        ++rows;
-    }
-    return Map<const Matrix<typename M::Scalar, M::RowsAtCompileTime, M::ColsAtCompileTime, RowMajor>>(values.data(), rows, values.size()/rows);
-}
-
 std::random_device rd;
 //std::mt19937 gen(rd());  //here you could set the seed, but std::random_device already does that
 std::mt19937 gen(0);  //here you could set the seed, but std::random_device already does that
@@ -451,8 +420,8 @@ MatDf sampleTrajectory(const drake::trajectories::BsplineTrajectory<double>& tra
 
 void loadStartsAndGoalsFromFile(const std::string& start_path, const std::string& goal_path, MatDf& start_mat, MatDf& goal_mat)
 {
-    start_mat = load_csv<MatDf>(start_path);
-    goal_mat = load_csv<MatDf>(goal_path);
+    start_mat = loadEigenFromFile<MatDf>(start_path);
+    goal_mat = loadEigenFromFile<MatDf>(goal_path);
 }
 
 void runBVPTest(std::vector<double>& time_log, bool save=false, int test_size=1)
@@ -580,11 +549,11 @@ void runBVPTest(std::vector<double>& time_log, bool save=false, int test_size=1)
         std::string goals_path ="../logs/test_abb_goals.txt";
 
         all_traj.transposeInPlace();
-        writeToCSVfile(traj_path, all_traj);
+        writeEigenToFile(traj_path, all_traj);
         trace_log.transposeInPlace();
-        writeToCSVfile(traj_trace_path, trace_log);
-        writeToCSVfile(starts_path, starts);
-        writeToCSVfile(goals_path, goals);
+        writeEigenToFile(traj_trace_path, trace_log);
+        writeEigenToFile(starts_path, starts);
+        writeEigenToFile(goals_path, goals);
 
 //        std::cout << "starts:\n" << starts << std::endl;
 //        std::cout << "goals:\n" << goals << std::endl;
