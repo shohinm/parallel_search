@@ -7,6 +7,7 @@
  */
 
 #include <stdio.h>
+#include <fstream>
 
 #include <Eigen/Geometry>
 #include <Eigen/StdVector>
@@ -129,5 +130,36 @@ typedef Matf<Eigen::Dynamic, Eigen::Dynamic> MatDf;
 typedef Eigen::Transform<decimal_t, 2, Eigen::Affine> Aff2f;
 /// Allias of Eigen::Affine3d
 typedef Eigen::Transform<decimal_t, 3, Eigen::Affine> Aff3f;
+
+template<typename M>
+static M loadEigenFromFile (const std::string & path, char delim= ' ') {
+    using namespace Eigen;
+    std::ifstream indata;
+    indata.open(path);
+    std::string line;
+    std::vector<double> values;
+    uint rows = 0;
+    while (std::getline(indata, line)) {
+        std::stringstream lineStream(line);
+        std::string cell;
+        while (std::getline(lineStream, cell, delim)) {
+            values.push_back(std::stod(cell));
+        }
+        ++rows;
+    }
+    return Map<const Matrix<typename M::Scalar, M::RowsAtCompileTime, M::ColsAtCompileTime, RowMajor>>(values.data(), rows, values.size()/rows);
+}
+
+//https://eigen.tuxfamily.org/dox/structEigen_1_1IOFormat.html
+const static Eigen::IOFormat CSVFormat(Eigen::FullPrecision, Eigen::DontAlignCols, ", ", "\n");
+static void writeEigenToFile(std::string& fname, const MatDf& matrix)
+{
+    std::ofstream file(fname);
+    if (file.is_open())
+    {
+        file << matrix.format(CSVFormat);
+        file.close();
+    }
+}
 
 #endif
