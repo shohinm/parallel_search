@@ -1,6 +1,8 @@
 #ifndef ARASTAR_PLANNER_HPP
 #define ARASTAR_PLANNER_HPP
 
+#define ADAPTIVE 0
+
 #include <future>
 #include <planners/WastarPlanner.hpp>  
 
