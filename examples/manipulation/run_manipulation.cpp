@@ -210,22 +210,26 @@ void postProcessWithControlPoints(std::vector<PlanElement>& path, double& cost, 
 
 void constructActions(vector<shared_ptr<Action>>& action_ptrs,
                       ParamsType& action_params, std::string& mj_modelpath,
-                      VecDf& ang_discretization,
+                      std::string mprim_file,
                       ManipulationAction::OptVecPtrType& opt,
                       ManipulationAction::MjModelVecType m_vec,
                       ManipulationAction::MjDataVecType d_vec,
                       int num_threads)
 {
-    for (int i=0; i<=2*dof; ++i)
+    for (int i=0; i<=action_params["length"]; ++i)
     {
-        if (i == 2*dof)
+        if (i == action_params["length"])
         {
-            auto one_joint_action = std::make_shared<OneJointAtATime>(std::to_string(i), action_params, mj_modelpath, ang_discretization, opt, m_vec, d_vec, num_threads, 1);
+            auto one_joint_action = std::make_shared<OneJointAtATime>(std::to_string(i), action_params,
+                                                                      mj_modelpath, DISCRETIZATION, mprim_file,
+                                                                      opt, m_vec, d_vec, num_threads, 1);
             action_ptrs.emplace_back(one_joint_action);
         }
         else
         {
-            auto one_joint_action = std::make_shared<OneJointAtATime>(std::to_string(i), action_params, mj_modelpath, ang_discretization, opt, m_vec, d_vec, num_threads, 0);
+            auto one_joint_action = std::make_shared<OneJointAtATime>(std::to_string(i), action_params,
+                                                                      mj_modelpath, DISCRETIZATION, mprim_file,
+                                                                      opt, m_vec, d_vec, num_threads, 0);
             action_ptrs.emplace_back(one_joint_action);
         }
     }
@@ -284,37 +288,6 @@ VecDf genRandomVector(VecDf& low, VecDf& high, int size)
     return randvec;
 }
 
-template<typename M>
-M load_csv (const std::string & path, char delim=' ') {
-    using namespace Eigen;
-    std::ifstream indata;
-    indata.open(path);
-    std::string line;
-    std::vector<double> values;
-    uint rows = 0;
-    while (std::getline(indata, line)) {
-        std::stringstream lineStream(line);
-        std::string cell;
-        while (std::getline(lineStream, cell, delim)) {
-            values.push_back(std::stod(cell));
-        }
-        ++rows;
-    }
-    return Map<const Matrix<typename M::Scalar, M::RowsAtCompileTime, M::ColsAtCompileTime, RowMajor>>(values.data(), rows, values.size()/rows);
-}
-
-//https://eigen.tuxfamily.org/dox/structEigen_1_1IOFormat.html
-const static Eigen::IOFormat CSVFormat(Eigen::FullPrecision, Eigen::DontAlignCols, ", ", "\n");
-void writeToCSVfile(std::string& fname, const MatDf& matrix)
-{
-    std::ofstream file(fname);
-    if (file.is_open())
-    {
-        file << matrix.format(CSVFormat);
-        file.close();
-    }
-}
-
 void generateStartsAndGoals(vector<vector<double>>& starts, vector<vector<double>>& goals, int num_runs, mjModel* m, mjData* d)
 {
     bool valid = true;
@@ -350,8 +323,8 @@ void loadStartsAndGoalsFromFile(vector<vector<double>>& starts,
                                 vector<vector<double>>& goals,
                                 const string& start_path, const string& goal_path)
 {
-    MatDf start_mat = load_csv<MatDf>(start_path);
-    MatDf goal_mat = load_csv<MatDf>(goal_path);
+    MatDf start_mat = loadEigenFromFile<MatDf>(start_path);
+    MatDf goal_mat = loadEigenFromFile<MatDf>(goal_path);
 
     for (int i=0; i<start_mat.rows(); ++i)
     {
@@ -542,8 +515,13 @@ int main(int argc, char* argv[])
     // Construct actions
     ParamsType action_params;
     action_params["planner_name"] = planner_name=="insat" || planner_name=="pinsat"? 1: -1;
+    action_params["length"] = 12;
+    std::string mprim_file = "../examples/manipulation/resources/shield/irb1600_6_12.mprim";
     vector<shared_ptr<Action>> action_ptrs;
-    constructActions(action_ptrs, action_params, modelpath, discretization, opt_vec_ptr, m_vec, d_vec, num_threads);
+    constructActions(action_ptrs, action_params,
+                     modelpath,
+                     mprim_file,
+                     opt_vec_ptr, m_vec, d_vec, num_threads);
 
     std::vector<std::shared_ptr<ManipulationAction>> manip_action_ptrs;
     for (auto& a : action_ptrs)
@@ -739,7 +717,7 @@ int main(int argc, char* argv[])
     if ((planner_name == "insat") || (planner_name == "pinsat"))
     {
         traj_log.transposeInPlace();
-        writeToCSVfile(traj_path, traj_log);
+        writeEigenToFile(traj_path, traj_log);
     }
     else
     {
@@ -767,8 +745,8 @@ int main(int argc, char* argv[])
 
     }
 
-    writeToCSVfile(starts_path, start_log);
-    writeToCSVfile(goals_path, goal_log);
+    writeEigenToFile(starts_path, start_log);
+    writeEigenToFile(goals_path, goal_log);
 
 
     cout << endl << "************ Global Stats ************" << endl;

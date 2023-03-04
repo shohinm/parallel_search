@@ -40,12 +40,12 @@ namespace ps
   ManipulationAction::ManipulationAction(const std::string& type,
                                          ParamsType params,
                                          std::string& mj_modelpath,
-                                         VecDf ang_discretization,
+                                         double discretization,
                                          OptVecPtrType& opt,
                                          MjModelVecType& m_vec, MjDataVecType& d_vec,
                                          int num_threads,
                                          bool is_expensive) : InsatAction(type, params, is_expensive),
-                                                          discretization_(ang_discretization),
+                                                          discretization_(discretization),
                                                           opt_(opt), m_(m_vec), d_(d_vec)
   {
 
@@ -64,11 +64,11 @@ namespace ps
 
     for (int i=0; i<m_[0]->nq; ++i)
     {
-        disc_min_ang(i) = discretization_(i)*
-                static_cast<int>(robot_params_.min_q_(i)/discretization_(i));
-        disc_max_ang(i) = discretization_(i)*
-                          static_cast<int>(robot_params_.max_q_(i)/discretization_(i));
-        num_angles(i) = 1+(static_cast<int>((disc_max_ang(i)-disc_min_ang(i))/discretization_(i)));
+        disc_min_ang(i) = discretization_*
+                static_cast<int>(robot_params_.min_q_(i)/discretization_);
+        disc_max_ang(i) = discretization_*
+                          static_cast<int>(robot_params_.max_q_(i)/discretization_);
+        num_angles(i) = 1+(static_cast<int>((disc_max_ang(i)-disc_min_ang(i))/discretization_));
         discrete_angles_[i] = VecDf::LinSpaced(num_angles(i), disc_min_ang(i), disc_max_ang(i));
     }
 
@@ -130,12 +130,12 @@ namespace ps
   VecDf ManipulationAction::GetSuccessor(const VecDf &state, int thread_id)
   {
     int prim_id = std::stoi(Action::type_);
-    if (prim_id < 2*m_[thread_id]->nq)
+    if (prim_id < mprims_.rows())
     {
         VecDf succ(m_[thread_id]->nq);
         for (int j=0; j<m_[thread_id]->nq; ++j)
         {
-            succ(j) = state(j) + mprims_(prim_id,j)*discretization_(j);
+            succ(j) = state(j) + mprims_(prim_id,j);
         }
         succ = contToDisc(succ, thread_id);
 
@@ -220,7 +220,7 @@ namespace ps
   bool ManipulationAction::isCollisionFree(const VecDf &curr, const VecDf &succ, VecDf &free_state, int thread_id) const
   {
     double ang_dist = (succ-curr).norm();
-    double dx = discretization_.minCoeff()/3.0; /// Magic number 3.0 will prevent roundoff errors
+    double dx = discretization_/3.0; /// Magic number 3.0 will prevent roundoff errors
     int n = static_cast<int>(ceil(ang_dist/(dx)));
     MatDf edge = linInterp(curr, succ, n);
 

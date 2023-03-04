@@ -66,7 +66,7 @@ namespace ps
     ManipulationAction(const std::string& type,
                      ParamsType params,
                      std::string& mj_modelpath,
-                     VecDf ang_discretization,
+                     double discretization,
                      OptVecPtrType& opt,
                      MjModelVecType& m_vec, MjDataVecType& d_vec,
                      int num_threads=1,
@@ -122,7 +122,7 @@ namespace ps
 
     /// Discretization stuff
     MatDf mprims_;
-    VecDf discretization_;
+    double discretization_;
     std::unordered_map<int, VecDf> discrete_angles_;
 //    MatDf discrete_angles_;
 
@@ -147,7 +147,7 @@ namespace ps
     OneJointAtATime(const std::string& type,
                     ParamsType params,
                     std::string& mj_modelpath,
-                    VecDf ang_discretization,
+                    double discretization, std::string mprim_file,
                     OptVecPtrType& opt,
                     MjModelVecType& m_vec, MjDataVecType& d_vec,
                     int num_threads=1,
@@ -155,29 +155,21 @@ namespace ps
             ManipulationAction(type,
                                params,
                                mj_modelpath,
-                               ang_discretization,
+                               discretization,
                                opt, m_vec, d_vec,
                                num_threads,
                                is_expensive)
     {
-      mprims_.resize(2*m_[0]->nq, m_[0]->nq);
-      mprims_.setZero();
-      for (int i=0; i<m_[0]->nq; ++i)
-      {
-        for (int j=0; j<m_[0]->nq; ++j)
-        {
-          if (i==j)
-          {
-            mprims_(i, j) = 1;
-          }
-        }
-      }
-      mprims_.block(m_[0]->nq,0,m_[0]->nq,m_[0]->nq) =
-              -1*mprims_.block(0,0,m_[0]->nq,m_[0]->nq);
+        /// Load input prims
+        mprims_ = loadEigenFromFile<MatDf>(mprim_file, ' ');
 
-//      mprims_.col(3).setZero();
-//      mprims_.col(5).setZero();
-
+        /// Input prims contain only one direction. Flip the sign for adding prims in the other direction
+        int num_input_prim = mprims_.rows();
+        mprims_.conservativeResize(2*mprims_.rows(), mprims_.cols());
+        mprims_.block(num_input_prim,0,num_input_prim,m_[0]->nq) =
+                -1*mprims_.block(0,0,num_input_prim,m_[0]->nq);
+        /// Input is in degrees. Convert to radians
+        mprims_ *= (M_PI/180.0);
     };
   };
 
