@@ -36,16 +36,6 @@ double roundOff(double value, unsigned char prec)
 vector<vector<double>> loadCostFactorMap(const string& fname, int width, int height)
 {
     ifstream infile(fname);
-
-    // string line;
-    // while (getline(infile, line))
-    // {
-    //     istringstream iss(line);
-    //     for (int )
-
-    //     // process pair (a,b)
-    // }
-
     vector<vector<double>> cost_map(width, vector<double>(height));
     
     for (int y = 0; y < height; y++)
@@ -391,6 +381,7 @@ int main(int argc, char* argv[])
     // for (int m_idx = 2; m_idx < 3; ++m_idx) // Fail case for optimality (thread=10)
     {
         auto map = map_vec[m_idx];
+        auto img = img_vec[m_idx];
         auto cost_factor_map = apply_cost_factor_map ? cost_factor_map_vec[m_idx] : vector<vector<double>>();
         auto scale = scale_vec[m_idx];
 
