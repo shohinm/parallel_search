@@ -55,3 +55,11 @@ bool IsLesserState::operator()(const State& lhs, const State& rhs)
 		return lhs.GetFValue() < rhs.GetFValue();
 }
 
+
+bool IsGreaterState::operator()(const State& lhs, const State& rhs)
+{
+    if (lhs.GetFValue() == rhs.GetFValue()) // tie breaking
+        return lhs.GetStateID() < rhs.GetStateID();
+    else
+		return lhs.GetFValue() > rhs.GetFValue();
+}

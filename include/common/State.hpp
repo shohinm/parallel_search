@@ -79,6 +79,12 @@ public:
     bool operator() (const State& lhs, const State& rhs);
 };
 
+class IsGreaterState
+{
+public:
+    bool operator() (const State& lhs, const State& rhs);
+};
+
 }
 
 

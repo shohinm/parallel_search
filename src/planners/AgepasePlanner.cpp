@@ -4,8 +4,8 @@
 #include <planners/AgepasePlanner.hpp>
  
 #include <fstream>
-#define DEBUG 0
-#define EXPERIMENT 1
+#define DEBUG 1
+#define EXPERIMENT 0
 
 using namespace std;
 using namespace ps;
@@ -27,6 +27,7 @@ bool AgepasePlanner::Plan()
 
     // Experiment
     std::vector<double> data_list;
+    smpl::intrusive_heap<State, IsGreaterState> state_close_list;
 
     startTimer();
     double heuristic_w = heuristic_w_;
@@ -35,6 +36,7 @@ bool AgepasePlanner::Plan()
         terminate_ = false;
 
         resetClosed();
+        state_close_list.clear();
         // cout << "Start state: " << start_state_ptr_->GetFValue() << endl;
         being_expanded_states_.clear();
         improvePath();
@@ -116,7 +118,9 @@ bool AgepasePlanner::Plan()
             // {
             //     cout << "Rounding error????" << endl;
             // }
-            
+            // if (!edge_incon_list_.empty())
+            // {}
+            // else if (max_e_value != std::numeric_limits<double>::min())
             if (max_e_value != std::numeric_limits<double>::min())
             {
                 heuristic_w_ = max_e_value;

@@ -282,7 +282,7 @@ int main(int argc, char* argv[])
 {
     int num_threads;
     double time_budget = 0;
-    bool apply_cost_factor_map = true;
+    bool apply_cost_factor_map = false;
 
     if (!strcmp(argv[1], "wastar"))
     {
@@ -324,9 +324,9 @@ int main(int argc, char* argv[])
     ParamsType planner_params;
     string planner_name = argv[1];
     planner_params["num_threads"] = num_threads;
-    // planner_params["heuristic_weight"] = 50;
+    planner_params["heuristic_weight"] = 50;
     // planner_params["heuristic_weight"] = 5;
-    planner_params["heuristic_weight"] = 1;
+    // planner_params["heuristic_weight"] = 1;
     if (time_budget)
     {
         planner_params["timeout"] = time_budget;
