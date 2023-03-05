@@ -3,7 +3,7 @@
 #include <cmath>
 #include <fstream>
 
-#define EXPERIMENT 0
+#define EXPERIMENT 1
 
 using namespace std;
 using namespace ps;

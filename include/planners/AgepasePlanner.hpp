@@ -1,9 +1,6 @@
 #ifndef AGEPASE_PLANNER_HPP
 #define AGEPASE_PLANNER_HPP
 
-#define NAIVE 0
-#define ADAPTIVE 0
-
 #include <future>
 #include <condition_variable>
 #include <planners/GepasePlanner.hpp>
@@ -30,6 +27,8 @@ class AgepasePlanner : public GepasePlanner
         double delta_w_;
         double best_cost_;
         std::vector<PlanElement> best_plan_;
+        bool naive_;
+        bool adaptive_;
 
 };
 

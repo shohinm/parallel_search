@@ -282,12 +282,22 @@ int main(int argc, char* argv[])
 {
     int num_threads;
     double time_budget = 0;
-    bool apply_cost_factor_map = false;
+    bool apply_cost_factor_map = true;
+    bool naive = 0;
+    bool adaptive = 0;
+    double heuristic_weight = 50;
 
     if (!strcmp(argv[1], "wastar"))
     {
-        if (argc != 2) throw runtime_error("Format: run_robot_nav_2d wastar");
-        num_threads = 1;
+        if (argc == 2)
+            num_threads = 1;
+        else if (argc == 3)
+        {
+            num_threads = 1;
+            heuristic_weight = atof(argv[2]);
+        }
+        else
+            throw runtime_error("Format: run_robot_nav_2d wastar");
     }
     else if (!strcmp(argv[1], "mplp"))
     {
@@ -297,15 +307,44 @@ int main(int argc, char* argv[])
     }
     else if (!strcmp(argv[1], "arastar"))
     {
-        if (argc != 3) throw runtime_error("Format: run_robot_nav_2d arastar [time_budget]");
-        num_threads = 1;
-        time_budget = atof(argv[2]);
+        if (argc == 3)
+        {
+            num_threads = 1;
+            time_budget = atof(argv[2]);
+        }
+        else
+            throw runtime_error("Format: run_robot_nav_2d arastar [time_budget]");
     }
     else if (!strcmp(argv[1], "agepase"))
     {
-        if (argc != 4) throw runtime_error("Format: run_robot_nav_2d agepase [num_threads] [time_budget]");
-        num_threads = atoi(argv[2]);
-        time_budget = atof(argv[3]);
+        if (argc == 4)
+        {
+            num_threads = atoi(argv[2]);
+            time_budget = atof(argv[3]);
+        }
+        else if (argc == 6)
+        {
+            num_threads = atoi(argv[2]);
+            time_budget = atof(argv[3]);
+            naive = atoi(argv[4]);
+            adaptive = atoi(argv[5]);
+        }
+        else
+            throw runtime_error("Format: run_robot_nav_2d agepase [num_threads] [time_budget]");
+    }
+    else if (!strcmp(argv[1], "epase"))
+    {
+        if (argc == 3)
+        {
+            num_threads = atoi(argv[2]);
+        }
+        else if (argc == 4)
+        {
+            num_threads = atoi(argv[2]);
+            heuristic_weight = atof(argv[3]);
+        }
+        else
+            throw runtime_error("Format: run_robot_nav_2d epase [num_threads]");
     }
     else
     {
@@ -324,7 +363,9 @@ int main(int argc, char* argv[])
     ParamsType planner_params;
     string planner_name = argv[1];
     planner_params["num_threads"] = num_threads;
-    planner_params["heuristic_weight"] = 50;
+    planner_params["heuristic_weight"] = heuristic_weight;
+    planner_params["naive"] = naive;
+    planner_params["adaptive"] = adaptive;
     // planner_params["heuristic_weight"] = 5;
     // planner_params["heuristic_weight"] = 1;
     if (time_budget)

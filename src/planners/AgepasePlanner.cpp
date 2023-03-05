@@ -4,8 +4,8 @@
 #include <planners/AgepasePlanner.hpp>
  
 #include <fstream>
-#define DEBUG 1
-#define EXPERIMENT 0
+#define DEBUG 0
+#define EXPERIMENT 1
 
 using namespace std;
 using namespace ps;
@@ -13,7 +13,8 @@ using namespace ps;
 AgepasePlanner::AgepasePlanner(ParamsType planner_params):
 GepasePlanner(planner_params)
 {    
-
+    naive_  = planner_params["naive"];
+    adaptive_ = planner_params["adaptive"];
 }
 
 AgepasePlanner::~AgepasePlanner()
@@ -73,7 +74,7 @@ bool AgepasePlanner::Plan()
             break;
         }
 
-        // if (!NAIVE)
+        // if (!naive_)
         // {
         //     // append inconsistent list's edges into Eopen
         //     for(auto it_edge = edge_incon_list_.begin(); it_edge != edge_incon_list_.end(); it_edge++)
@@ -83,7 +84,7 @@ bool AgepasePlanner::Plan()
         // }
         
         // Update heuristic weight
-        if (ADAPTIVE)
+        if (adaptive_)
         {
             // Get max e-value of current open list
             double max_e_value = std::numeric_limits<double>::min();
@@ -141,7 +142,7 @@ bool AgepasePlanner::Plan()
             heuristic_w_ -= delta_w_;
         }
         
-        if (NAIVE)
+        if (naive_)
         {
             edge_incon_list_.clear();
             while (!edge_open_list_.empty())
@@ -220,7 +221,7 @@ bool AgepasePlanner::Plan()
     
     if (EXPERIMENT)
     {
-        string filename = "experiment_" + to_string(num_threads_) + "_aepase_" + to_string(heuristic_w) + "_" + to_string(delta_w_) + "_" + to_string(NAIVE) + "_" + to_string(ADAPTIVE) + ".txt";
+        string filename = "experiment_" + to_string(num_threads_) + "_aepase_" + to_string(heuristic_w) + "_" + to_string(delta_w_) + "_" + to_string(naive_) + "_" + to_string(adaptive_) + ".txt";
         std::ofstream newFile(filename, std::ios::app);
         for (auto data : data_list)
         {
@@ -265,7 +266,7 @@ void AgepasePlanner::improvePath()
 
         while (!curr_edge_ptr && !terminate_)
         {
-            // if (goal_state_ptr_ != NULL && !NAIVE)
+            // if (goal_state_ptr_ != NULL && !naive_)
             if (goal_state_ptr_ != NULL)
             {
                 if (!edge_open_list_.empty())
@@ -393,7 +394,7 @@ void AgepasePlanner::improvePath()
                 else if(curr_edge_ptr->parent_state_ptr_->GetFValue() < goal_state_ptr_->GetFValue())
                     goal_state_ptr_ = curr_edge_ptr->parent_state_ptr_;
 
-                // if (NAIVE)
+                // if (naive_)
                 // {
                 //     // Construct path
                 //     auto goal_state_ptr = goal_state_ptr_;
