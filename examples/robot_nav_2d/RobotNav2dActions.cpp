@@ -41,6 +41,12 @@ ActionSuccessor RobotNav2dAction::GetSuccessor(const StateVarsType& state_vars, 
     }
     
     double cost = pow(pow((next_state_vars[0] - state_vars[0]), 2) + pow((next_state_vars[1] - state_vars[1]), 2), 0.5);;
+
+    if (!cost_factor_map_.empty())
+    {
+        cost *= cost_factor_map_[state_vars[0]][state_vars[1]];   
+    }
+
     return ActionSuccessor(true, {make_pair(next_state_vars, cost)});
 
 }
@@ -70,6 +76,12 @@ ActionSuccessor RobotNav2dAction::GetSuccessorLazy(const StateVarsType& state_va
     }
     
     double cost = pow(pow((final_state_vars[0] - state_vars[0]), 2) + pow((final_state_vars[1] - state_vars[1]), 2), 0.5);;
+    
+    if (!cost_factor_map_.empty())
+    {
+        cost *= cost_factor_map_[state_vars[0]][state_vars[1]];   
+    }
+
     return ActionSuccessor(true, {make_pair(final_state_vars, cost)});
 
 }

@@ -33,6 +33,32 @@ double roundOff(double value, unsigned char prec)
     return round(value * pow_10) / pow_10;
 }
 
+vector<vector<double>> loadCostFactorMap(const string& fname, int width, int height)
+{
+    ifstream infile(fname);
+
+    // string line;
+    // while (getline(infile, line))
+    // {
+    //     istringstream iss(line);
+    //     for (int )
+
+    //     // process pair (a,b)
+    // }
+
+    vector<vector<double>> cost_map(width, vector<double>(height));
+    
+    for (int y = 0; y < height; y++)
+    {
+        for (int x = 0; x < width; x++)
+        {
+            infile >> cost_map[x][y];
+        }
+    }   
+
+    return cost_map;
+}
+
 vector<vector<int>> loadMap(const char *fname, cv::Mat& img, int &width, int &height, int scale=1)
 {
     vector<vector<int>> map;
@@ -85,6 +111,8 @@ vector<vector<int>> loadMap(const char *fname, cv::Mat& img, int &width, int &he
         }
     }
 
+    height = scaled_height;
+    width = scaled_width;
     return scaled_map;
 
 }
@@ -168,7 +196,7 @@ size_t EdgeKeyGenerator(const EdgePtrType& edge_ptr)
     return seed;
 }
 
-void constructActions(vector<shared_ptr<Action>>& action_ptrs, ParamsType& action_params, vector<vector<int>>& map)
+void constructActions(vector<shared_ptr<Action>>& action_ptrs, ParamsType& action_params, vector<vector<int>>& map, vector<vector<double>>& cost_factor_map)
 {
     // Define action parameters
     action_params["length"] = 25;
@@ -178,28 +206,28 @@ void constructActions(vector<shared_ptr<Action>>& action_ptrs, ParamsType& actio
     ParamsType expensive_action_params = action_params;
     expensive_action_params["cache_footprint"] = 1;
     
-    auto move_up_controller_ptr = make_shared<MoveUpAction>("MoveUp", action_params, map);
+    auto move_up_controller_ptr = make_shared<MoveUpAction>("MoveUp", action_params, map, cost_factor_map);
     action_ptrs.emplace_back(move_up_controller_ptr);
 
-    auto move_up_right_controller_ptr = make_shared<MoveUpRightAction>("MoveUpRight", expensive_action_params, map);
+    auto move_up_right_controller_ptr = make_shared<MoveUpRightAction>("MoveUpRight", expensive_action_params, map, cost_factor_map);
     action_ptrs.emplace_back(move_up_right_controller_ptr);
 
-    auto move_right_controller_ptr = make_shared<MoveRightAction>("MoveRight", action_params, map);
+    auto move_right_controller_ptr = make_shared<MoveRightAction>("MoveRight", action_params, map, cost_factor_map);
     action_ptrs.emplace_back(move_right_controller_ptr);
 
-    auto move_right_down_controller_ptr = make_shared<MoveRightDownAction>("MoveRightDown", expensive_action_params, map);
+    auto move_right_down_controller_ptr = make_shared<MoveRightDownAction>("MoveRightDown", expensive_action_params, map, cost_factor_map);
     action_ptrs.emplace_back(move_right_down_controller_ptr);
 
-    auto move_down_controller_ptr = make_shared<MoveDownAction>("MoveDown", action_params, map);
+    auto move_down_controller_ptr = make_shared<MoveDownAction>("MoveDown", action_params, map, cost_factor_map);
     action_ptrs.emplace_back(move_down_controller_ptr);
 
-    auto move_down_left_controller_ptr = make_shared<MoveDownLeftAction>("MoveDownLeft", expensive_action_params, map);
+    auto move_down_left_controller_ptr = make_shared<MoveDownLeftAction>("MoveDownLeft", expensive_action_params, map, cost_factor_map);
     action_ptrs.emplace_back(move_down_left_controller_ptr);
 
-    auto move_left_controller_ptr = make_shared<MoveLeftAction>("MoveLeft", action_params, map);
+    auto move_left_controller_ptr = make_shared<MoveLeftAction>("MoveLeft", action_params, map, cost_factor_map);
     action_ptrs.emplace_back(move_left_controller_ptr);
 
-    auto move_left_up_controller_ptr = make_shared<MoveLeftUpAction>("MoveLeftUp", expensive_action_params, map);
+    auto move_left_up_controller_ptr = make_shared<MoveLeftUpAction>("MoveLeftUp", expensive_action_params, map, cost_factor_map);
     action_ptrs.emplace_back(move_left_up_controller_ptr);
 
 }
@@ -264,6 +292,7 @@ int main(int argc, char* argv[])
 {
     int num_threads;
     double time_budget = 0;
+    bool apply_cost_factor_map = true;
 
     if (!strcmp(argv[1], "wastar"))
     {
@@ -322,17 +351,27 @@ int main(int argc, char* argv[])
     cv::Mat img;
     
     vector<vector<vector<int>>> map_vec;
+    vector<vector<vector<double>>> cost_factor_map_vec;
     vector<cv::Mat> img_vec;
 
     map_vec.emplace_back(loadMap("../examples/robot_nav_2d/resources/hrt201n/hrt201n.map", img, width, height, scale_vec[0]));
+    cost_factor_map_vec.emplace_back(loadCostFactorMap("../examples/robot_nav_2d/resources/hrt201n/hrt201n_cost_factor.map", width, height));
     img_vec.emplace_back(img.clone());
+
     map_vec.emplace_back(loadMap("../examples/robot_nav_2d/resources/den501d/den501d.map", img, width, height, scale_vec[1]));
+    cost_factor_map_vec.emplace_back(loadCostFactorMap("../examples/robot_nav_2d/resources/den501d/den501d_cost_factor.map", width, height));
     img_vec.emplace_back(img.clone());
+
     map_vec.emplace_back(loadMap("../examples/robot_nav_2d/resources/den520d/den520d.map", img, width, height, scale_vec[2]));
+    cost_factor_map_vec.emplace_back(loadCostFactorMap("../examples/robot_nav_2d/resources/den520d/den520d_cost_factor.map", width, height));
     img_vec.emplace_back(img.clone());
+
     map_vec.emplace_back(loadMap("../examples/robot_nav_2d/resources/ht_chantry/ht_chantry.map", img, width, height, scale_vec[3]));
+    cost_factor_map_vec.emplace_back(loadCostFactorMap("../examples/robot_nav_2d/resources/ht_chantry/ht_chantry_cost_factor.map", width, height));
     img_vec.emplace_back(img.clone());
+
     map_vec.emplace_back(loadMap("../examples/robot_nav_2d/resources/brc203d/brc203d.map", img, width, height, scale_vec[4]));
+    cost_factor_map_vec.emplace_back(loadCostFactorMap("../examples/robot_nav_2d/resources/brc203d/brc203d_cost_factor.map", width, height));
     img_vec.emplace_back(img.clone());
 
 
@@ -352,13 +391,13 @@ int main(int argc, char* argv[])
     // for (int m_idx = 2; m_idx < 3; ++m_idx) // Fail case for optimality (thread=10)
     {
         auto map = map_vec[m_idx];
-        auto img = img_vec[m_idx];
+        auto cost_factor_map = apply_cost_factor_map ? cost_factor_map_vec[m_idx] : vector<vector<double>>();
         auto scale = scale_vec[m_idx];
 
         // Construct actions
         ParamsType action_params;
         vector<shared_ptr<Action>> action_ptrs;
-        constructActions(action_ptrs, action_params, map);
+        constructActions(action_ptrs, action_params, map, cost_factor_map);
 
         // Construct planner
         shared_ptr<Planner> planner_ptr;
