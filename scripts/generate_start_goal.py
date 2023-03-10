@@ -67,6 +67,8 @@ def ik(x,r):
     q = fkik.computeIK(target_position=x, target_orientation=r)
     return q
 
+num_regions = 8
+
 s = 0
 while s < data_size:
     sid = 0
@@ -78,8 +80,8 @@ while s < data_size:
             gid = id[1]
             break
 
-    st_seed = np.random.random_sample((7,))
-    go_seed = np.random.random_sample((7,))
+    st_seed = np.random.random_sample((3,))
+    go_seed = np.random.random_sample((3,))
     start = np.array([(vol[sid,:,1]-vol[sid,:,0])*st_seed+vol[sid,:,0]])
     goal = np.array([(vol[gid,:,1]-vol[gid,:,0])*go_seed+vol[gid,:,0]])
 
