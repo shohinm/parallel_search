@@ -41,12 +41,13 @@ namespace ps
                                          ParamsType params,
                                          std::string& mj_modelpath,
                                          double discretization,
+                                         MatDf& mprims,
                                          OptVecPtrType& opt,
                                          MjModelVecType& m_vec, MjDataVecType& d_vec,
                                          int num_threads,
                                          bool is_expensive) : InsatAction(type, params, is_expensive),
                                                           discretization_(discretization),
-                                                          opt_(opt), m_(m_vec), d_(d_vec)
+                                                          opt_(opt), m_(m_vec), d_(d_vec), mprims_(mprims)
   {
 
     for (int i=0; i<num_threads; ++i)

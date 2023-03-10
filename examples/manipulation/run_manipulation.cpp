@@ -57,6 +57,7 @@ using namespace ps;
 
 vector<double> goal;
 int dof;
+int num_actions;
 VecDf discretization;
 
 // Mujoco and LoS heuristic
@@ -134,7 +135,7 @@ size_t EdgeKeyGenerator(const EdgePtrType& edge_ptr)
 
     controller_id = std::stoi(action_ptr->GetType());
 
-    if (controller_id > 2*dof)
+    if (controller_id > num_actions)
     {
         throw runtime_error("Controller type not recognized in getEdgeKey!");
     }
@@ -210,7 +211,7 @@ void postProcessWithControlPoints(std::vector<PlanElement>& path, double& cost, 
 
 void constructActions(vector<shared_ptr<Action>>& action_ptrs,
                       ParamsType& action_params, std::string& mj_modelpath,
-                      std::string mprim_file,
+                      MatDf& mprims,
                       ManipulationAction::OptVecPtrType& opt,
                       ManipulationAction::MjModelVecType m_vec,
                       ManipulationAction::MjDataVecType d_vec,
@@ -221,14 +222,14 @@ void constructActions(vector<shared_ptr<Action>>& action_ptrs,
         if (i == action_params["length"])
         {
             auto one_joint_action = std::make_shared<OneJointAtATime>(std::to_string(i), action_params,
-                                                                      mj_modelpath, DISCRETIZATION, mprim_file,
+                                                                      mj_modelpath, DISCRETIZATION, mprims,
                                                                       opt, m_vec, d_vec, num_threads, 1);
             action_ptrs.emplace_back(one_joint_action);
         }
         else
         {
             auto one_joint_action = std::make_shared<OneJointAtATime>(std::to_string(i), action_params,
-                                                                      mj_modelpath, DISCRETIZATION, mprim_file,
+                                                                      mj_modelpath, DISCRETIZATION, mprims,
                                                                       opt, m_vec, d_vec, num_threads, 0);
             action_ptrs.emplace_back(one_joint_action);
         }
@@ -377,6 +378,25 @@ void setupMujoco(mjModel **m, mjData **d, std::string modelpath)
     *d = mj_makeData(*m);
 }
 
+MatDf loadMPrims(std::string mprim_file)
+{
+  if (!global_m)
+  {
+    std::runtime_error("Attempting to load motion primitives before Mujoco model. ERROR!");
+  }
+
+  /// Load input prims
+  MatDf mprims = loadEigenFromFile<MatDf>(mprim_file, ' ');
+
+  /// Input prims contain only one direction. Flip the sign for adding prims in the other direction
+  int num_input_prim = mprims.rows();
+  mprims.conservativeResize(2*mprims.rows(), mprims.cols());
+  mprims.block(num_input_prim,0,num_input_prim,global_m->nq) =
+      -1*mprims.block(0,0,num_input_prim,global_m->nq);
+  /// Input is in degrees. Convert to radians
+  mprims *= (M_PI/180.0);
+}
+
 int main(int argc, char* argv[])
 {
     int num_threads;
@@ -515,12 +535,14 @@ int main(int argc, char* argv[])
     // Construct actions
     ParamsType action_params;
     action_params["planner_name"] = planner_name=="insat" || planner_name=="pinsat"? 1: -1;
-    action_params["length"] = 12;
     std::string mprim_file = "../examples/manipulation/resources/shield/irb1600_6_12.mprim";
+    auto mprims = loadMPrims(mprim_file);
+    action_params["length"] = mprims.rows();
+    num_actions = mprims.rows();
     vector<shared_ptr<Action>> action_ptrs;
     constructActions(action_ptrs, action_params,
                      modelpath,
-                     mprim_file,
+                     mprims,
                      opt_vec_ptr, m_vec, d_vec, num_threads);
 
     std::vector<std::shared_ptr<ManipulationAction>> manip_action_ptrs;

@@ -67,6 +67,7 @@ namespace ps
                      ParamsType params,
                      std::string& mj_modelpath,
                      double discretization,
+                     MatDf& mprims,
                      OptVecPtrType& opt,
                      MjModelVecType& m_vec, MjDataVecType& d_vec,
                      int num_threads=1,
@@ -147,7 +148,7 @@ namespace ps
     OneJointAtATime(const std::string& type,
                     ParamsType params,
                     std::string& mj_modelpath,
-                    double discretization, std::string mprim_file,
+                    double discretization, MatDf& mprims,
                     OptVecPtrType& opt,
                     MjModelVecType& m_vec, MjDataVecType& d_vec,
                     int num_threads=1,
@@ -156,20 +157,11 @@ namespace ps
                                params,
                                mj_modelpath,
                                discretization,
+                               mprims,
                                opt, m_vec, d_vec,
                                num_threads,
                                is_expensive)
     {
-        /// Load input prims
-        mprims_ = loadEigenFromFile<MatDf>(mprim_file, ' ');
-
-        /// Input prims contain only one direction. Flip the sign for adding prims in the other direction
-        int num_input_prim = mprims_.rows();
-        mprims_.conservativeResize(2*mprims_.rows(), mprims_.cols());
-        mprims_.block(num_input_prim,0,num_input_prim,m_[0]->nq) =
-                -1*mprims_.block(0,0,num_input_prim,m_[0]->nq);
-        /// Input is in degrees. Convert to radians
-        mprims_ *= (M_PI/180.0);
     };
   };
 
