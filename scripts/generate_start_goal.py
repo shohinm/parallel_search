@@ -32,10 +32,18 @@ goals = np.empty((0,arm_model.nq))
 #                 [[0, 1.2], [0, 0.6], [0.2, 1.2]],
 #                 [[-0.6, 0], [-1.2, 0], [0.2, 1.2]],
 #                 [[0, 1.2], [-1.8, -1.2], [0.2, 1.2]]])
-vol = np.array([[[1.4, 2.0], [-1.2, 0], [1.0, 1.8]],
-                [[0, 1.2], [0.2, 1.0], [1.0, 1.8]],
-                [[-1.0, -0.4], [-1.2, 0], [1.0, 1.8]],
-                [[0, 1.2], [-2.0, -1.4], [1.0, 1.8]]])
+# vol = np.array([[[1.4, 2.0], [-1.2, 0], [1.0, 1.8]],
+#                 [[0, 1.2], [0.2, 1.0], [1.0, 1.8]],
+#                 [[-1.0, -0.4], [-1.2, 0], [1.0, 1.8]],
+#                 [[0, 1.2], [-2.0, -1.4], [1.0, 1.8]]])
+vol = np.array([[[1.4, 2.0], [-1.2, 0], [1.0, 1.4]],
+                [[1.4, 2.0], [-1.2, 0], [1.4, 1.8]],
+                [[0, 1.2], [0.2, 1.0], [1.0, 1.4]],
+                [[0, 1.2], [0.2, 1.0], [1.4, 1.8]],
+                [[-1.0, -0.4], [-1.2, 0], [1.0, 1.4]],
+                [[-1.0, -0.4], [-1.2, 0], [1.4, 1.8]],
+                [[0, 1.2], [-2.0, -1.4], [1.0, 1.4]],
+                [[0, 1.2], [-2.0, -1.4], [1.4, 1.8]]])
 
 data_size = 500
 
@@ -70,26 +78,38 @@ while s < data_size:
             gid = id[1]
             break
 
-    st_seed = np.random.random_sample((3,))
-    go_seed = np.random.random_sample((3,))
+    st_seed = np.random.random_sample((7,))
+    go_seed = np.random.random_sample((7,))
     start = np.array([(vol[sid,:,1]-vol[sid,:,0])*st_seed+vol[sid,:,0]])
     goal = np.array([(vol[gid,:,1]-vol[gid,:,0])*go_seed+vol[gid,:,0]])
 
     r = np.array([0,0,0,1])
-    if sid==1:
+    if sid==2:
         r = np.array([0.707, 0, 0, 0.707])
-    elif sid==2:
-        r = np.array([0, 0, 1, 0])
     elif sid==3:
+        r = np.array([0.707, 0, 0, 0.707])
+    elif sid == 4:
+        r = np.array([0, 0, 1, 0])
+    elif sid == 5:
+        r = np.array([0, 0, 1, 0])
+    elif sid==6:
+        r = np.array([0.707, 0, 0, -0.707])
+    elif sid==7:
         r = np.array([0.707, 0, 0, -0.707])
     st_q = ik(start, r)
 
     r = np.array([0,0,0,1])
-    if gid==1:
+    if gid==2:
         r = np.array([0.707, 0, 0, 0.707])
-    elif gid==2:
+    if gid == 3:
+        r = np.array([0.707, 0, 0, 0.707])
+    elif gid==4:
         r = np.array([0, 0, 1, 0])
-    elif gid==3:
+    elif gid == 5:
+        r = np.array([0, 0, 1, 0])
+    elif gid==6:
+        r = np.array([0.707, 0, 0, -0.707])
+    elif gid==7:
         r = np.array([0.707, 0, 0, -0.707])
     go_q = ik(goal, r)
 
