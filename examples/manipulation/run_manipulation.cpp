@@ -397,6 +397,8 @@ MatDf loadMPrims(std::string mprim_file)
       -1*mprims.block(0, 0, num_input_prim, rm::global_m->nq);
   /// Input is in degrees. Convert to radians
   mprims *= (M_PI/180.0);
+
+  return mprims;
 }
 
 int main(int argc, char* argv[])
