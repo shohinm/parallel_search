@@ -8,8 +8,8 @@ import numpy as np
 from numpy import genfromtxt
 
 # planner_name = 'test'
-planner_name = 'insat'
-# planner_name = 'pinsat'
+# planner_name = 'insat'
+planner_name = 'pinsat'
 # planner_name = 'rrt'
 # planner_name = 'rrtconnect'
 # planner_name = 'epase'
@@ -83,7 +83,11 @@ def upsampleTraj(traj, dx=0.1):
 if static_planner:
   traj = upsampleTraj(traj, 0.1)
 
+skp = 0
 for i in range(np.shape(traj)[0]):
+  skp += 1
+  if skp % 2 == 0:
+    continue
   if np.array_equal(traj[i,:], -1*np.ones((arm_model.nq,))):
     sleep(2)
     continue

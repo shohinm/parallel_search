@@ -29,7 +29,7 @@ else:
 
 model_dir = '/home/gaussian/cmu_ri_phd/phd_research/parallel_search/third_party/mujoco-2.3.2/model/abb/irb_1600'
 mjcf_arm = 'irb1600_6_12_shield.xml'
-# mjcf_arm_proj = 'irb1600_6_12_shield_projectile.xml'
+mjcf_arm_demo = 'irb1600_6_12_shield_projectile.xml'
 traj_file = '/home/gaussian/cmu_ri_phd/phd_research/parallel_search/logs/demo/' + planner_name + '_abb_traj.txt'
 starts_file = '/home/gaussian/cmu_ri_phd/phd_research/parallel_search/logs/demo/' + planner_name + '_abb_starts.txt'
 goals_file = '/home/gaussian/cmu_ri_phd/phd_research/parallel_search/logs/demo/' + planner_name + '_abb_goals.txt'
@@ -39,7 +39,10 @@ goals = genfromtxt(goals_file, delimiter=',')
 # just using arm model for calculating ee traj
 arm_model = MjModel.from_xml_path(os.path.join(model_dir, mjcf_arm))
 arm_data = MjData(arm_model)
-viewer = mujoco_viewer.MujocoViewer(arm_model, arm_data)
+# for demo
+arm_model_demo = MjModel.from_xml_path(os.path.join(model_dir, mjcf_arm_demo))
+arm_data_demo = MjData(arm_model_demo)
+viewer = mujoco_viewer.MujocoViewer(arm_model_demo, arm_data_demo)
 
 
 def balltraj(end_pos, len, max_len, dx):
