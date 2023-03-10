@@ -28,17 +28,31 @@
         <geom name="floor" pos="0 0 0" size="5 5 .125" type="plane" material="BeigeMaterial" condim="3"  contype="0" conaffinity="0"/>
 
 
-        <!-- obstacles -->
-        <body name="cage" pos="0.65 -0.7 0" quat="0.707 0 0 -0.707">
+        <!-- simple obstacles -->
+<!--         <body name="cage" pos="0.65 -0.7 0" quat="0.707 0 0 -0.707">
             <geom name="c1" size="0.1 0.1 1" pos="0.6 0.5 1" type="box" rgba="0.7 0.7 0.7 1" contype="3" conaffinity="3"/>
             <geom name="c2" size="0.1 0.1 1" pos="-0.6 0.5 1" type="box" rgba="0.7 0.7 0.7 1" contype="3" conaffinity="3"/>
             <geom name="c3" size="0.1 0.1 1" pos="0.6 -0.6 1" type="box" rgba="0.7 0.7 0.7 1" contype="3" conaffinity="3"/>
             <geom name="c4" size="0.1 0.1 1" pos="-0.6 -0.6 1" type="box" rgba="0.7 0.7 0.7 1" contype="3" conaffinity="3"/>            
+        </body> -->
+
+        <!-- obstacles -->
+        <body name="cage" pos="0.55 -0.7 0" quat="0.707 0 0 -0.707">
+            <!-- vertical -->
+            <geom name="c1" size="0.06 0.06 1" pos="0.750 0.750 1" type="box" rgba="1.0 0.0 0.0 1" contype="3" conaffinity="3"/>
+            <geom name="c2" size="0.06 0.06 1" pos="-0.750 0.750 1" type="box" rgba="1.0 0.0 0.0 1" contype="3" conaffinity="3"/>
+            <geom name="c3" size="0.06 0.06 1" pos="0.750 -0.750 1" type="box" rgba="1.0 0.0 0.0 1" contype="3" conaffinity="3"/>
+            <geom name="c4" size="0.06 0.06 1" pos="-0.750 -0.750 1" type="box" rgba="1.0 0.0 0.0 1" contype="3" conaffinity="3"/>            
+            <!-- horizontal -->
+            <geom name="c5" size="0.06 0.750 0.06" pos="0.750 0 1.25" type="box" rgba="1.0 0.0 0.0 1" contype="3" conaffinity="3"/>
+            <geom name="c6" size="0.750 0.06 0.06" pos="0 0.750 1.25" type="box" rgba="1.0 0.0 0.0 1" contype="3" conaffinity="3"/>
+            <geom name="c7" size="0.06 0.750 0.06" pos="-0.750 0 1.25" type="box" rgba="1.0 0.0 0.0 1" contype="3" conaffinity="3"/>
+            <geom name="c8" size="0.750 0.06 0.06" pos="0 -0.750 1.25" type="box" rgba="1.0 0.0 0.0 1" contype="3" conaffinity="3"/>
         </body>
 
         <body name="pedestal" pos="0.0 0.0 0.0">
             <geom type="mesh" rgba="0 0 1 1" mesh="pedestal" euler="1.57 0 0" contype="1" conaffinity="1"/>
-            <body name="base" pos="0.65 -0.7 0.45">
+            <body name="base" pos="0.55 -0.7 0.45">
                 <geom type="mesh" rgba="0.9 0.9 0.9 1" mesh="base_link" contype="2" conaffinity="2"/>
                 <body name="link_1" pos="0 0 0">
                     <inertial pos="0.0444007 -0.00834001 0.340163" quat="0.575539 0.391509 0.239129 0.676973" mass="44.6131" diaginertia="1.4797 1.22366 0.686463" />
