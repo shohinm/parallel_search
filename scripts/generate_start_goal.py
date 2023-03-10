@@ -72,7 +72,7 @@ while s < data_size:
     sid = 0
     gid = 0
     while 1:
-        id = np.random.choice(4, 2)
+        id = np.random.choice(8, 2)
         if id[0] != id[1]:
             sid = id[0]
             gid = id[1]
