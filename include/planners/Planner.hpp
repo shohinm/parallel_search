@@ -44,6 +44,8 @@ class Planner
         void SetStateToStateHeuristicGenerator(std::function<double(const StateVarsType&, const StateVarsType&)> callback);
         void SetPostProcessor(std::function<void(std::vector<PlanElement>&, double&, double)> callback);
 
+        StatePtrMapType GetStateMap() {return state_map_;}
+
     protected:
         
         virtual void initialize();
