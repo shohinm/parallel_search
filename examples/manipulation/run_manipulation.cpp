@@ -55,7 +55,8 @@ using namespace ps;
 #define TERMINATION_DIST 0.1
 #define DISCRETIZATION 0.05
 
-namespace rm {
+namespace rm
+{
   vector<double> goal;
 
   int dof;
@@ -76,32 +77,10 @@ double roundOff(double value, unsigned char prec)
     return round(value * pow_10) / pow_10;
 }
 
-double computeHeuristicStateToState(const StateVarsType& state_vars_1, const StateVarsType& state_vars_2)
-{
-    double dist = 0.0;
-    for (int i=0; i < rm::dof - 1; ++i)
-    {
-        dist += pow(state_vars_2[i]-state_vars_1[i], 2);
-    }
-    return std::sqrt(dist);
-
-//    VecDf ds(dof);
-//    for (int i=0; i<dof; ++i)
-//    {
-//        ds(i) = state_vars_2[2] - state_vars_1[i];
-//        ds(i) /= discretization(i);
-//    }
-//    return ds.norm();
-}
-
-double computeHeuristic(const StateVarsType& state_vars)
-{
-    return computeHeuristicStateToState(state_vars, rm::goal);
-}
-
 bool isGoalState(const StateVarsType& state_vars, double dist_thresh)
 {
-    for (int i=0; i < rm::dof - 2; ++i)
+    /// Joint-wise threshold
+    for (int i=0; i < rm::dof; ++i)
     {
         if (fabs(rm::goal[i] - state_vars[i]) > dist_thresh)
         {
@@ -110,13 +89,7 @@ bool isGoalState(const StateVarsType& state_vars, double dist_thresh)
     }
     return true;
 
-//    double dist=0;
-//    for (int i=0; i<state_vars.size()-2; ++i)
-//    {
-//        dist += std::sqrt((goal[i]-state_vars[i])*(goal[i]-state_vars[i]));
-//    }
-//    return (dist < dist_thresh);
-
+    /// Euclidean threshold
 //    return (computeHeuristic(state_vars) < dist_thresh);
 }
 
@@ -147,6 +120,21 @@ size_t EdgeKeyGenerator(const EdgePtrType& edge_ptr)
     boost::hash_combine(seed, controller_id);
 
     return seed;
+}
+
+double computeHeuristicStateToState(const StateVarsType& state_vars_1, const StateVarsType& state_vars_2)
+{
+  double dist = 0.0;
+  for (int i=0; i < rm::dof; ++i)
+  {
+    dist += pow(state_vars_2[i]-state_vars_1[i], 2);
+  }
+  return std::sqrt(dist);
+}
+
+double computeHeuristic(const StateVarsType& state_vars)
+{
+  return computeHeuristicStateToState(state_vars, rm::goal);
 }
 
 double computeLoSHeuristic(const StateVarsType& state_vars)
