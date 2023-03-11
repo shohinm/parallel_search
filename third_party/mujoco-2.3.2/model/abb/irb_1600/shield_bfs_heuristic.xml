@@ -1,0 +1,38 @@
+<mujoco model="abb_irb1600_6_12">
+    <compiler angle="radian" />
+    <size njmax="500" nconmax="100" />
+    <option collision="dynamic"/>
+
+    <asset>
+        <mesh name="pedestal" file="pedestal.stl" scale="0.001 0.001 0.001"/>
+    </asset>
+
+    <worldbody>
+        <!-- obstacles -->
+        <include file="shield_obstacles.xml"/>
+
+        <!-- env limits represented as with an outer dome -->
+        <body name="outer_dome" pos="0.55 -0.7 0" quat="1 0 0 0">
+            <geom name="w1" size="0.05 1.5 1" pos="1.5 0.0 1" type="box" rgba="0.7 0.7 0.0 0.3" contype="3" conaffinity="3"/>
+            <geom name="w2" size="1.5 0.05 1" pos="0.0 1.5 1" type="box" rgba="0.7 0.7 0.0 0.3" contype="3" conaffinity="3"/>
+            <geom name="w3" size="0.05 1.5 1" pos="-1.5 0.0 1" type="box" rgba="0.7 0.7 0.0 0.3" contype="3" conaffinity="3"/>
+            <geom name="w4" size="1.5 0.05 1" pos="0.0 -1.5 1" type="box" rgba="0.7 0.7 0.0 0.3" contype="3" conaffinity="3"/>
+            <geom name="w5" size="1.5 1.5 0.05" pos="0 0 0" type="box" rgba="0.7 0.7 0.0 0.3" contype="3" conaffinity="3"/>
+            <geom name="w6" size="1.5 1.5 0.05" pos="0 0 2" type="box" rgba="0.7 0.7 0.0 0.3" contype="3" conaffinity="3"/>
+        </body>
+
+
+        <!-- 3D  -->
+        <body name="b1" pos="0.55 -0.7 0.75" quat="1 0 0 0">
+            <inertial pos="0 0 0" mass=".1" diaginertia="1e-4 1e-4 1e-4"/>
+            <joint name="b1" type="free" limited="false" />
+            <geom name="b1" type="sphere" size="0.05" rgba="1 1 0 1" />
+        </body>
+
+        <body name="pedestal" pos="0.0 0.0 0.0">
+            <geom type="mesh" rgba="0 0 1 1" mesh="pedestal" euler="1.57 0 0" contype="1" conaffinity="1"/>
+        </body>
+
+    </worldbody>
+
+</mujoco>
