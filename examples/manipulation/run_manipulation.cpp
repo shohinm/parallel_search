@@ -552,7 +552,7 @@ int main(int argc, char* argv[])
 
     int run_offset = 0;
     num_runs = starts.size();
-    num_runs = 30;
+//    num_runs = 30;
     for (int run = run_offset; run < run_offset+num_runs; ++run)
     {
         // Set goal conditions
