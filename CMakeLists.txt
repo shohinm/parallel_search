@@ -39,6 +39,7 @@ set(SOURCES
     src/common/Edge.cpp
     src/common/insat/InsatEdge.cpp
     src/planners/Planner.cpp
+    src/planners/BFSPlanner.cpp
     src/planners/WastarPlanner.cpp
     src/planners/PwastarPlanner.cpp
     src/planners/PasePlanner.cpp
