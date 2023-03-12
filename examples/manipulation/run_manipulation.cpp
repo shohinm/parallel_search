@@ -199,14 +199,69 @@ void postProcessWithControlPoints(std::vector<PlanElement>& path, double& cost, 
     opt.postProcessWithControlPoints(path, cost, allowed_time, ins_act.get());
 }
 
+void setupMujoco(mjModel **m, mjData **d, std::string modelpath)
+{
+  *m = nullptr;
+  if (std::strlen(modelpath.c_str()) > 4 && !strcmp(modelpath.c_str() + std::strlen(modelpath.c_str()) - 4, ".mjb"))
+  {
+    *m = mj_loadModel(modelpath.c_str(), nullptr);
+  }
+  else
+  {
+    *m = mj_loadXML(modelpath.c_str(), nullptr, nullptr, 0);
+  }
+  if (!m)
+  {
+    mju_error("Cannot load the model");
+  }
+  *d = mj_makeData(*m);
+}
+
+MatDf loadMPrims(std::string mprim_file)
+{
+  if (!rm::global_m)
+  {
+    std::runtime_error("Attempting to load motion primitives before Mujoco model. ERROR!");
+  }
+
+  /// Load input prims
+  MatDf mprims = loadEigenFromFile<MatDf>(mprim_file, ' ');
+
+  /// Input prims contain only one direction. Flip the sign for adding prims in the other direction
+  int num_input_prim = mprims.rows();
+  mprims.conservativeResize(2*mprims.rows(), mprims.cols());
+  mprims.block(num_input_prim, 0, num_input_prim, rm::global_m->nq) =
+      -1*mprims.block(0, 0, num_input_prim, rm::global_m->nq);
+  /// Input is in degrees. Convert to radians
+  mprims *= (M_PI/180.0);
+
+  return mprims;
+}
+
 void constructActions(vector<shared_ptr<Action>>& action_ptrs,
-                      ParamsType& action_params, std::string& mj_modelpath,
-                      MatDf& mprims,
+                      ParamsType& action_params,
+                      std::string& mj_modelpath, std::string& mprimpath,
                       ManipulationAction::OptVecPtrType& opt,
-                      ManipulationAction::MjModelVecType m_vec,
-                      ManipulationAction::MjDataVecType d_vec,
                       int num_threads)
 {
+
+    /// Vectorize simulator handle
+    ManipulationAction::MjModelVecType m_vec;
+    ManipulationAction::MjDataVecType d_vec;
+    for (int i=0; i<num_threads; ++i)
+    {
+      mjModel* act_m= nullptr;
+      mjData * act_d= nullptr;
+      setupMujoco(&act_m, &act_d, mj_modelpath);
+      m_vec.push_back(act_m);
+      d_vec.push_back(act_d);
+    }
+
+    /// Load mprims
+    auto mprims = loadMPrims(mprimpath);
+    action_params["length"] = mprims.rows();
+    rm::num_actions = mprims.rows();
+
     for (int i=0; i<=action_params["length"]; ++i)
     {
         if (i == action_params["length"])
@@ -350,45 +405,6 @@ MatDf sampleTrajectory(const drake::trajectories::BsplineTrajectory<double>& tra
 }
 
 
-void setupMujoco(mjModel **m, mjData **d, std::string modelpath)
-{
-    *m = nullptr;
-    if (std::strlen(modelpath.c_str()) > 4 && !strcmp(modelpath.c_str() + std::strlen(modelpath.c_str()) - 4, ".mjb"))
-    {
-        *m = mj_loadModel(modelpath.c_str(), nullptr);
-    }
-    else
-    {
-        *m = mj_loadXML(modelpath.c_str(), nullptr, nullptr, 0);
-    }
-    if (!m)
-    {
-        mju_error("Cannot load the model");
-    }
-    *d = mj_makeData(*m);
-}
-
-MatDf loadMPrims(std::string mprim_file)
-{
-  if (!rm::global_m)
-  {
-    std::runtime_error("Attempting to load motion primitives before Mujoco model. ERROR!");
-  }
-
-  /// Load input prims
-  MatDf mprims = loadEigenFromFile<MatDf>(mprim_file, ' ');
-
-  /// Input prims contain only one direction. Flip the sign for adding prims in the other direction
-  int num_input_prim = mprims.rows();
-  mprims.conservativeResize(2*mprims.rows(), mprims.cols());
-  mprims.block(num_input_prim, 0, num_input_prim, rm::global_m->nq) =
-      -1*mprims.block(0, 0, num_input_prim, rm::global_m->nq);
-  /// Input is in degrees. Convert to radians
-  mprims *= (M_PI/180.0);
-
-  return mprims;
-}
-
 int main(int argc, char* argv[])
 {
     int num_threads;
@@ -422,17 +438,6 @@ int main(int argc, char* argv[])
     rm::shield_h_w.resize(rm::dof);
     rm::shield_h_w << 0, 10, 7, 0.1, 1, 0.1;
 
-    ManipulationAction::MjModelVecType m_vec;
-    ManipulationAction::MjDataVecType d_vec;
-
-    for (int i=0; i<num_threads; ++i)
-    {
-        mjModel* act_m= nullptr;
-        mjData * act_d= nullptr;
-        setupMujoco(&act_m, &act_d, modelpath);
-        m_vec.push_back(act_m);
-        d_vec.push_back(act_d);
-    }
 
 
     // Experiment parameters
@@ -526,16 +531,14 @@ int main(int argc, char* argv[])
 
     // Construct actions
     ParamsType action_params;
-    action_params["planner_name"] = planner_name=="insat" || planner_name=="pinsat"? 1: -1;
-    std::string mprim_file = "../examples/manipulation/resources/shield/irb1600_6_12.mprim";
-    auto mprims = loadMPrims(mprim_file);
-    action_params["length"] = mprims.rows();
-    rm::num_actions = mprims.rows();
+    action_params["planner_type"] = planner_name=="insat" || planner_name=="pinsat"? 1: -1;
+    std::string mprimpath = "../examples/manipulation/resources/shield/irb1600_6_12.mprim";
+
     vector<shared_ptr<Action>> action_ptrs;
     constructActions(action_ptrs, action_params,
                      modelpath,
-                     mprims,
-                     opt_vec_ptr, m_vec, d_vec, num_threads);
+                     mprimpath,
+                     opt_vec_ptr, num_threads);
 
     std::vector<std::shared_ptr<ManipulationAction>> manip_action_ptrs;
     for (auto& a : action_ptrs)
@@ -549,7 +552,7 @@ int main(int argc, char* argv[])
 
     int run_offset = 0;
     num_runs = starts.size();
-//    num_runs = 10;
+    num_runs = 30;
     for (int run = run_offset; run < run_offset+num_runs; ++run)
     {
         // Set goal conditions

@@ -49,15 +49,6 @@ namespace ps
                                                           discretization_(discretization),
                                                           opt_(opt), m_(m_vec), d_(d_vec), mprims_(mprims)
   {
-
-    for (int i=0; i<num_threads; ++i)
-    {
-      mjModel* mod = mj_loadXML(mj_modelpath.c_str(), nullptr, nullptr, 0);
-      mjData* dat = mj_makeData(mod);
-      m_.push_back(mod);
-      d_.push_back(dat);
-    }
-
     // Caching discrete angles per DOF in the robot joint angle range
     VecDf disc_min_ang(m_[0]->nq);
     VecDf disc_max_ang(m_[0]->nq);
@@ -175,7 +166,7 @@ namespace ps
         /// Direct edge to goal
       /// If successor is the same as the state. This will happen if the joint angle is close its limit.
       /// if expanded state is too close to goal
-      if (state.isApprox(goal_, 1e-3) || params_["planner_name"]==1) /// assuming discretization is never finer than 1e-3.
+      if (state.isApprox(goal_, 1e-3) || params_["planner_type"]==1) /// assuming discretization is never finer than 1e-3.
       {
           return goal_;
       }
