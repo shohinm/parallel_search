@@ -165,6 +165,33 @@ namespace ps
     };
   };
 
+  class TaskSpaceAction : public ManipulationAction
+  {
+
+  public:
+    TaskSpaceAction(const std::string& type,
+                    ParamsType params,
+                    std::string& mj_modelpath,
+                    double discretization, MatDf& mprims,
+                    OptVecPtrType& opt,
+                    MjModelVecType& m_vec, MjDataVecType& d_vec,
+                    int num_threads=1,
+                    bool is_expensive = true):
+        ManipulationAction(type,
+                           params,
+                           mj_modelpath,
+                           discretization,
+                           mprims,
+                           opt, m_vec, d_vec,
+                           num_threads,
+                           is_expensive)
+    {
+      if (!(mprims.cols()==2 || mprims.cols()==3))
+      {
+        std::runtime_error("Task space actions primitives should be in 2D or 3D...");
+      }
+    };
+  };
 
 }
 
