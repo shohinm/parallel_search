@@ -1,0 +1,7 @@
+<mujoco model="shield_obstacles_easy">
+
+    <!-- obstacles -->
+    <!-- <include file="shield_obstacles_easy.xml"/> -->
+    <include file="shield_obstacles_hard.xml"/>
+
+</mujoco>

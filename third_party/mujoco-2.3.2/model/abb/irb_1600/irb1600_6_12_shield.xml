@@ -27,28 +27,8 @@
         <!-- Floor -->
         <geom name="floor" pos="0 0 0" size="5 5 .125" type="plane" material="BeigeMaterial" condim="3"  contype="0" conaffinity="0"/>
 
-
-        <!-- simple obstacles -->
-<!--         <body name="cage" pos="0.65 -0.7 0" quat="0.707 0 0 -0.707">
-            <geom name="c1" size="0.1 0.1 1" pos="0.6 0.5 1" type="box" rgba="0.7 0.7 0.7 1" contype="3" conaffinity="3"/>
-            <geom name="c2" size="0.1 0.1 1" pos="-0.6 0.5 1" type="box" rgba="0.7 0.7 0.7 1" contype="3" conaffinity="3"/>
-            <geom name="c3" size="0.1 0.1 1" pos="0.6 -0.6 1" type="box" rgba="0.7 0.7 0.7 1" contype="3" conaffinity="3"/>
-            <geom name="c4" size="0.1 0.1 1" pos="-0.6 -0.6 1" type="box" rgba="0.7 0.7 0.7 1" contype="3" conaffinity="3"/>            
-        </body> -->
-
         <!-- obstacles -->
-        <body name="cage" pos="0.55 -0.7 0" quat="0.707 0 0 -0.707">
-            <!-- vertical -->
-            <geom name="c1" size="0.06 0.06 1" pos="0.900 0.900 1" type="box" rgba="1.0 0.0 0.0 1" contype="3" conaffinity="3"/>
-            <geom name="c2" size="0.06 0.06 1" pos="-0.900 0.900 1" type="box" rgba="1.0 0.0 0.0 1" contype="3" conaffinity="3"/>
-            <geom name="c3" size="0.06 0.06 1" pos="0.900 -0.900 1" type="box" rgba="1.0 0.0 0.0 1" contype="3" conaffinity="3"/>
-            <geom name="c4" size="0.06 0.06 1" pos="-0.900 -0.900 1" type="box" rgba="1.0 0.0 0.0 1" contype="3" conaffinity="3"/>            
-            <!-- horizontal -->
-            <geom name="c5" size="0.06 0.900 0.06" pos="0.900 0 1.25" type="box" rgba="1.0 0.0 0.0 1" contype="3" conaffinity="3"/>
-            <geom name="c6" size="0.900 0.06 0.06" pos="0 0.900 1.25" type="box" rgba="1.0 0.0 0.0 1" contype="3" conaffinity="3"/>
-            <geom name="c7" size="0.06 0.900 0.06" pos="-0.900 0 1.25" type="box" rgba="1.0 0.0 0.0 1" contype="3" conaffinity="3"/>
-            <geom name="c8" size="0.900 0.06 0.06" pos="0 -0.900 1.25" type="box" rgba="1.0 0.0 0.0 1" contype="3" conaffinity="3"/>
-        </body>
+        <include file="shield_obstacles.xml"/>
 
         <body name="pedestal" pos="0.0 0.0 0.0">
             <geom type="mesh" rgba="0 0 1 1" mesh="pedestal" euler="1.57 0 0" contype="1" conaffinity="1"/>

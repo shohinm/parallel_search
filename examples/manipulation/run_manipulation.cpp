@@ -55,18 +55,21 @@ using namespace ps;
 #define TERMINATION_DIST 0.1
 #define DISCRETIZATION 0.05
 
-vector<double> goal;
-int dof;
-int num_actions;
-VecDf discretization;
+namespace rm
+{
+  vector<double> goal;
 
-// Mujoco and LoS heuristic
-mjModel* global_m = nullptr;
-mjData* global_d = nullptr;
-std::unordered_map<size_t, double> heuristic_cache;
+  int dof;
+  int num_actions;
+  VecDf discretization;
 
-// shield heuristic weight
-VecDf shield_h_w;
+  // Mujoco and LoS heuristic
+  mjModel* global_m = nullptr;
+  mjData* global_d = nullptr;
+  std::unordered_map<size_t, double> heuristic_cache;
+  /// shield heuristic weight
+  VecDf shield_h_w;
+}
 
 double roundOff(double value, unsigned char prec)
 {
@@ -74,54 +77,26 @@ double roundOff(double value, unsigned char prec)
     return round(value * pow_10) / pow_10;
 }
 
-double computeHeuristicStateToState(const StateVarsType& state_vars_1, const StateVarsType& state_vars_2)
-{
-    double dist = 0.0;
-    for (int i=0; i<dof-1; ++i)
-    {
-        dist += pow(state_vars_2[i]-state_vars_1[i], 2);
-    }
-    return std::sqrt(dist);
-
-//    VecDf ds(dof);
-//    for (int i=0; i<dof; ++i)
-//    {
-//        ds(i) = state_vars_2[2] - state_vars_1[i];
-//        ds(i) /= discretization(i);
-//    }
-//    return ds.norm();
-}
-
-double computeHeuristic(const StateVarsType& state_vars)
-{
-    return computeHeuristicStateToState(state_vars, goal);
-}
-
 bool isGoalState(const StateVarsType& state_vars, double dist_thresh)
 {
-    for (int i=0; i<dof-2; ++i)
+    /// Joint-wise threshold
+    for (int i=0; i < rm::dof; ++i)
     {
-        if (fabs(goal[i]-state_vars[i]) > dist_thresh)
+        if (fabs(rm::goal[i] - state_vars[i]) > dist_thresh)
         {
             return false;
         }
     }
     return true;
 
-//    double dist=0;
-//    for (int i=0; i<state_vars.size()-2; ++i)
-//    {
-//        dist += std::sqrt((goal[i]-state_vars[i])*(goal[i]-state_vars[i]));
-//    }
-//    return (dist < dist_thresh);
-
+    /// Euclidean threshold
 //    return (computeHeuristic(state_vars) < dist_thresh);
 }
 
 size_t StateKeyGenerator(const StateVarsType& state_vars)
 {
     size_t seed = 0;
-    for (int i=0; i<dof; ++i)
+    for (int i=0; i < rm::dof; ++i)
     {
         boost::hash_combine(seed, state_vars[i]);
     }
@@ -135,7 +110,7 @@ size_t EdgeKeyGenerator(const EdgePtrType& edge_ptr)
 
     controller_id = std::stoi(action_ptr->GetType());
 
-    if (controller_id > num_actions)
+    if (controller_id > rm::num_actions)
     {
         throw runtime_error("Controller type not recognized in getEdgeKey!");
     }
@@ -147,36 +122,51 @@ size_t EdgeKeyGenerator(const EdgePtrType& edge_ptr)
     return seed;
 }
 
+double computeHeuristicStateToState(const StateVarsType& state_vars_1, const StateVarsType& state_vars_2)
+{
+  double dist = 0.0;
+  for (int i=0; i < rm::dof; ++i)
+  {
+    dist += pow(state_vars_2[i]-state_vars_1[i], 2);
+  }
+  return std::sqrt(dist);
+}
+
+double computeHeuristic(const StateVarsType& state_vars)
+{
+  return computeHeuristicStateToState(state_vars, rm::goal);
+}
+
 double computeLoSHeuristic(const StateVarsType& state_vars)
 {
     size_t state_key = StateKeyGenerator(state_vars);
-    if (heuristic_cache.find(state_key) != heuristic_cache.end())
+    if (rm::heuristic_cache.find(state_key) != rm::heuristic_cache.end())
     {
-        return heuristic_cache[state_key];
+        return rm::heuristic_cache[state_key];
     }
 
     double h = computeHeuristic(state_vars);
-    heuristic_cache[state_key] = h;
+    rm::heuristic_cache[state_key] = h;
     int N = static_cast<int>(h)/9e-1;
     Eigen::Map<const VecDf> p1(&state_vars[0], state_vars.size());
-    Eigen::Map<const VecDf> p2(&goal[0], goal.size());
+    Eigen::Map<const VecDf> p2(&rm::goal[0], rm::goal.size());
 
     for (int i=0; i<N; ++i)
     {
         double j = i/static_cast<double>(N);
         VecDf intp_pt = p1*(1-j) + p2*j;
 
-        mju_copy(global_d->qpos, intp_pt.data(), global_m->nq);
-        mj_fwdPosition(global_m, global_d);
+        mju_copy(rm::global_d->qpos, intp_pt.data(), rm::global_m->nq);
+        mj_fwdPosition(rm::global_m, rm::global_d);
 
-        if (global_d->ncon>0)
+        if (rm::global_d->ncon > 0)
         {
-            heuristic_cache[state_key] = 100;
+            rm::heuristic_cache[state_key] = 100;
             break;
         }
     }
 
-    return heuristic_cache[state_key];
+    return rm::heuristic_cache[state_key];
 }
 
 double computeShieldHeuristic(const StateVarsType& state_vars)
@@ -189,9 +179,9 @@ double computeShieldHeuristic(const StateVarsType& state_vars)
 //                  shield_h_w(4) * pow((goal[4] - state_vars[4]),2) +
 //                  shield_h_w(5) * pow((goal[5] - state_vars[5]),2);
 
-    double cost = shield_h_w(0) * pow((goal[0] - state_vars[0]),2) +
-                  shield_h_w(1) * pow((state_vars[1]),2) +
-                  shield_h_w(2) * pow((-M_PI/2 - state_vars[2]),2);
+    double cost = rm::shield_h_w(0) * pow((rm::goal[0] - state_vars[0]), 2) +
+                  rm::shield_h_w(1) * pow((state_vars[1]), 2) +
+                  rm::shield_h_w(2) * pow((-M_PI / 2 - state_vars[2]), 2);
     return std::sqrt(cost);
 }
 
@@ -292,7 +282,7 @@ VecDf genRandomVector(VecDf& low, VecDf& high, int size)
 void generateStartsAndGoals(vector<vector<double>>& starts, vector<vector<double>>& goals, int num_runs, mjModel* m, mjData* d)
 {
     bool valid = true;
-    VecDf hi(dof), lo(dof);
+    VecDf hi(rm::dof), lo(rm::dof);
     hi.setZero(); lo.setZero();
     for (int i=0; i<m->njnt; ++i)
     {
@@ -302,16 +292,16 @@ void generateStartsAndGoals(vector<vector<double>>& starts, vector<vector<double
 
     for (int i=0; i<num_runs; ++i)
     {
-        VecDf st = genRandomVector(lo, hi, dof);
-        VecDf go = genRandomVector(lo, hi, dof);
-        for (int i=0; i<dof; ++i)
+        VecDf st = genRandomVector(lo, hi, rm::dof);
+        VecDf go = genRandomVector(lo, hi, rm::dof);
+        for (int i=0; i < rm::dof; ++i)
         {
             if (i==3 || i==5) { st(i) = go(i) = 0.0;}
         }
 
         std::vector<double> v_st, v_go;
-        v_st.resize(dof);
-        v_go.resize(dof);
+        v_st.resize(rm::dof);
+        v_go.resize(rm::dof);
         VecDf::Map(&v_st[0], st.size()) = st;
         VecDf::Map(&v_go[0], go.size()) = go;
 
@@ -335,8 +325,8 @@ void loadStartsAndGoalsFromFile(vector<vector<double>>& starts,
 //        }
 
         std::vector<double> v_st, v_go;
-        v_st.resize(dof);
-        v_go.resize(dof);
+        v_st.resize(rm::dof);
+        v_go.resize(rm::dof);
         VecDf::Map(&v_st[0], start_mat.cols()) = start_mat.row(i);
         VecDf::Map(&v_go[0], goal_mat.cols()) = goal_mat.row(i);
 
@@ -352,7 +342,7 @@ MatDf sampleTrajectory(const drake::trajectories::BsplineTrajectory<double>& tra
     int i=0;
     for (double t=0.0; t<=traj.end_time(); t+=dt)
     {
-        sampled_traj.conservativeResize(dof, sampled_traj.cols()+1);
+        sampled_traj.conservativeResize(rm::dof, sampled_traj.cols() + 1);
         sampled_traj.col(i) = traj.value(t);
         ++i;
     }
@@ -380,7 +370,7 @@ void setupMujoco(mjModel **m, mjData **d, std::string modelpath)
 
 MatDf loadMPrims(std::string mprim_file)
 {
-  if (!global_m)
+  if (!rm::global_m)
   {
     std::runtime_error("Attempting to load motion primitives before Mujoco model. ERROR!");
   }
@@ -391,8 +381,8 @@ MatDf loadMPrims(std::string mprim_file)
   /// Input prims contain only one direction. Flip the sign for adding prims in the other direction
   int num_input_prim = mprims.rows();
   mprims.conservativeResize(2*mprims.rows(), mprims.cols());
-  mprims.block(num_input_prim,0,num_input_prim,global_m->nq) =
-      -1*mprims.block(0,0,num_input_prim,global_m->nq);
+  mprims.block(num_input_prim, 0, num_input_prim, rm::global_m->nq) =
+      -1*mprims.block(0, 0, num_input_prim, rm::global_m->nq);
   /// Input is in degrees. Convert to radians
   mprims *= (M_PI/180.0);
 
@@ -427,10 +417,10 @@ int main(int argc, char* argv[])
     mjData *d = nullptr;
 
     setupMujoco(&m,&d,modelpath);
-    setupMujoco(&global_m, &global_d, modelpath);
-    dof = m->nq;
-    shield_h_w.resize(dof);
-    shield_h_w << 0, 10, 7, 0.1, 1, 0.1;
+    setupMujoco(&rm::global_m, &rm::global_d, modelpath);
+    rm::dof = m->nq;
+    rm::shield_h_w.resize(rm::dof);
+    rm::shield_h_w << 0, 10, 7, 0.1, 1, 0.1;
 
     ManipulationAction::MjModelVecType m_vec;
     ManipulationAction::MjDataVecType d_vec;
@@ -503,9 +493,9 @@ int main(int argc, char* argv[])
     // Robot Params
     IRB1600 robot_params;
     // Insat Params
-    InsatParams insat_params(dof, 2*dof, dof);
+    InsatParams insat_params(rm::dof, 2 * rm::dof, rm::dof);
     // spline params
-    BSplineOpt::BSplineOptParams spline_params(dof,
+    BSplineOpt::BSplineOptParams spline_params(rm::dof,
                                                planner_params["num_ctrl_points"],
                                                planner_params["spline_order"],
                                                planner_params["min_exec_duration"],
@@ -513,9 +503,9 @@ int main(int argc, char* argv[])
                                                BSplineOpt::BSplineOptParams::ConstraintMode::CONTROLPT);
     spline_params.setAdaptiveParams(planner_params["min_ctrl_points"], planner_params["max_ctrl_points"]);
     // discretization
-    discretization.resize(dof);
-    discretization.setOnes();
-    discretization *= DISCRETIZATION;
+    rm::discretization.resize(rm::dof);
+    rm::discretization.setOnes();
+    rm::discretization *= DISCRETIZATION;
     // discretization = (robot_params.max_q_ - robot_params.min_q_)/50.0;
 
     vector<double> all_maps_time_vec, all_maps_cost_vec;
@@ -540,7 +530,7 @@ int main(int argc, char* argv[])
     std::string mprim_file = "../examples/manipulation/resources/shield/irb1600_6_12.mprim";
     auto mprims = loadMPrims(mprim_file);
     action_params["length"] = mprims.rows();
-    num_actions = mprims.rows();
+    rm::num_actions = mprims.rows();
     vector<shared_ptr<Action>> action_ptrs;
     constructActions(action_ptrs, action_params,
                      modelpath,
@@ -563,12 +553,12 @@ int main(int argc, char* argv[])
     for (int run = run_offset; run < run_offset+num_runs; ++run)
     {
         // Set goal conditions
-        goal = goals[run];
+        rm::goal = goals[run];
         auto start = starts[run];
 
         for (auto& op : *opt_vec_ptr)
         {
-            op.updateStartAndGoal(start, goal);
+            op.updateStartAndGoal(start, rm::goal);
         }
 
         for (auto& m : manip_action_ptrs)
@@ -577,7 +567,7 @@ int main(int argc, char* argv[])
         }
 
         // Clear heuristic cache
-        heuristic_cache.clear();
+        rm::heuristic_cache.clear();
 
         // Construct planner
         shared_ptr<Planner> planner_ptr;
@@ -612,7 +602,7 @@ int main(int argc, char* argv[])
         planner_ptr->SetStartState(start);
         if ((planner_name == "rrt") || (planner_name == "rrtconnect"))
         {
-            planner_ptr->SetGoalState(goal);
+            planner_ptr->SetGoalState(rm::goal);
         }
 
 
@@ -692,10 +682,10 @@ int main(int argc, char* argv[])
             /// track logs
             start_log.conservativeResize(start_log.rows()+1, insat_params.lowD_dims_);
             goal_log.conservativeResize(goal_log.rows()+1, insat_params.lowD_dims_);
-            for (int i=0; i<dof; ++i)
+            for (int i=0; i < rm::dof; ++i)
             {
-                Eigen::Map<const VecDf> svec(&starts[run][0], dof);
-                Eigen::Map<const VecDf> gvec(&goals[run][0], dof);
+                Eigen::Map<const VecDf> svec(&starts[run][0], rm::dof);
+                Eigen::Map<const VecDf> gvec(&goals[run][0], rm::dof);
                 start_log.bottomRows(1) = svec.transpose();
                 goal_log.bottomRows(1) = gvec.transpose();
             }
