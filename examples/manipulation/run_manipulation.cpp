@@ -780,6 +780,28 @@ int main(int argc, char* argv[])
     {
         traj_log.transposeInPlace();
         writeEigenToFile(traj_path, traj_log);
+
+      ofstream traj_fout("../logs/" + planner_name + "_abb_path.txt");
+
+      for (auto& p : plan_vec)
+      {
+        for (auto& wp : p)
+        {
+          for (auto& j : wp.state_)
+          {
+            traj_fout << j << " ";
+          }
+          traj_fout << endl;
+        }
+
+        for (auto& j : dummy_wp)
+        {
+          traj_fout << j << " ";
+        }
+        traj_fout << endl;
+      }
+
+      traj_fout.close();
     }
     else
     {
