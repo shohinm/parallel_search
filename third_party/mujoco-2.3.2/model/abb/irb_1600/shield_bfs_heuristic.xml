@@ -33,7 +33,7 @@
         <body name="b1" pos="0.55 -0.7 0.75" quat="1 0 0 0">
             <inertial pos="0 0 0" mass=".1" diaginertia="1e-4 1e-4 1e-4"/>
             <joint name="b1" type="free" limited="false" />
-            <geom name="b1" type="sphere" size="0.05" rgba="1 1 0 1" contype="1" conaffinity="1"/>
+            <geom name="b1" type="sphere" size="0.02" rgba="1 1 0 1" contype="1" conaffinity="1"/>
         </body>
 
     </worldbody>
