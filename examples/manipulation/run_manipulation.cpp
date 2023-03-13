@@ -45,6 +45,7 @@
 #include <planners/EpasePlanner.hpp>
 #include <planners/GepasePlanner.hpp>
 #include <planners/WastarPlanner.hpp>
+#include <planners/BFSPlanner.hpp>
 #include "ManipulationActions.hpp"
 #include <mujoco/mujoco.h>
 #include <planners/insat/opt/BSplineOpt.hpp>
@@ -53,7 +54,7 @@ using namespace std;
 using namespace ps;
 
 #define TERMINATION_DIST 0.1
-#define BFS_DISCRETIZATION 0.02
+#define BFS_DISCRETIZATION 0.01
 #define DISCRETIZATION 0.05
 
 namespace rm
@@ -61,15 +62,22 @@ namespace rm
   vector<double> goal;
 
   int dof;
-  int num_actions;
   VecDf discretization;
 
-  // Mujoco and LoS heuristic
+  // Mujoco
   mjModel* global_m = nullptr;
   mjData* global_d = nullptr;
+  /// LoS heuristic
   std::unordered_map<size_t, double> heuristic_cache;
   /// shield heuristic weight
   VecDf shield_h_w;
+
+  // BFS
+  /// BFS model Mj Handles
+  mjModel* global_bfs_m = nullptr;
+  mjData* global_bfs_d = nullptr;
+  /// State Map for BFS heuristic
+  ps::Planner::StatePtrMapType bfs_state_map;
 }
 
 double roundOff(double value, unsigned char prec)
@@ -94,6 +102,11 @@ bool isGoalState(const StateVarsType& state_vars, double dist_thresh)
 //    return (computeHeuristic(state_vars) < dist_thresh);
 }
 
+bool isBFS3DGoalState(const StateVarsType& state_vars, double dist_thresh)
+{
+  return false;
+}
+
 size_t StateKeyGenerator(const StateVarsType& state_vars)
 {
     size_t seed = 0;
@@ -104,17 +117,22 @@ size_t StateKeyGenerator(const StateVarsType& state_vars)
     return seed;
 }
 
+size_t BFS3DStateKeyGenerator(const StateVarsType& state_vars)
+{
+  size_t seed = 0;
+  for (int i=0; i < 3; ++i)
+  {
+    boost::hash_combine(seed, state_vars[i]);
+  }
+  return seed;
+}
+
 size_t EdgeKeyGenerator(const EdgePtrType& edge_ptr)
 {
     int controller_id;
     auto action_ptr = edge_ptr->action_ptr_;
 
     controller_id = std::stoi(action_ptr->GetType());
-
-    if (controller_id > rm::num_actions)
-    {
-        throw runtime_error("Controller type not recognized in getEdgeKey!");
-    }
 
     size_t seed = 0;
     boost::hash_combine(seed, edge_ptr->parent_state_ptr_->GetStateID());
@@ -131,6 +149,11 @@ double computeHeuristicStateToState(const StateVarsType& state_vars_1, const Sta
     dist += pow(state_vars_2[i]-state_vars_1[i], 2);
   }
   return std::sqrt(dist);
+}
+
+double zeroHeuristic(const StateVarsType& state_vars)
+{
+  return 0.0;
 }
 
 double computeHeuristic(const StateVarsType& state_vars)
@@ -186,6 +209,12 @@ double computeShieldHeuristic(const StateVarsType& state_vars)
     return std::sqrt(cost);
 }
 
+double computeBFSHeuristic(const StateVarsType& state_vars)
+{
+  size_t state_key = StateKeyGenerator(state_vars);
+  return rm::bfs_state_map[state_key]->GetFValue();
+}
+
 void postProcess(std::vector<PlanElement>& path, double& cost, double allowed_time, const shared_ptr<Action>& act, BSplineOpt& opt)
 {
     cout << "Post processing with timeout: " << allowed_time << endl;
@@ -231,8 +260,8 @@ MatDf loadMPrims(std::string mprim_file)
   /// Input prims contain only one direction. Flip the sign for adding prims in the other direction
   int num_input_prim = mprims.rows();
   mprims.conservativeResize(2*mprims.rows(), mprims.cols());
-  mprims.block(num_input_prim, 0, num_input_prim, rm::global_m->nq) =
-      -1*mprims.block(0, 0, num_input_prim, rm::global_m->nq);
+  mprims.block(num_input_prim, 0, num_input_prim, mprims.cols()) =
+      -1*mprims.block(0, 0, num_input_prim, mprims.cols());
 
   return mprims;
 }
@@ -243,9 +272,6 @@ void constructActions(vector<shared_ptr<Action>>& action_ptrs,
                       ManipulationAction::OptVecPtrType& opt,
                       int num_threads)
 {
-    /// Cspace prims
-    ManipulationAction::Mode mprim_mode = ManipulationAction::Mode::CSPACE;
-
     /// Vectorize simulator handle
     ManipulationAction::MjModelVecType m_vec;
     ManipulationAction::MjDataVecType d_vec;
@@ -262,14 +288,13 @@ void constructActions(vector<shared_ptr<Action>>& action_ptrs,
     auto mprims = loadMPrims(mprimpath);
     mprims *= (M_PI/180.0); /// Input is in degrees. Convert to radians
     action_params["length"] = mprims.rows();
-    rm::num_actions = mprims.rows();
 
     for (int i=0; i<=action_params["length"]; ++i)
     {
         if (i == action_params["length"])
         {
             auto one_joint_action = std::make_shared<OneJointAtATime>(std::to_string(i), action_params,
-                                                                      mprim_mode, DISCRETIZATION, mprims,
+                                                                      DISCRETIZATION, mprims,
                                                                       opt, m_vec, d_vec, num_threads, 1);
             action_ptrs.emplace_back(one_joint_action);
         }
@@ -277,7 +302,7 @@ void constructActions(vector<shared_ptr<Action>>& action_ptrs,
         {
             bool is_expensive = (action_params["planner_name"] == 1) ? 1 : 0;
             auto one_joint_action = std::make_shared<OneJointAtATime>(std::to_string(i), action_params,
-                                                                      mprim_mode, DISCRETIZATION, mprims,
+                                                                      DISCRETIZATION, mprims,
                                                                       opt, m_vec, d_vec, num_threads, is_expensive);
             action_ptrs.emplace_back(one_joint_action);
         }
@@ -291,12 +316,8 @@ void constructActions(vector<shared_ptr<Action>>& action_ptrs,
 void constructBFSActions(vector<shared_ptr<Action>>& action_ptrs,
                          ParamsType& action_params,
                          std::string& mj_modelpath, std::string& mprimpath,
-                         ManipulationAction::OptVecPtrType& opt,
                          int num_threads)
 {
-  /// Cspace prims
-  ManipulationAction::Mode mprim_mode = ManipulationAction::Mode::TASKSPACE3D;
-
   /// Vectorize simulator handle
   ManipulationAction::MjModelVecType m_vec;
   ManipulationAction::MjDataVecType d_vec;
@@ -312,13 +333,12 @@ void constructBFSActions(vector<shared_ptr<Action>>& action_ptrs,
   /// Load mprims
   auto mprims = loadMPrims(mprimpath);
   action_params["length"] = mprims.rows();
-  rm::num_actions = mprims.rows();
 
   for (int i=0; i<action_params["length"]; ++i)
   {
-    auto one_joint_action = std::make_shared<OneJointAtATime>(std::to_string(i), action_params,
-                                                              mprim_mode, BFS_DISCRETIZATION, mprims,
-                                                              opt, m_vec, d_vec, num_threads, 0);
+    auto one_joint_action = std::make_shared<TaskSpaceAction>(std::to_string(i), action_params,
+                                                              BFS_DISCRETIZATION, mprims,
+                                                              m_vec, d_vec, num_threads, 0);
     action_ptrs.emplace_back(one_joint_action);
   }
 }
@@ -343,12 +363,15 @@ void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vec
     else
         throw runtime_error("Planner type not identified!");
 
+    /// Heuristic
+//    planner_ptr->SetHeuristicGenerator(bind(computeHeuristic, placeholders::_1));
+//    planner_ptr->SetHeuristicGenerator(bind(computeLoSHeuristic, placeholders::_1));
+//    planner_ptr->SetHeuristicGenerator(bind(computeShieldHeuristic, placeholders::_1));
+    planner_ptr->SetHeuristicGenerator(bind(computeBFSHeuristic, placeholders::_1));
+
     planner_ptr->SetActions(action_ptrs);
     planner_ptr->SetStateMapKeyGenerator(bind(StateKeyGenerator, placeholders::_1));
     planner_ptr->SetEdgeKeyGenerator(bind(EdgeKeyGenerator, placeholders::_1));
-    planner_ptr->SetHeuristicGenerator(bind(computeHeuristic, placeholders::_1));
-    // planner_ptr->SetHeuristicGenerator(bind(computeLoSHeuristic, placeholders::_1));
-    // planner_ptr->SetHeuristicGenerator(bind(computeShieldHeuristic, placeholders::_1));
     planner_ptr->SetStateToStateHeuristicGenerator(bind(computeHeuristicStateToState, placeholders::_1, placeholders::_2));
     planner_ptr->SetGoalChecker(bind(isGoalState, placeholders::_1, TERMINATION_DIST));
     if ((planner_name == "insat") || (planner_name == "pinsat") || (planner_name == "epase") || (planner_name == "gepase"))
@@ -359,6 +382,33 @@ void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vec
     {
         planner_ptr->SetPostProcessor(bind(postProcessWithControlPoints, placeholders::_1, placeholders::_2, placeholders::_3, action_ptrs[0], opt));        
     }
+}
+
+void setBFSHeuristic(StateVarsType& start, std::shared_ptr<Planner>& bfs_planner_ptr,
+                     std::vector<shared_ptr<Action>>& bfs_action_ptrs, ParamsType& planner_params)
+{
+  bfs_planner_ptr->SetActions(bfs_action_ptrs);
+  bfs_planner_ptr->SetStateMapKeyGenerator(bind(BFS3DStateKeyGenerator, placeholders::_1));
+  bfs_planner_ptr->SetEdgeKeyGenerator(bind(EdgeKeyGenerator, placeholders::_1));
+  bfs_planner_ptr->SetGoalChecker(bind(isBFS3DGoalState, placeholders::_1, TERMINATION_DIST));
+  bfs_planner_ptr->SetHeuristicGenerator(bind(zeroHeuristic, placeholders::_1));
+
+  mju_copy(rm::global_d->qpos, start.data(), rm::global_m->nq);
+  mju_zero(rm::global_d->qvel, rm::global_m->nv);
+  mju_zero(rm::global_d->qacc, rm::global_m->nv);
+  mj_kinematics(rm::global_m, rm::global_d);
+  // ee pose
+  std::vector<double> ee_pos(3, 0.0);
+  double xpos[rm::global_m->nbody*3];
+  mju_copy(xpos, rm::global_d->xpos, rm::global_m->nbody*3);
+  ee_pos[0] = xpos[3*(rm::global_m->nbody-1)];
+  ee_pos[1] = xpos[3*(rm::global_m->nbody-1) + 1];
+  ee_pos[2] = xpos[3*(rm::global_m->nbody-1) + 2];
+
+  bfs_planner_ptr->SetStartState(ee_pos);
+  bfs_planner_ptr->Plan();
+
+  rm::bfs_state_map = bfs_planner_ptr->GetStateMap();
 }
 
 std::random_device rd;
@@ -576,12 +626,19 @@ int main(int argc, char* argv[])
     ParamsType action_params;
     action_params["planner_type"] = planner_name=="insat" || planner_name=="pinsat"? 1: -1;
     std::string mprimpath = "../examples/manipulation/resources/shield/irb1600_6_12.mprim";
-
     vector<shared_ptr<Action>> action_ptrs;
     constructActions(action_ptrs, action_params,
                      modelpath,
                      mprimpath,
                      opt_vec_ptr, num_threads);
+
+    // Construct BFS actions
+    std::string bfsmodelpath = "../third_party/mujoco-2.3.2/model/abb/irb_1600/shield_bfs_heuristic.xml";
+    setupMujoco(&rm::global_bfs_m, &rm::global_bfs_d, bfsmodelpath);
+    std::string bfsmprimpath = "../examples/manipulation/resources/shield/bfs3d.mprim";
+    vector<shared_ptr<Action>> bfs_action_ptrs;
+    constructBFSActions(bfs_action_ptrs, action_params,
+                       bfsmodelpath, bfsmprimpath, num_threads);
 
     std::vector<std::shared_ptr<ManipulationAction>> manip_action_ptrs;
     for (auto& a : action_ptrs)
@@ -612,8 +669,12 @@ int main(int argc, char* argv[])
             m->setGoal(goals[run]);
         }
 
-        // Clear heuristic cache
+        /// Clear heuristic cache
         rm::heuristic_cache.clear();
+
+        /// Set BFS heuristic
+        std::shared_ptr<Planner> bfs_planner_ptr = std::make_shared<BFSPlanner>(planner_params);
+        setBFSHeuristic(goals[run], bfs_planner_ptr, bfs_action_ptrs, planner_params);
 
         // Construct planner
         shared_ptr<Planner> planner_ptr;
@@ -781,27 +842,27 @@ int main(int argc, char* argv[])
         traj_log.transposeInPlace();
         writeEigenToFile(traj_path, traj_log);
 
-      ofstream traj_fout("../logs/" + planner_name + "_abb_path.txt");
+        ofstream traj_fout("../logs/" + planner_name + "_abb_path.txt");
 
-      for (auto& p : plan_vec)
-      {
-        for (auto& wp : p)
+        for (auto& p : plan_vec)
         {
-          for (auto& j : wp.state_)
+          for (auto& wp : p)
+          {
+            for (auto& j : wp.state_)
+            {
+              traj_fout << j << " ";
+            }
+            traj_fout << endl;
+          }
+
+          for (auto& j : dummy_wp)
           {
             traj_fout << j << " ";
           }
           traj_fout << endl;
         }
 
-        for (auto& j : dummy_wp)
-        {
-          traj_fout << j << " ";
-        }
-        traj_fout << endl;
-      }
-
-      traj_fout.close();
+        traj_fout.close();
     }
     else
     {
@@ -824,9 +885,8 @@ int main(int argc, char* argv[])
             }
             traj_fout << endl;
         }
-        
-        traj_fout.close();
 
+        traj_fout.close();
     }
 
     writeEigenToFile(starts_path, start_log);
