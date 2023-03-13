@@ -56,16 +56,19 @@ namespace ps
     typedef BSplineOpt OptType;
     typedef std::vector<OptType> OptVecType;
     typedef std::shared_ptr<OptVecType> OptVecPtrType;
+    typedef std::vector<mjModel*> MjModelVecType; /// MuJoCo
+    typedef std::vector<mjData*> MjDataVecType; /// MuJoCo
 
-    /// Mujoco
-    typedef std::vector<mjModel*> MjModelVecType;
-    typedef std::vector<mjData*> MjDataVecType;
-//    typedef std::vector<std::shared_ptr<mjModel>> MjModelVecType;
-//    typedef std::vector<std::shared_ptr<mjData>> MjDataVecType;
+    enum Mode
+    {
+      CSPACE = 0,
+      TASKSPACE,
+      TASKSPACE3D
+    };
 
     ManipulationAction(const std::string& type,
                      ParamsType params,
-                     std::string& mj_modelpath,
+                     Mode mode,
                      double discretization,
                      MatDf& mprims,
                      OptVecPtrType& opt,
@@ -125,7 +128,7 @@ namespace ps
     MatDf mprims_;
     double discretization_;
     std::unordered_map<int, VecDf> discrete_angles_;
-//    MatDf discrete_angles_;
+    Mode mprim_mode_;
 
     /// Optimizer stuff
     OptVecPtrType opt_;
@@ -147,7 +150,7 @@ namespace ps
   public:
     OneJointAtATime(const std::string& type,
                     ParamsType params,
-                    std::string& mj_modelpath,
+                    Mode mode,
                     double discretization, MatDf& mprims,
                     OptVecPtrType& opt,
                     MjModelVecType& m_vec, MjDataVecType& d_vec,
@@ -155,7 +158,7 @@ namespace ps
                     bool is_expensive = true):
             ManipulationAction(type,
                                params,
-                               mj_modelpath,
+                               mode,
                                discretization,
                                mprims,
                                opt, m_vec, d_vec,
@@ -171,7 +174,7 @@ namespace ps
   public:
     TaskSpaceAction(const std::string& type,
                     ParamsType params,
-                    std::string& mj_modelpath,
+                    Mode mode,
                     double discretization, MatDf& mprims,
                     OptVecPtrType& opt,
                     MjModelVecType& m_vec, MjDataVecType& d_vec,
@@ -179,7 +182,7 @@ namespace ps
                     bool is_expensive = true):
         ManipulationAction(type,
                            params,
-                           mj_modelpath,
+                           mode,
                            discretization,
                            mprims,
                            opt, m_vec, d_vec,

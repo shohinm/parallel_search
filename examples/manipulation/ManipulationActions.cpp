@@ -39,14 +39,14 @@ namespace ps
 {
   ManipulationAction::ManipulationAction(const std::string& type,
                                          ParamsType params,
-                                         std::string& mj_modelpath,
+                                         Mode mode,
                                          double discretization,
                                          MatDf& mprims,
                                          OptVecPtrType& opt,
                                          MjModelVecType& m_vec, MjDataVecType& d_vec,
                                          int num_threads,
                                          bool is_expensive) : InsatAction(type, params, is_expensive),
-                                                          discretization_(discretization),
+                                                          mprim_mode_(mode),  discretization_(discretization),
                                                           opt_(opt), m_(m_vec), d_(d_vec), mprims_(mprims)
   {
     // Caching discrete angles per DOF in the robot joint angle range
