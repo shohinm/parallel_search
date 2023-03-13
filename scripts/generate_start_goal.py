@@ -129,13 +129,9 @@ while s < data_size:
                 goals = np.append(goals, go_q[np.newaxis,:], axis=0)
 
                 with open(start_file, "ab") as f:
-                    if s>0:
-                        f.write(b"\n")
                     np.savetxt(f, starts[-1, :], delimiter=' ')
 
                 with open(goal_file, "ab") as f:
-                    if s>0:
-                        f.write(b"\n")
                     np.savetxt(f, goals[-1, :], delimiter=' ')
 
                 s = s+1
