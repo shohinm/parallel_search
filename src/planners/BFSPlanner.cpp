@@ -75,6 +75,11 @@ namespace ps
 
     }
 
+    if (state_open_list_.empty())
+    {
+      std::cout << "[BFSPlanner::Plan] BFS ran exhaustively until OPEN is empty!" << std::endl;
+    }
+
     auto t_end = std::chrono::steady_clock::now();
     double t_elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(t_end-t_start_).count();
     planner_stats_.total_time_ = 1e-9*t_elapsed;
