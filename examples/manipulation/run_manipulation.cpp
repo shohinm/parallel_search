@@ -365,20 +365,20 @@ void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vec
 
     /// Heuristic
 //    planner_ptr->SetHeuristicGenerator(bind(computeHeuristic, placeholders::_1));
-    planner_ptr->SetHeuristicGenerator(bind(computeLoSHeuristic, placeholders::_1));
+//    planner_ptr->SetHeuristicGenerator(bind(computeLoSHeuristic, placeholders::_1));
 //    planner_ptr->SetHeuristicGenerator(bind(computeShieldHeuristic, placeholders::_1));
-//    planner_ptr->SetHeuristicGenerator(bind(computeBFSHeuristic, placeholders::_1));
+    planner_ptr->SetHeuristicGenerator(bind(computeBFSHeuristic, placeholders::_1));
 
     planner_ptr->SetActions(action_ptrs);
     planner_ptr->SetStateMapKeyGenerator(bind(StateKeyGenerator, placeholders::_1));
     planner_ptr->SetEdgeKeyGenerator(bind(EdgeKeyGenerator, placeholders::_1));
     planner_ptr->SetStateToStateHeuristicGenerator(bind(computeHeuristicStateToState, placeholders::_1, placeholders::_2));
     planner_ptr->SetGoalChecker(bind(isGoalState, placeholders::_1, TERMINATION_DIST));
-    if ((planner_name == "insat") || (planner_name == "pinsat") || (planner_name == "epase") || (planner_name == "gepase"))
+    if ((planner_name == "epase") || (planner_name == "gepase"))
     {
         planner_ptr->SetPostProcessor(bind(postProcess, placeholders::_1, placeholders::_2, placeholders::_3, action_ptrs[0], opt));
     }
-    else
+    else if ((planner_name == "rrt") || (planner_name == "rrtconnect"))
     {
         planner_ptr->SetPostProcessor(bind(postProcessWithControlPoints, placeholders::_1, placeholders::_2, placeholders::_3, action_ptrs[0], opt));        
     }
@@ -651,8 +651,8 @@ int main(int argc, char* argv[])
     vector<vector<PlanElement>> plan_vec;
 
     int run_offset = 0;
-//    num_runs = starts.size();
-    num_runs = 30;
+    num_runs = starts.size();
+//    num_runs = 5;
     for (int run = run_offset; run < run_offset+num_runs; ++run)
     {
         // Set goal conditions
@@ -674,7 +674,7 @@ int main(int argc, char* argv[])
 
         /// Set BFS heuristic
         std::shared_ptr<Planner> bfs_planner_ptr = std::make_shared<BFSPlanner>(planner_params);
-//        setBFSHeuristic(goals[run], bfs_planner_ptr, bfs_action_ptrs, planner_params);
+        setBFSHeuristic(goals[run], bfs_planner_ptr, bfs_action_ptrs, planner_params);
 
         // Construct planner
         shared_ptr<Planner> planner_ptr;
