@@ -69,6 +69,11 @@ def ik(x,r):
 
 num_regions = 8
 
+start_file = '../examples/manipulation/resources/shield/starts.txt'
+goal_file = '../examples/manipulation/resources/shield/goals.txt'
+open(start_file, 'w').close()
+open(goal_file, 'w').close()
+
 s = 0
 while s < data_size:
     sid = 0
@@ -122,6 +127,17 @@ while s < data_size:
             try:
                 starts = np.append(starts, st_q[np.newaxis,:], axis=0)
                 goals = np.append(goals, go_q[np.newaxis,:], axis=0)
+
+                with open(start_file, "ab") as f:
+                    if s>0:
+                        f.write(b"\n")
+                    np.savetxt(f, starts[-1, :], delimiter=' ')
+
+                with open(goal_file, "ab") as f:
+                    if s>0:
+                        f.write(b"\n")
+                    np.savetxt(f, goals[-1, :], delimiter=' ')
+
                 s = s+1
             except Exception as e: 
                 print(e)
@@ -137,7 +153,3 @@ while s < data_size:
         #     pdb.set_trace()
 
 
-start_file = '../examples/manipulation/resources/shield/starts.txt'
-goal_file = '../examples/manipulation/resources/shield/goals.txt'
-np.savetxt(start_file, starts, delimiter=' ')
-np.savetxt(goal_file, goals, delimiter=' ')
