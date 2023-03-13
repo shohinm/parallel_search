@@ -42,7 +42,7 @@ namespace ps
                                          Mode mode,
                                          double discretization,
                                          MatDf& mprims,
-                                         OptVecPtrType& opt,
+                                         OptVecPtrType opt,
                                          MjModelVecType& m_vec, MjDataVecType& d_vec,
                                          int num_threads,
                                          bool is_expensive) : InsatAction(type, params, is_expensive),
@@ -71,10 +71,6 @@ namespace ps
     }
     else if (mprim_mode_ == Mode::TASKSPACE3D)
     {
-      for (int i=0; i<6; ++i)
-      {
-        std::cout << m_vec[0]->numeric_data[i] << std::endl;
-      }
       // Caching discrete angles per DOF in the robot joint angle range
       VecDf disc_min_xyz(3);
       VecDf disc_max_xyz(3);
@@ -230,7 +226,10 @@ namespace ps
     else if (mprim_mode_ == Mode::TASKSPACE3D)
     {
       VecDf succ(3);
-      succ = state + mprims_.row(prim_id);
+      for (int j=0; j<3; ++j)
+      {
+        succ(j) = state(j) + mprims_(prim_id,j);
+      }
       succ = contToDisc(succ, thread_id);
 
       /// If successor is the same as the state. This will happen if the joint angle is close its limit.
@@ -389,14 +388,15 @@ namespace ps
     }
     else if (mprim_mode_ == Mode::TASKSPACE3D)
     {
-      if (state(0) <= m_[thread_id]->numeric_data[0] ||
-          state(1) <= m_[thread_id]->numeric_data[1] ||
-          state(2) <= m_[thread_id]->numeric_data[2] ||
-          state(0) >= m_[thread_id]->numeric_data[3] ||
-          state(1) >= m_[thread_id]->numeric_data[4] ||
-          state(2) >= m_[thread_id]->numeric_data[5])
+      valid = false;
+      if (state(0) >= m_[thread_id]->numeric_data[0] &&
+          state(1) >= m_[thread_id]->numeric_data[1] &&
+          state(2) >= m_[thread_id]->numeric_data[2] &&
+          state(0) <= m_[thread_id]->numeric_data[3] &&
+          state(1) <= m_[thread_id]->numeric_data[4] &&
+          state(2) <= m_[thread_id]->numeric_data[5])
       {
-        valid = false;
+        valid = true;
       }
     }
 

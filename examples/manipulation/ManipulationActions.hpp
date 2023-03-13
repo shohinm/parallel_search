@@ -70,7 +70,7 @@ namespace ps
                      Mode mode,
                      double discretization,
                      MatDf& mprims,
-                     OptVecPtrType& opt,
+                     OptVecPtrType opt,
                      MjModelVecType& m_vec, MjDataVecType& d_vec,
                      int num_threads=1,
                      bool is_expensive = true);
@@ -149,15 +149,14 @@ namespace ps
   public:
     OneJointAtATime(const std::string& type,
                     ParamsType params,
-                    Mode mode,
                     double discretization, MatDf& mprims,
-                    OptVecPtrType& opt,
+                    OptVecPtrType opt,
                     MjModelVecType& m_vec, MjDataVecType& d_vec,
                     int num_threads=1,
                     bool is_expensive = true):
             ManipulationAction(type,
                                params,
-                               mode,
+                               Mode::CSPACE,
                                discretization,
                                mprims,
                                opt, m_vec, d_vec,
@@ -173,18 +172,16 @@ namespace ps
   public:
     TaskSpaceAction(const std::string& type,
                     ParamsType params,
-                    Mode mode,
                     double discretization, MatDf& mprims,
-                    OptVecPtrType& opt,
                     MjModelVecType& m_vec, MjDataVecType& d_vec,
                     int num_threads=1,
                     bool is_expensive = true):
         ManipulationAction(type,
                            params,
-                           mode,
+                           Mode::TASKSPACE3D,
                            discretization,
                            mprims,
-                           opt, m_vec, d_vec,
+                           nullptr, m_vec, d_vec,
                            num_threads,
                            is_expensive)
     {
