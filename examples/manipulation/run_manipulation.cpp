@@ -232,8 +232,6 @@ MatDf loadMPrims(std::string mprim_file)
   mprims.conservativeResize(2*mprims.rows(), mprims.cols());
   mprims.block(num_input_prim, 0, num_input_prim, rm::global_m->nq) =
       -1*mprims.block(0, 0, num_input_prim, rm::global_m->nq);
-  /// Input is in degrees. Convert to radians
-  mprims *= (M_PI/180.0);
 
   return mprims;
 }
@@ -259,6 +257,7 @@ void constructActions(vector<shared_ptr<Action>>& action_ptrs,
 
     /// Load mprims
     auto mprims = loadMPrims(mprimpath);
+    mprims *= (M_PI/180.0); /// Input is in degrees. Convert to radians
     action_params["length"] = mprims.rows();
     rm::num_actions = mprims.rows();
 
@@ -267,14 +266,14 @@ void constructActions(vector<shared_ptr<Action>>& action_ptrs,
         if (i == action_params["length"])
         {
             auto one_joint_action = std::make_shared<OneJointAtATime>(std::to_string(i), action_params,
-                                                                      mj_modelpath, DISCRETIZATION, mprims,
+                                                                      DISCRETIZATION, mprims,
                                                                       opt, m_vec, d_vec, num_threads, 1);
             action_ptrs.emplace_back(one_joint_action);
         }
         else
         {
             auto one_joint_action = std::make_shared<OneJointAtATime>(std::to_string(i), action_params,
-                                                                      mj_modelpath, DISCRETIZATION, mprims,
+                                                                      DISCRETIZATION, mprims,
                                                                       opt, m_vec, d_vec, num_threads, 0);
             action_ptrs.emplace_back(one_joint_action);
         }
