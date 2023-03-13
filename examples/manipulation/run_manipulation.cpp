@@ -365,9 +365,9 @@ void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vec
 
     /// Heuristic
 //    planner_ptr->SetHeuristicGenerator(bind(computeHeuristic, placeholders::_1));
-//    planner_ptr->SetHeuristicGenerator(bind(computeLoSHeuristic, placeholders::_1));
+    planner_ptr->SetHeuristicGenerator(bind(computeLoSHeuristic, placeholders::_1));
 //    planner_ptr->SetHeuristicGenerator(bind(computeShieldHeuristic, placeholders::_1));
-    planner_ptr->SetHeuristicGenerator(bind(computeBFSHeuristic, placeholders::_1));
+//    planner_ptr->SetHeuristicGenerator(bind(computeBFSHeuristic, placeholders::_1));
 
     planner_ptr->SetActions(action_ptrs);
     planner_ptr->SetStateMapKeyGenerator(bind(StateKeyGenerator, placeholders::_1));
@@ -651,8 +651,8 @@ int main(int argc, char* argv[])
     vector<vector<PlanElement>> plan_vec;
 
     int run_offset = 0;
-    num_runs = starts.size();
-//    num_runs = 30;
+//    num_runs = starts.size();
+    num_runs = 30;
     for (int run = run_offset; run < run_offset+num_runs; ++run)
     {
         // Set goal conditions
@@ -674,7 +674,7 @@ int main(int argc, char* argv[])
 
         /// Set BFS heuristic
         std::shared_ptr<Planner> bfs_planner_ptr = std::make_shared<BFSPlanner>(planner_params);
-        setBFSHeuristic(goals[run], bfs_planner_ptr, bfs_action_ptrs, planner_params);
+//        setBFSHeuristic(goals[run], bfs_planner_ptr, bfs_action_ptrs, planner_params);
 
         // Construct planner
         shared_ptr<Planner> planner_ptr;
@@ -808,6 +808,9 @@ int main(int argc, char* argv[])
                 traj_log.rightCols(1) = -1*VecDf::Ones(insat_params.lowD_dims_);
                 all_execution_time.push_back(soln_traj.traj_.end_time());
                 cout << "Execution time: " << soln_traj.traj_.end_time() << endl;
+
+                auto plan = planner_ptr->GetPlan();
+                plan_vec.emplace_back(plan);
             }
             else
             {
