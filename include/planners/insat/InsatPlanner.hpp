@@ -48,7 +48,7 @@ namespace ps
 
         void resetStates();
 
-        void constructPlan(InsatStatePtrType& state_ptr);
+        void constructPlan(InsatStatePtrType& insat_state_ptr);
 
         void exit();
 
