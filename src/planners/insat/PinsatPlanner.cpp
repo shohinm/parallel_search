@@ -291,7 +291,8 @@ void PinsatPlanner::expand(InsatEdgePtrType edge_ptr, int thread_id)
 
                 if (action_ptr->IsExpensive())
                 {
-                    if (VERBOSE) cout << "Pushing successor with g_val: " << state_ptr->GetGValue() << " | h_val: " << state_ptr->GetHValue() << endl;
+                    if (VERBOSE) edge_ptr_next->Print("Pushing to open: ");
+
                     edge_open_list_.push(edge_ptr_next);
                     notifyMainThread();
                 }
@@ -339,7 +340,7 @@ void PinsatPlanner::expandEdge(InsatEdgePtrType edge_ptr, int thread_id)
 {
 
     auto action_ptr = edge_ptr->action_ptr_;
-
+    if (VERBOSE) edge_ptr->Print("Expanding ");
     lock_.unlock();
     // Evaluate the edge
     auto t_start = chrono::steady_clock::now();
