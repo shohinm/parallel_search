@@ -53,6 +53,7 @@ using namespace std;
 using namespace ps;
 
 #define TERMINATION_DIST 0.1
+#define BFS_DISCRETIZATION 0.02
 #define DISCRETIZATION 0.05
 
 namespace rm
@@ -285,6 +286,43 @@ void constructActions(vector<shared_ptr<Action>>& action_ptrs,
     // So that the adaptive primitive is tried first
     reverse(action_ptrs.begin(), action_ptrs.end());
 }
+
+
+void constructBFSActions(vector<shared_ptr<Action>>& action_ptrs,
+                         ParamsType& action_params,
+                         std::string& mj_modelpath, std::string& mprimpath,
+                         ManipulationAction::OptVecPtrType& opt,
+                         int num_threads)
+{
+  /// Cspace prims
+  ManipulationAction::Mode mprim_mode = ManipulationAction::Mode::TASKSPACE3D;
+
+  /// Vectorize simulator handle
+  ManipulationAction::MjModelVecType m_vec;
+  ManipulationAction::MjDataVecType d_vec;
+  for (int i=0; i<num_threads; ++i)
+  {
+    mjModel* act_m= nullptr;
+    mjData * act_d= nullptr;
+    setupMujoco(&act_m, &act_d, mj_modelpath);
+    m_vec.push_back(act_m);
+    d_vec.push_back(act_d);
+  }
+
+  /// Load mprims
+  auto mprims = loadMPrims(mprimpath);
+  action_params["length"] = mprims.rows();
+  rm::num_actions = mprims.rows();
+
+  for (int i=0; i<action_params["length"]; ++i)
+  {
+    auto one_joint_action = std::make_shared<OneJointAtATime>(std::to_string(i), action_params,
+                                                              mprim_mode, BFS_DISCRETIZATION, mprims,
+                                                              opt, m_vec, d_vec, num_threads, 0);
+    action_ptrs.emplace_back(one_joint_action);
+  }
+}
+
 
 void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vector<shared_ptr<Action>>& action_ptrs, ParamsType& planner_params, ParamsType& action_params, BSplineOpt& opt)
 {
