@@ -87,6 +87,7 @@ namespace ps
     planner_stats_.num_jobs_per_thread_.resize(1, 0);
 
     // Initialize the queue
+    start_state_ptr_->SetFValue(0.0);
     state_open_list_.push_back(start_state_ptr_);
 
     planner_stats_.num_threads_spawned_ = 1;
@@ -128,6 +129,7 @@ namespace ps
         edge_ptr->SetCost(1.0);
         edge_map_.insert(std::make_pair(getEdgeKey(edge_ptr), edge_ptr));
         successor_state_ptr->SetIncomingEdgePtr(edge_ptr);
+        successor_state_ptr->SetFValue(state_ptr->GetFValue() + edge_ptr->GetCost());
         state_open_list_.push_back(successor_state_ptr);
       }
     }
