@@ -743,6 +743,8 @@ int main(int argc, char* argv[])
                 auto samp_traj = sampleTrajectory(soln_traj.traj_, 5e-3);
                 traj_log.conservativeResize(insat_params.lowD_dims_, traj_log.cols()+samp_traj.cols());
                 traj_log.rightCols(samp_traj.cols()) = samp_traj;
+                traj_log.conservativeResize(insat_params.lowD_dims_, traj_log.cols()+1);
+                traj_log.rightCols(1) = -1*VecDf::Ones(insat_params.lowD_dims_);
                 all_execution_time.push_back(soln_traj.traj_.end_time());
                 cout << "Execution time: " << soln_traj.traj_.end_time() << endl;
             }
