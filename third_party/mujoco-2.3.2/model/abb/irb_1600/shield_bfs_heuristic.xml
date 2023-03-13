@@ -7,6 +7,10 @@
         <mesh name="pedestal" file="pedestal.stl" scale="0.001 0.001 0.001"/>
     </asset>
 
+    <custom>
+        <numeric name="env_size" size="6" data="-1.5 -1.5 0 1.5 1.5 2"/>
+    </custom>
+
     <worldbody>
         <!-- obstacles -->
         <include file="shield_obstacles.xml"/>
