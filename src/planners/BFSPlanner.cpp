@@ -93,6 +93,7 @@ namespace ps
 
     // Initialize the queue
     start_state_ptr_->SetFValue(0.0);
+    start_state_ptr_->SetVisited();
     state_open_list_.push_back(start_state_ptr_);
 
     planner_stats_.num_threads_spawned_ = 1;
@@ -105,8 +106,6 @@ namespace ps
 
     planner_stats_.num_jobs_per_thread_[0] +=1;
     planner_stats_.num_state_expansions_++;
-
-    state_ptr->SetVisited();
 
     for (auto& action_ptr: actions_ptrs_)
     {
@@ -135,6 +134,7 @@ namespace ps
         edge_map_.insert(std::make_pair(getEdgeKey(edge_ptr), edge_ptr));
         successor_state_ptr->SetIncomingEdgePtr(edge_ptr);
         successor_state_ptr->SetFValue(state_ptr->GetFValue() + edge_ptr->GetCost());
+        successor_state_ptr->SetVisited();
         state_open_list_.push_back(successor_state_ptr);
       }
     }
