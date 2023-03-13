@@ -273,12 +273,16 @@ void constructActions(vector<shared_ptr<Action>>& action_ptrs,
         }
         else
         {
+            bool is_expensive = (action_params["planner_name"] == 1) ? 1 : 0;
             auto one_joint_action = std::make_shared<OneJointAtATime>(std::to_string(i), action_params,
                                                                       mj_modelpath, DISCRETIZATION, mprims,
-                                                                      opt, m_vec, d_vec, num_threads, 0);
+                                                                      opt, m_vec, d_vec, num_threads, is_expensive);
             action_ptrs.emplace_back(one_joint_action);
         }
     }
+
+    // So that the adaptive primitive is tried first
+    reverse(action_ptrs.begin(), action_ptrs.end());
 }
 
 void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vector<shared_ptr<Action>>& action_ptrs, ParamsType& planner_params, ParamsType& action_params, BSplineOpt& opt)
@@ -303,9 +307,9 @@ void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vec
     planner_ptr->SetActions(action_ptrs);
     planner_ptr->SetStateMapKeyGenerator(bind(StateKeyGenerator, placeholders::_1));
     planner_ptr->SetEdgeKeyGenerator(bind(EdgeKeyGenerator, placeholders::_1));
-//    planner_ptr->SetHeuristicGenerator(bind(computeHeuristic, placeholders::_1));
-    planner_ptr->SetHeuristicGenerator(bind(computeLoSHeuristic, placeholders::_1));
-//    planner_ptr->SetHeuristicGenerator(bind(computeShieldHeuristic, placeholders::_1));
+    planner_ptr->SetHeuristicGenerator(bind(computeHeuristic, placeholders::_1));
+    // planner_ptr->SetHeuristicGenerator(bind(computeLoSHeuristic, placeholders::_1));
+    // planner_ptr->SetHeuristicGenerator(bind(computeShieldHeuristic, placeholders::_1));
     planner_ptr->SetStateToStateHeuristicGenerator(bind(computeHeuristicStateToState, placeholders::_1, placeholders::_2));
     planner_ptr->SetGoalChecker(bind(isGoalState, placeholders::_1, TERMINATION_DIST));
     if ((planner_name == "insat") || (planner_name == "pinsat") || (planner_name == "epase") || (planner_name == "gepase"))
@@ -486,8 +490,8 @@ int main(int argc, char* argv[])
     std::vector<vector<double>> starts, goals;
     if (load_starts_goals_from_file)
     {
-        std::string starts_path = "../examples/manipulation/resources/shield/starts.txt";
-        std::string goals_path = "../examples/manipulation/resources/shield/goals.txt";
+        std::string starts_path = "../examples/manipulation/resources/shield/starts_hard.txt";
+        std::string goals_path = "../examples/manipulation/resources/shield/goals_hard.txt";
         loadStartsAndGoalsFromFile(starts, goals, starts_path, goals_path);
     }
     else
