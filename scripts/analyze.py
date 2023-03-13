@@ -5,11 +5,10 @@ from collections import defaultdict
 import argparse
 import os
 
-def relevant_indices(alg, data, cost_thresh, time_thresh):
-    # pdb.set_trace()
-    idx = np.array(np.where( (data['cost'] > cost_thresh) & (data['time'] <= time_thresh))).squeeze()
+def relevant_indices(alg, data, expansion_thresh, time_thresh):
+    idx = np.array(np.where((data['cost'] > 0) & (data['state_expansions'] > expansion_thresh) & (data['time'] <= time_thresh))).squeeze()
         
-    success = np.count_nonzero(data["cost"] > 0)/float(data["cost"].shape[0])
+    success = np.count_nonzero((data["cost"] > 0) & (data['time'] <= time_thresh))/float(data["cost"].shape[0])
     success_idx = np.array(np.where(data["cost"] != -1))
     return idx, success, success_idx
 
@@ -22,10 +21,10 @@ def prune_failures(data):
     return idx, success, success_idx
 
 
-def sanity_check(data, cost_thresh):
+def sanity_check(data, expansion_thresh):
     result = True;
     for alg in data.keys():
-        # result = result and (np.count_nonzero(data[alg]['cost'] < cost_thresh) == 0) 
+        # result = result and (np.count_nonzero(data[alg]['cost'] < expansion_thresh) == 0) 
         result = result and (np.count_nonzero(data[alg]['cost'] == -1) == 0)
 
     result = result and np.array_equal(data['wastar']['id'], data['pase']['id']) and np.array_equal(data['wastar']['id'], data['gepase']['id'])
@@ -33,8 +32,8 @@ def sanity_check(data, cost_thresh):
     return result
 
 
-def print_stats(insat, pinsat, rrt, epase, cost_thresh, time_thresh):
-    print("\n\n--------------- Cost thresh: {} ---------------".format(cost_thresh))
+def print_stats(insat, pinsat, rrt, epase, expansion_thresh, time_thresh):
+    print("\n\n--------------- Cost thresh: {} ---------------".format(expansion_thresh))
 
     d = {}
     d['insat'] = {'id' : insat[:, 0], 'time' : insat[:, 1], 'cost' : insat[:, 2], 'length' : insat[:, 3], 'state_expansions' : insat[:, 4], 'edge_expansions' : insat[:, 5]} 
@@ -42,13 +41,13 @@ def print_stats(insat, pinsat, rrt, epase, cost_thresh, time_thresh):
     d['rrt'] = {'id' : rrt[:, 0], 'time' : rrt[:, 1], 'cost' : rrt[:, 2], 'length' : rrt[:, 3], 'state_expansions' : rrt[:, 4], 'edge_expansions' : rrt[:, 5]} 
     d['epase'] = {'id' : epase[:, 0], 'time' : epase[:, 1], 'cost' : epase[:, 2], 'length' : epase[:, 3], 'state_expansions' : epase[:, 4], 'edge_expansions' : epase[:, 5]} 
 
-    insat_idx, insat_success, insat_success_idx = relevant_indices('insat', d['insat'], cost_thresh, time_thresh)
-    insat_adaptive_idx, insat_adaptive_success, insat_adaptive_success_idx = relevant_indices('rrt', d['rrt'], cost_thresh, time_thresh)
-    pinsat_idx, pinsat_success, pinsat_success_idx = relevant_indices('pinsat', d['pinsat'], cost_thresh, time_thresh)
-    pinsat_adaptive_idx, pinsat_adaptive_success, pinsat_adaptive_success_idx = relevant_indices('epase', d['epase'], cost_thresh, time_thresh)
+    insat_idx, insat_success, insat_success_idx = relevant_indices('insat', d['insat'], expansion_thresh, time_thresh)
+    insat_adaptive_idx, insat_adaptive_success, insat_adaptive_success_idx = relevant_indices('rrt', d['rrt'], expansion_thresh, time_thresh)
+    pinsat_idx, pinsat_success, pinsat_success_idx = relevant_indices('pinsat', d['pinsat'], expansion_thresh, time_thresh)
+    pinsat_adaptive_idx, pinsat_adaptive_success, pinsat_adaptive_success_idx = relevant_indices('epase', d['epase'], expansion_thresh, time_thresh)
 
     insat = insat[insat_idx, :]
-    pinsat = pinsat[insat_idx, :]
+    pinsat = pinsat[pinsat_idx, :]
     rrt = rrt[insat_adaptive_idx, :]
     epase = epase[pinsat_adaptive_idx, :]
 
@@ -88,7 +87,7 @@ def print_stats(insat, pinsat, rrt, epase, cost_thresh, time_thresh):
     # pdb.set_trace()
 
 
-    # if not sanity_check(d, cost_thresh):
+    # if not sanity_check(d, expansion_thresh):
     #     print("Sanity check failed")
     #     pdb.set_trace()
 
@@ -147,7 +146,7 @@ def print_stats(insat, pinsat, rrt, epase, cost_thresh, time_thresh):
         print(alg)
         print("------------------")
         # for stat in np.sort(list(stats[alg])):
-        for stat in ['success_rate', 'mean_time', 'std_time', 'mean_cost', 'std_cost']:
+        for stat in ['num_success_problems', 'success_rate', 'mean_time', 'std_time', 'mean_cost', 'std_cost']:
             # if stat in ['mean_time', 'std_time', 'mean_cost', 'std_cost']:
             print('{}: {}'.format(stat, np.round(stats[alg][stat],2)))
             # else:
@@ -187,29 +186,24 @@ def get_intersecting_data(wastar, gepase, pase):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--num_threads', '-nt', type=int, default=50)
-    parser.add_argument('--num_data', '-nd', type=int, default=800)
+    parser.add_argument('--num_threads', '-nt', type=int, default=60)
+    parser.add_argument('--dir', '-d', type=str, default="easy")
+
     args = parser.parse_args()
     
-    base_dir = "../logs"
+    base_dir = os.path.join("../logs", args.dir)
 
     end_d = 800
 
-    insat = np.loadtxt(os.path.join(base_dir, "insat_1.txt"))[0:end_d]
-    pinsat = np.loadtxt(os.path.join(base_dir, "pinsat_" + str(args.num_threads) + ".txt"))[0:end_d]
-    rrt = np.loadtxt(os.path.join(base_dir, "rrtconnect_" + str(args.num_threads) + ".txt"))[0:end_d]
-    epase = np.loadtxt(os.path.join(base_dir, "epase_" + str(args.num_threads) + ".txt"))[0:end_d]
-
+    insat = np.loadtxt(os.path.join(base_dir, "insat_smart_1.txt"))[0:end_d]
+    pinsat = np.loadtxt(os.path.join(base_dir, "pinsat_smart_" + str(args.num_threads) + ".txt"))[0:end_d]
+    # rrt = np.loadtxt(os.path.join(base_dir, "rrtconnect_" + str(args.num_threads) + ".txt"))[0:end_d]
+    # epase = np.loadtxt(os.path.join(base_dir, "epase_" + str(args.num_threads) + ".txt"))[0:end_d]
+    rrt = epase = pinsat
 
     # pdb.set_trace()
     np.set_printoptions(suppress=True)
 
     stats = {}
-    stats[0] = print_stats(insat, pinsat, rrt, epase, 0, 10)
-    # stats[5] =print_stats(wastar, pase, epase, gepase, 5000)
-    # stats[10] =print_stats(wastar, pase, epase, gepase, 10000)
-    # stats[15] =print_stats(wastar, pase, epase, gepase, 15000)
-    # stats[20] =print_stats(wastar, pase, epase, gepase, 20000)
-    # stats[25] =print_stats(wastar, pase, epase, gepase, 25000)
-    # stats[30] =print_stats(wastar, pase, epase, gepase, 30000)
+    stats[0] = print_stats(insat, pinsat, rrt, epase, 1, 10)
 
