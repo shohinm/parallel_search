@@ -62,7 +62,6 @@ namespace ps
     enum Mode
     {
       CSPACE = 0,
-      TASKSPACE,
       TASKSPACE3D
     };
 
