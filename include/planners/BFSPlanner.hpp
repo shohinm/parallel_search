@@ -52,7 +52,6 @@ namespace ps
     BFSPlanner(ParamsType planner_params);
     ~BFSPlanner();
     bool Plan();
-    StatePtrMapType GetStateMap() {return state_map_;}
 
   protected:
     void initialize();
