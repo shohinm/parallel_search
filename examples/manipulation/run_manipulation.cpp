@@ -48,6 +48,7 @@
 #include <planners/BFSPlanner.hpp>
 #include "ManipulationActions.hpp"
 #include <mujoco/mujoco.h>
+#include "bfs3d.h"
 #include <planners/insat/opt/BSplineOpt.hpp>
 
 using namespace std;
@@ -78,6 +79,8 @@ namespace rm
   mjData* global_bfs_d = nullptr;
   /// State Map for BFS heuristic
   ps::Planner::StatePtrMapType bfs_state_map;
+  shared_ptr<smpl::BFS_3D> bfs3d;
+
 }
 
 double roundOff(double value, unsigned char prec)
@@ -209,10 +212,45 @@ double computeShieldHeuristic(const StateVarsType& state_vars)
     return std::sqrt(cost);
 }
 
+// double computeBFSHeuristic(const StateVarsType& state_vars)
+// {
+//   size_t state_key = StateKeyGenerator(state_vars);
+//   return rm::bfs_state_map[state_key]->GetFValue();
+// }
+
+void initializeBFS(int length, int width, int height, vector<vector<int>> occupied_cells)
+{
+    rm::bfs3d = make_shared<smpl::BFS_3D>(length, width, height);
+    for (auto& c : occupied_cells)
+    {
+        rm::bfs3d->setWall(c[0], c[1], c[2]);
+    }
+}
+
+
+void recomputeBFS(int x, int y, int z)
+{
+    rm::bfs3d->run(x, y, z);
+}
+
 double computeBFSHeuristic(const StateVarsType& state_vars)
 {
-  size_t state_key = StateKeyGenerator(state_vars);
-  return rm::bfs_state_map[state_key]->GetFValue();
+    // TODO: RAM, call FK here.
+
+    int x = 0;
+    int y = 0;
+    int z = 0;
+    double cost_per_cell = 1;
+
+    if (!rm::bfs3d->inBounds(x, y, z)) {
+        return DINF;
+    }
+    else if (rm::bfs3d->getDistance(x, y, z) == smpl::BFS_3D::WALL) {
+        return DINF;
+    }
+    else {
+        return cost_per_cell * rm::bfs3d->getDistance(x, y, z);
+    }
 }
 
 void postProcess(std::vector<PlanElement>& path, double& cost, double allowed_time, const shared_ptr<Action>& act, BSplineOpt& opt)
@@ -637,8 +675,11 @@ int main(int argc, char* argv[])
     setupMujoco(&rm::global_bfs_m, &rm::global_bfs_d, bfsmodelpath);
     std::string bfsmprimpath = "../examples/manipulation/resources/shield/bfs3d.mprim";
     vector<shared_ptr<Action>> bfs_action_ptrs;
-    constructBFSActions(bfs_action_ptrs, action_params,
-                       bfsmodelpath, bfsmprimpath, num_threads);
+    // constructBFSActions(bfs_action_ptrs, action_params,
+    //                    bfsmodelpath, bfsmprimpath, num_threads);
+    
+    // TODO: RAM
+    // rm::bfs3d->initializeBFS(length, width, height, occupied_cells)
 
     std::vector<std::shared_ptr<ManipulationAction>> manip_action_ptrs;
     for (auto& a : action_ptrs)
@@ -646,6 +687,7 @@ int main(int argc, char* argv[])
         std::shared_ptr<ManipulationAction> manip_action_ptr = std::dynamic_pointer_cast<ManipulationAction>(a);
         manip_action_ptrs.emplace_back(manip_action_ptr);
     }
+
 
     int num_success = 0;
     vector<vector<PlanElement>> plan_vec;
@@ -657,6 +699,10 @@ int main(int argc, char* argv[])
     {
         // Set goal conditions
         rm::goal = goals[run];
+
+        // TODO: RAM
+        // rm::bfs3d->recomputeBFS(x, y, z);
+        
         auto start = starts[run];
 
         for (auto& op : *opt_vec_ptr)
