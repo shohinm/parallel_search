@@ -103,3 +103,6 @@ add_executable(domain_template
 target_link_libraries(domain_template
         ${drake_LIBRARIES}
         pthread)
+
+add_executable(collfilter
+        examples/manipulation/collision_filter_finder.cpp)
