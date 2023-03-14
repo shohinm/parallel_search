@@ -59,8 +59,8 @@
                                     <body name="link_6" pos="0.065 0 0">
                                         <inertial pos="-0.0164152 2.0728e-06 0.000267316" quat="0.502798 0.497187 0.497346 0.50264" mass="0.0748395" diaginertia="3.09311e-05 3.06155e-05 1.53407e-05" />
                                         <joint name="joint_6" pos="0 0 0" axis="1 0 0" limited="true" range="-6.9813 6.9813" />
-                                        <geom type="mesh" rgba="0.9 0.9 0.9 1" mesh="link_6" contype="2" conaffinity="2"/>
-                                        <geom name="shield" type="box" rgba="0 1 0 1" pos="0.005 0 0" size="0.005 0.1 0.1" contype="1" conaffinity="1" />
+                                        <geom type="mesh" rgba="0.9 0.9 0.9 1" mesh="link_6" contype="1" conaffinity="1"/>
+                                        <geom name="shield" type="box" rgba="0 1 0 1" pos="0.005 0 0" size="0.005 0.1 0.1" contype="2" conaffinity="2" />
                                     </body>
                                 </body>
                             </body>
