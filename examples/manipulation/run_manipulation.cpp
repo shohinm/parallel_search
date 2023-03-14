@@ -720,7 +720,7 @@ int main(int argc, char* argv[])
 
         /// Set BFS heuristic
         std::shared_ptr<Planner> bfs_planner_ptr = std::make_shared<BFSPlanner>(planner_params);
-        setBFSHeuristic(goals[run], bfs_planner_ptr, bfs_action_ptrs, planner_params);
+//        setBFSHeuristic(goals[run], bfs_planner_ptr, bfs_action_ptrs, planner_params);
 
         // Construct planner
         shared_ptr<Planner> planner_ptr;
