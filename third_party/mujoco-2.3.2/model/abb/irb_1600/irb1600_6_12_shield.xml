@@ -28,7 +28,9 @@
         <geom name="floor" pos="0 0 0" size="5 5 .125" type="plane" material="BeigeMaterial" condim="3"  contype="0" conaffinity="0"/>
 
         <!-- obstacles -->
-        <include file="shield_obstacles.xml"/>
+        <body name="obstacle" pos="0.55 -0.7 0" quat="0.707 0 0 -0.707">
+            <include file="shield_obstacles.xml"/>
+        </body>
 
         <body name="pedestal" pos="0.0 0.0 0.0">
             <geom type="mesh" rgba="0 0 1 1" mesh="pedestal" euler="1.57 0 0" contype="1" conaffinity="1"/>

@@ -39,6 +39,7 @@ set(SOURCES
     src/common/Edge.cpp
     src/common/insat/InsatEdge.cpp
     src/planners/Planner.cpp
+    src/planners/BFSPlanner.cpp
     src/planners/WastarPlanner.cpp
     src/planners/PwastarPlanner.cpp
     src/planners/PasePlanner.cpp
@@ -79,6 +80,7 @@ target_link_libraries(run_insat_nav_2d
 add_executable(run_manipulation
         examples/manipulation/run_manipulation.cpp
         examples/manipulation/ManipulationActions.cpp
+        examples/manipulation/bfs3d.cpp
         ${SOURCES})
 
 target_link_libraries(run_manipulation

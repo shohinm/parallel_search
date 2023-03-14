@@ -26,12 +26,12 @@ else:
   # dt = 0.5
   # dt = 1
 
-model_dir = '/home/gaussian/cmu_ri_phd/phd_research/parallel_search/third_party/mujoco-2.3.2/model/abb/irb_1600'
+model_dir = '../parallel_search/third_party/mujoco-2.3.2/model/abb/irb_1600'
 mjcf = 'irb1600_6_12.xml'
 mjcf_arm = 'irb1600_6_12_shield.xml'
-traj_file = '/home/gaussian/cmu_ri_phd/phd_research/parallel_search/logs/' + planner_name + '_abb_traj.txt'
-starts_file = '/home/gaussian/cmu_ri_phd/phd_research/parallel_search/logs/' + planner_name + '_abb_starts.txt'
-goals_file = '/home/gaussian/cmu_ri_phd/phd_research/parallel_search/logs/' + planner_name + '_abb_goals.txt'
+traj_file = '../parallel_search/logs/' + planner_name + '_abb_traj.txt'
+starts_file = '../parallel_search/logs/' + planner_name + '_abb_starts.txt'
+goals_file = '../parallel_search/logs/' + planner_name + '_abb_goals.txt'
 traj = genfromtxt(traj_file, delimiter=' ' if static_planner else ',')
 starts = genfromtxt(starts_file, delimiter=',')
 goals = genfromtxt(goals_file, delimiter=',')

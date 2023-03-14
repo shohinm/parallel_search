@@ -1408,7 +1408,6 @@ namespace ps
             if (traj.disc_traj_.size() > 0)
             {
                 cost = calculateCost(disc_traj);
-                std::cout << "pp cost: " << cost << std::endl;
                 auto time_traj = sampleTrajectory(traj, 5e-3);
                 path.clear();
                 for (int i=0; i<time_traj.cols(); ++i)
@@ -1452,7 +1451,6 @@ namespace ps
             if (traj.disc_traj_.size() > 0)
             {
                 cost = calculateCost(disc_traj);
-                std::cout << "rrt pp cost: " << cost << std::endl;
                 auto time_traj = sampleTrajectory(traj, 5e-3);
                 path.clear();
                 for (int i=0; i<time_traj.cols(); ++i)

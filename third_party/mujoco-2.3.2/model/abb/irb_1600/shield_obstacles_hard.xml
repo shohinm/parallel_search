@@ -1,17 +1,15 @@
 <mujoco model="shield_obstacles_hard">
 
     <!-- hard obstacles -->
-    <body name="cage" pos="0.55 -0.7 0" quat="0.707 0 0 -0.707">
-        <!-- vertical -->
-        <geom name="c1" size="0.06 0.06 1" pos="0.900 0.900 1" type="box" rgba="1.0 0.0 0.0 1" contype="3" conaffinity="3"/>
-        <geom name="c2" size="0.06 0.06 1" pos="-0.900 0.900 1" type="box" rgba="1.0 0.0 0.0 1" contype="3" conaffinity="3"/>
-        <geom name="c3" size="0.06 0.06 1" pos="0.900 -0.900 1" type="box" rgba="1.0 0.0 0.0 1" contype="3" conaffinity="3"/>
-        <geom name="c4" size="0.06 0.06 1" pos="-0.900 -0.900 1" type="box" rgba="1.0 0.0 0.0 1" contype="3" conaffinity="3"/>            
-        <!-- horizontal -->
-        <geom name="c5" size="0.06 0.900 0.06" pos="0.900 0 1.25" type="box" rgba="1.0 0.0 0.0 1" contype="3" conaffinity="3"/>
-        <geom name="c6" size="0.900 0.06 0.06" pos="0 0.900 1.25" type="box" rgba="1.0 0.0 0.0 1" contype="3" conaffinity="3"/>
-        <geom name="c7" size="0.06 0.900 0.06" pos="-0.900 0 1.25" type="box" rgba="1.0 0.0 0.0 1" contype="3" conaffinity="3"/>
-        <geom name="c8" size="0.900 0.06 0.06" pos="0 -0.900 1.25" type="box" rgba="1.0 0.0 0.0 1" contype="3" conaffinity="3"/>
-    </body>
+    <!-- vertical -->
+    <geom name="c1" size="0.06 0.06 1" pos="0.800 0.800 1" type="box" rgba="1.0 0.0 0.0 1" contype="3" conaffinity="3"/>
+    <geom name="c2" size="0.06 0.06 1" pos="-0.800 0.800 1" type="box" rgba="1.0 0.0 0.0 1" contype="3" conaffinity="3"/>
+    <geom name="c3" size="0.06 0.06 1" pos="0.800 -0.800 1" type="box" rgba="1.0 0.0 0.0 1" contype="3" conaffinity="3"/>
+    <geom name="c4" size="0.06 0.06 1" pos="-0.800 -0.800 1" type="box" rgba="1.0 0.0 0.0 1" contype="3" conaffinity="3"/>            
+    <!-- horizontal -->
+    <geom name="c5" size="0.06 0.800 0.06" pos="0.800 0 1.25" type="box" rgba="1.0 0.0 0.0 1" contype="3" conaffinity="3"/>
+    <geom name="c6" size="0.800 0.06 0.06" pos="0 0.800 1.25" type="box" rgba="1.0 0.0 0.0 1" contype="3" conaffinity="3"/>
+    <geom name="c7" size="0.06 0.800 0.06" pos="-0.800 0 1.25" type="box" rgba="1.0 0.0 0.0 1" contype="3" conaffinity="3"/>
+    <geom name="c8" size="0.800 0.06 0.06" pos="0 -0.800 1.25" type="box" rgba="1.0 0.0 0.0 1" contype="3" conaffinity="3"/>
 
 </mujoco>

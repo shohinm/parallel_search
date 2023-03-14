@@ -383,12 +383,13 @@ void PinsatPlanner::expandEdge(InsatEdgePtrType edge_ptr, int thread_id)
                     anc_states.emplace_back(anc->GetStateVars());
                 }
 
-                if (ancestors.front()->GetIncomingEdgePtr()) /// When anc is not start
+                if (ancestors.front()->GetIncomingInsatEdgePtr()) /// When anc is not start
                 {
-                    traj = action_ptr->optimize(ancestors.front()->GetIncomingEdgePtr()->GetTraj(),
+                    traj = action_ptr->optimize(ancestors.front()->GetIncomingInsatEdgePtr()->GetTraj(),
                                                 anc_states,
                                                 successor_state_ptr->GetStateVars(), thread_id);
-                    inc_cost = action_ptr->getCost(traj) - action_ptr->getCost(ancestors.front()->GetIncomingEdgePtr()->GetTraj());
+                    inc_cost = action_ptr->getCost(traj) - action_ptr->getCost(
+                        ancestors.front()->GetIncomingInsatEdgePtr()->GetTraj());
                 }
                 else
                 {
@@ -408,12 +409,12 @@ void PinsatPlanner::expandEdge(InsatEdgePtrType edge_ptr, int thread_id)
                 {
                     if (planner_params_["adaptive_opt"] == true)
                     {
-                        if (anc->GetIncomingEdgePtr()) /// When anc is not start
+                        if (anc->GetIncomingInsatEdgePtr()) /// When anc is not start
                         {
-                            traj = action_ptr->optimize(anc->GetIncomingEdgePtr()->GetTraj(),
+                            traj = action_ptr->optimize(anc->GetIncomingInsatEdgePtr()->GetTraj(),
                                                         anc->GetStateVars(),
                                                         successor_state_ptr->GetStateVars(), thread_id);
-                            inc_cost = action_ptr->getCost(traj) - action_ptr->getCost(anc->GetIncomingEdgePtr()->GetTraj());
+                            inc_cost = action_ptr->getCost(traj) - action_ptr->getCost(anc->GetIncomingInsatEdgePtr()->GetTraj());
                         }
                         else
                         {
@@ -435,9 +436,9 @@ void PinsatPlanner::expandEdge(InsatEdgePtrType edge_ptr, int thread_id)
                         if (inc_traj.size() > 0)
                         {
                             inc_cost = action_ptr->getCost(inc_traj);
-                            if (anc->GetIncomingEdgePtr()) /// When anc is not start
+                            if (anc->GetIncomingInsatEdgePtr()) /// When anc is not start
                             {
-                                traj = action_ptr->warmOptimize(anc->GetIncomingEdgePtr()->GetTraj(), inc_traj, thread_id);
+                                traj = action_ptr->warmOptimize(anc->GetIncomingInsatEdgePtr()->GetTraj(), inc_traj, thread_id);
                             }
                             else
                             {
@@ -481,7 +482,7 @@ void PinsatPlanner::expandEdge(InsatEdgePtrType edge_ptr, int thread_id)
                         h_val_min_ = h_val < h_val_min_ ? h_val : h_val_min_;
                         successor_state_ptr->SetGValue(new_g_val);
                         successor_state_ptr->SetFValue(new_g_val + heuristic_w_*h_val);
-                        successor_state_ptr->SetIncomingEdgePtr(edge_ptr);
+                      successor_state_ptr->SetIncomingInsatEdgePtr(edge_ptr);
 
                         edge_ptr->SetTraj(traj);
                         edge_ptr->SetTrajCost(cost);

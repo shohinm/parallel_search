@@ -36,18 +36,18 @@ goals = np.empty((0,arm_model.nq))
 #                 [[0, 1.2], [0.2, 1.0], [1.0, 1.8]],
 #                 [[-1.0, -0.4], [-1.2, 0], [1.0, 1.8]],
 #                 [[0, 1.2], [-2.0, -1.4], [1.0, 1.8]]])
-vol = np.array([[[1.4, 2.0], [-1.2, 0], [1.0, 1.4]],
-                [[1.4, 2.0], [-1.2, 0], [1.4, 1.8]],
-                [[0, 1.2], [0.2, 1.0], [1.0, 1.4]],
-                [[0, 1.2], [0.2, 1.0], [1.4, 1.8]],
-                [[-1.0, -0.4], [-1.2, 0], [1.0, 1.4]],
-                [[-1.0, -0.4], [-1.2, 0], [1.4, 1.8]],
-                [[0, 1.2], [-2.0, -1.4], [1.0, 1.4]],
-                [[0, 1.2], [-2.0, -1.4], [1.4, 1.8]]])
+vol = np.array([[[1.4, 2.0], [-1.2, 0], [1.0, 1.3]],
+                [[1.4, 2.0], [-1.2, 0], [1.3, 1.6]],
+                [[0, 1.2], [0.2, 1.0], [1.0, 1.3]],
+                [[0, 1.2], [0.2, 1.0], [1.3, 1.6]],
+                [[-1.0, -0.3], [-1.2, 0], [1.0, 1.3]],
+                [[-1.0, -0.3], [-1.2, 0], [1.3, 1.6]],
+                [[0, 1.2], [-2.0, -1.6], [1.0, 1.3]],
+                [[0, 1.2], [-2.0, -1.6], [1.3, 1.6]]])
 
-data_size = 1000
+data_size = 500
 
-fkik = ABBFkIkSolver(urdf, start_pos=[0.65, -0.7, 0.45])
+fkik = ABBFkIkSolver(urdf, start_pos=[0.55, -0.7, 0.45])
 
 def isCollisionFree(q):
     if not (np.all(arm_model.jnt_range[:,0] <= q) and np.all(arm_model.jnt_range[:,1] >= q)):
@@ -70,13 +70,28 @@ def ik(x,r):
 
 num_regions = 8
 
+start_file = '../examples/manipulation/resources/shield/starts.txt'
+goal_file = '../examples/manipulation/resources/shield/goals.txt'
+open(start_file, 'w').close()
+open(goal_file, 'w').close()
+
+allowed = {0: [5, 6, 7],
+           1: [4, 6, 7],
+           2: [4, 5, 7],
+           3: [4, 5, 6],
+           4: [1, 2, 3],
+           5: [0, 2, 3],
+           6: [0, 1, 3],
+           7: [0, 1, 2]}
+
 s = 0
 while s < data_size:
     sid = 0
     gid = 0
     while 1:
         id = np.random.choice(8, 2)
-        if id[0] != id[1]:
+        # if id[0] != id[1]:
+        if id[1] in allowed[id[0]]:
             sid = id[0]
             gid = id[1]
             break
@@ -86,19 +101,21 @@ while s < data_size:
     start = np.array([(vol[sid,:,1]-vol[sid,:,0])*st_seed+vol[sid,:,0]])
     goal = np.array([(vol[gid,:,1]-vol[gid,:,0])*go_seed+vol[gid,:,0]])
 
+    # Using (x, y, z, w) to make it compatible with IK solver
+    ######### NOTE: MuJoCo uses (w, x, y, z) ############
     r = np.array([0,0,0,1])
     if sid==2:
         r = np.array([0.707, 0, 0, 0.707])
     elif sid==3:
         r = np.array([0.707, 0, 0, 0.707])
     elif sid == 4:
-        r = np.array([0, 0, 1, 0])
+        r = np.array([1, 0, 0, 0])
     elif sid == 5:
-        r = np.array([0, 0, 1, 0])
+        r = np.array([1, 0, 0, 0])
     elif sid==6:
-        r = np.array([0.707, 0, 0, -0.707])
+        r = np.array([-0.707, 0, 0, 0.707])
     elif sid==7:
-        r = np.array([0.707, 0, 0, -0.707])
+        r = np.array([-0.707, 0, 0, 0.707])
     st_q = ik(start, r)
 
     r = np.array([0,0,0,1])
@@ -107,13 +124,13 @@ while s < data_size:
     if gid == 3:
         r = np.array([0.707, 0, 0, 0.707])
     elif gid==4:
-        r = np.array([0, 0, 1, 0])
+        r = np.array([1, 0, 0, 0])
     elif gid == 5:
-        r = np.array([0, 0, 1, 0])
+        r = np.array([1, 0, 0, 0])
     elif gid==6:
-        r = np.array([0.707, 0, 0, -0.707])
+        r = np.array([-0.707, 0, 0, 0.707])
     elif gid==7:
-        r = np.array([0.707, 0, 0, -0.707])
+        r = np.array([-0.707, 0, 0, 0.707])
     go_q = ik(goal, r)
 
 
@@ -123,8 +140,15 @@ while s < data_size:
             try:
                 starts = np.append(starts, st_q[np.newaxis,:], axis=0)
                 goals = np.append(goals, go_q[np.newaxis,:], axis=0)
+
+                with open(start_file, "ab") as f:
+                    np.savetxt(f, st_q[np.newaxis,:], delimiter=' ')
+
+                with open(goal_file, "ab") as f:
+                    np.savetxt(f, go_q[np.newaxis,:], delimiter=' ')
+
                 s = s+1
-            except Exception as e: 
+            except Exception as e:
                 print(e)
                 pdb.set_trace()
         print("i: {} | total: {}".format(s, data_size))
@@ -133,12 +157,8 @@ while s < data_size:
         # print("goal: {}".format(goal))
 
         # print("ik failed")
-        # except Exception as e: 
+        # except Exception as e:
         #     print(e)
         #     pdb.set_trace()
 
 
-start_file = '../examples/manipulation/resources/shield/starts.txt'
-goal_file = '../examples/manipulation/resources/shield/goals.txt'
-np.savetxt(start_file, starts, delimiter=' ')
-np.savetxt(goal_file, goals, delimiter=' ')
