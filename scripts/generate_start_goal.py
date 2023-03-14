@@ -19,9 +19,9 @@ arm_data = MjData(arm_model)
 
 
 urdf = os.path.join(model_dir, 'irb1600_6_12_generated.urdf')
-fkik = ABBFkIkSolver(urdf)
-print(fkik.computeFK([0,0,0,0,0,0]))
-print(fkik.computeIK([0.815,0,0.9615], [0,0,0]))
+# fkik = ABBFkIkSolver(urdf)
+# print(fkik.computeFK([0,0,0,0,0,0]))
+# print(fkik.computeIK([0.815,0,0.9615], [0,0,0]))
 
 
 starts = np.empty((0,arm_model.nq))
@@ -104,23 +104,23 @@ while s < data_size:
     # Using (x, y, z, w) to make it compatible with IK solver
     ######### NOTE: MuJoCo uses (w, x, y, z) ############
     if sid==0 or sid==1:
-        r = np.array([1,0,0,0])
+        r = np.array([0,0,0,1])
     elif sid==2 or sid==3:
-        r = np.array([0.707, 0, 0, 0.707])
+        r = np.array([0, 0, 0.707, 0.707])
     elif sid == 4 or sid==5:
-        r = np.array([0, 0, 0, 1])
+        r = np.array([0, 0, 1, 0])
     elif sid==6 or sid==7:
-        r = np.array([0.707, 0, 0, -0.707])
+        r = np.array([0, 0, 0.707, -0.707])
     st_q = ik(start, r)
 
     if gid==0 or gid==1:
-        r = np.array([1,0,0,0])
+        r = np.array([0,0,0,1])
     elif gid==2 or gid==3:
-        r = np.array([0.707, 0, 0, 0.707])
+        r = np.array([0, 0, 0.707, 0.707])
     elif gid == 4 or gid==5:
-        r = np.array([0, 0, 0, 1])
+        r = np.array([0, 0, 1, 0])
     elif gid==6 or gid==7:
-        r = np.array([0.707, 0, 0, -0.707])
+        r = np.array([0, 0, 0.707, -0.707])
     go_q = ik(goal, r)
 
 
