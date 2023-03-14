@@ -403,9 +403,9 @@ void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vec
 
     /// Heuristic
 //    planner_ptr->SetHeuristicGenerator(bind(computeHeuristic, placeholders::_1));
-//    planner_ptr->SetHeuristicGenerator(bind(computeLoSHeuristic, placeholders::_1));
+    planner_ptr->SetHeuristicGenerator(bind(computeLoSHeuristic, placeholders::_1));
 //    planner_ptr->SetHeuristicGenerator(bind(computeShieldHeuristic, placeholders::_1));
-    planner_ptr->SetHeuristicGenerator(bind(computeBFSHeuristic, placeholders::_1));
+//    planner_ptr->SetHeuristicGenerator(bind(computeBFSHeuristic, placeholders::_1));
 
     planner_ptr->SetActions(action_ptrs);
     planner_ptr->SetStateMapKeyGenerator(bind(StateKeyGenerator, placeholders::_1));
