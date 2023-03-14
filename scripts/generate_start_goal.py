@@ -102,34 +102,24 @@ while s < data_size:
 
     # Using (x, y, z, w) to make it compatible with IK solver
     ######### NOTE: MuJoCo uses (w, x, y, z) ############
-    r = np.array([0,0,0,1])
-    if sid==2:
+    if sid==0 or sid==1:
+        r = np.array([1,0,0,0])
+    elif sid==2 or sid==3:
         r = np.array([0.707, 0, 0, 0.707])
-    elif sid==3:
-        r = np.array([0.707, 0, 0, 0.707])
-    elif sid == 4:
-        r = np.array([1, 0, 0, 0])
-    elif sid == 5:
-        r = np.array([1, 0, 0, 0])
-    elif sid==6:
-        r = np.array([-0.707, 0, 0, 0.707])
-    elif sid==7:
-        r = np.array([-0.707, 0, 0, 0.707])
+    elif sid == 4 or sid==5:
+        r = np.array([0, 0, 0, 1])
+    elif sid==6 or sid==7:
+        r = np.array([0.707, 0, 0, -0.707])
     st_q = ik(start, r)
 
-    r = np.array([0,0,0,1])
-    if gid==2:
+    if gid==0 or gid==1:
+        r = np.array([1,0,0,0])
+    elif gid==2 or gid==3:
         r = np.array([0.707, 0, 0, 0.707])
-    if gid == 3:
-        r = np.array([0.707, 0, 0, 0.707])
-    elif gid==4:
-        r = np.array([1, 0, 0, 0])
-    elif gid == 5:
-        r = np.array([1, 0, 0, 0])
-    elif gid==6:
-        r = np.array([-0.707, 0, 0, 0.707])
-    elif gid==7:
-        r = np.array([-0.707, 0, 0, 0.707])
+    elif gid == 4 or gid==5:
+        r = np.array([0, 0, 0, 1])
+    elif gid==6 or gid==7:
+        r = np.array([0.707, 0, 0, -0.707])
     go_q = ik(goal, r)
 
 
