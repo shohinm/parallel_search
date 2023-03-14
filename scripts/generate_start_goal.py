@@ -65,6 +65,7 @@ def isCollisionFree(q):
 def ik(x,r):
     ### your code here
     q = fkik.computeIK(target_position=x, target_orientation=r)
+    pdb.set_trace()
     return q
 
 num_regions = 8
