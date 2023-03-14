@@ -42,40 +42,42 @@ def print_stats(insat, pinsat, rrt, epase, expansion_thresh, time_thresh):
     d['epase'] = {'id' : epase[:, 0], 'time' : epase[:, 1], 'cost' : epase[:, 2], 'length' : epase[:, 3], 'state_expansions' : epase[:, 4], 'edge_expansions' : epase[:, 5]} 
 
     insat_idx, insat_success, insat_success_idx = relevant_indices('insat', d['insat'], expansion_thresh, time_thresh)
-    insat_adaptive_idx, insat_adaptive_success, insat_adaptive_success_idx = relevant_indices('rrt', d['rrt'], expansion_thresh, time_thresh)
     pinsat_idx, pinsat_success, pinsat_success_idx = relevant_indices('pinsat', d['pinsat'], expansion_thresh, time_thresh)
-    pinsat_adaptive_idx, pinsat_adaptive_success, pinsat_adaptive_success_idx = relevant_indices('epase', d['epase'], expansion_thresh, time_thresh)
+    rrt_idx, rrt_success, rrt_success_idx = relevant_indices('rrt', d['rrt'], -1, time_thresh)
+    epase_idx, epase_success, epase_success_idx = relevant_indices('epase', d['epase'], -1, time_thresh)
 
     insat = insat[insat_idx, :]
     pinsat = pinsat[pinsat_idx, :]
-    rrt = rrt[insat_adaptive_idx, :]
-    epase = epase[pinsat_adaptive_idx, :]
+    rrt = rrt[rrt_idx, :]
+    epase = epase[epase_idx, :]
+
+    # rrt_idx, rrt_success, rrt_success_idx  = prune_failures(rrt)
+    # epase_idx, epase_success, epase_success_idx  = prune_failures(epase)
 
     
     common_idx = np.intersect1d(insat[:,0], pinsat[:,0])
-    common_idx = np.intersect1d(common_idx, rrt[:,0])
-    common_idx = np.intersect1d(common_idx, epase[:,0])
+    # common_idx = np.intersect1d(common_idx, rrt[:,0])
+    # common_idx = np.intersect1d(common_idx, epase[:,0])
     
-    # pdb.set_trace()
 
     insat_filtered = []
     pinsat_filtered = []
-    insat_adaptive_filtered = []
-    pinsat_adaptive_filtered = []
-
-
+    rrt_filtered = []
+    epase_filtered = []
+    
     for idx in common_idx:
-
         insat_filtered.append(insat[np.where(insat[:,0] == idx)])
         pinsat_filtered.append(pinsat[np.where(pinsat[:,0] == idx)])
-        insat_adaptive_filtered.append(rrt[np.where(rrt[:,0] == idx)])
-        pinsat_adaptive_filtered.append(epase[np.where(epase[:,0] == idx)])
+        # rrt_filtered.append(rrt[np.where(rrt[:,0] == idx)])
+        # epase_filtered.append(epase[np.where(epase[:,0] == idx)])
     
+    rrt_filtered = rrt
+    epase_filtered = epase
 
     insat = np.array(insat_filtered).squeeze()
     pinsat = np.array(pinsat_filtered).squeeze()
-    rrt = np.array(insat_adaptive_filtered).squeeze()
-    epase = np.array(pinsat_adaptive_filtered).squeeze()
+    # rrt = np.array(rrt_filtered).squeeze()
+    # epase = np.array(epase_filtered).squeeze()
 
 
     d['insat'] = {'id' : insat[:, 0], 'time' : insat[:, 1], 'cost' : insat[:, 2], 'length' : insat[:, 3], 'state_expansions' : insat[:, 4], 'edge_expansions' : insat[:, 5]} 
@@ -119,7 +121,7 @@ def print_stats(insat, pinsat, rrt, epase, expansion_thresh, time_thresh):
     stats['pinsat']['mean_edge_expansions'] = np.mean(d['pinsat']['edge_expansions'])
 
     stats['rrt']['num_success_problems'] = d['rrt']['id'].shape[0]
-    stats['rrt']['success_rate'] = insat_adaptive_success
+    stats['rrt']['success_rate'] = rrt_success
     stats['rrt']['mean_cost'] = np.mean(d['rrt']['cost'])
     stats['rrt']['std_cost'] = np.std(d['rrt']['cost'])
     stats['rrt']['mean_time'] = np.mean(d['rrt']['time'])
@@ -130,7 +132,7 @@ def print_stats(insat, pinsat, rrt, epase, expansion_thresh, time_thresh):
     stats['rrt']['mean_edge_expansions'] = np.mean(d['rrt']['edge_expansions'])
 
     stats['epase']['num_success_problems'] = d['epase']['id'].shape[0]
-    stats['epase']['success_rate'] = pinsat_adaptive_success
+    stats['epase']['success_rate'] = epase_success
     stats['epase']['mean_cost'] = np.mean(d['epase']['cost'])
     stats['epase']['std_cost'] = np.std(d['epase']['cost'])
     stats['epase']['mean_time'] = np.mean(d['epase']['time'])
@@ -187,21 +189,19 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--num_threads', '-nt', type=int, default=60)
-    parser.add_argument('--dir', '-d', type=str, default="easy")
+    parser.add_argument('--dir', '-d', type=str, default="")
 
     args = parser.parse_args()
     
     base_dir = os.path.join("../logs", args.dir)
 
-    end_d = 800
 
-    insat = np.loadtxt(os.path.join(base_dir, "insat_smart_1.txt"))[0:end_d]
-    pinsat = np.loadtxt(os.path.join(base_dir, "pinsat_smart_" + str(args.num_threads) + ".txt"))[0:end_d]
-    # rrt = np.loadtxt(os.path.join(base_dir, "rrtconnect_" + str(args.num_threads) + ".txt"))[0:end_d]
-    # epase = np.loadtxt(os.path.join(base_dir, "epase_" + str(args.num_threads) + ".txt"))[0:end_d]
-    rrt = epase = pinsat
+    insat = np.loadtxt(os.path.join(base_dir, "insat_smart_1.txt"))
+    pinsat = np.loadtxt(os.path.join(base_dir, "pinsat_smart_" + str(args.num_threads) + ".txt"))
+    rrt = np.loadtxt(os.path.join(base_dir, "rrtconnect_" + str(args.num_threads) + ".txt"))
+    epase = np.loadtxt(os.path.join(base_dir, "epase_" + str(args.num_threads) + ".txt"))
+    # epase = rrt
 
-    # pdb.set_trace()
     np.set_printoptions(suppress=True)
 
     stats = {}
