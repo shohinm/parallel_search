@@ -412,11 +412,11 @@ void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vec
     planner_ptr->SetEdgeKeyGenerator(bind(EdgeKeyGenerator, placeholders::_1));
     planner_ptr->SetStateToStateHeuristicGenerator(bind(computeHeuristicStateToState, placeholders::_1, placeholders::_2));
     planner_ptr->SetGoalChecker(bind(isGoalState, placeholders::_1, TERMINATION_DIST));
-    if ((planner_name == "epase") || (planner_name == "gepase"))
+    if ((planner_name == "epase") || (planner_name == "gepase") || (planner_name == "rrt") || (planner_name == "rrtconnect"))
     {
         planner_ptr->SetPostProcessor(bind(postProcess, placeholders::_1, placeholders::_2, placeholders::_3, action_ptrs[0], opt));
     }
-    else if ((planner_name == "rrt") || (planner_name == "rrtconnect"))
+    else if (!(planner_name == "insat" || planner_name == "pinsat"))
     {
         planner_ptr->SetPostProcessor(bind(postProcessWithControlPoints, placeholders::_1, placeholders::_2, placeholders::_3, action_ptrs[0], opt));        
     }
