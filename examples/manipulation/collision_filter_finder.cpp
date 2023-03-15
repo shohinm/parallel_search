@@ -53,7 +53,8 @@ const int NO = _countof(objects);
 const int NNC = _countof(no_collisions);
 bool forbidden[NO][NO];
 //unsigned int combi;
-unsigned long long combi;
+unsigned long combi;
+//unsigned long long combi;
 
 //int _kbhit() {
 //  static const int STDIN = 0;
@@ -94,7 +95,7 @@ void init_forbidden() {
 }
 
 bool search_for_solution() {
-  for (combi = 1 | (1 << BITS); combi < 1ll << NO * 2 * BITS; combi += 1 << 2 * BITS) {
+  for (combi = 1 | (1 << BITS); combi < INT64_C(1) << NO * 2 * BITS; combi += 1 << 2 * BITS) {
     for (int o1 = 0; o1 < NO; o1++) {
       int contype1 = int(combi >> o1 * 2 * BITS) & MASK;
       int conaffinity1 = int(combi >> o1 * 2 * BITS >> BITS) & MASK;
