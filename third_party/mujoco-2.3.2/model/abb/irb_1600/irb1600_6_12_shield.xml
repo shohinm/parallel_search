@@ -25,7 +25,7 @@
         <light name="light2" diffuse=".5 .5 .5" pos="1.5 -1.5 2"  dir="-1 1 -.5" castshadow="false" />
         <light name="light3" diffuse=".5 .5 .5" pos="-1.5 -1.5 2" dir="1 1 -.5" castshadow="false" />
         <!-- Floor -->
-        <geom name="floor" pos="0 0 0" size="5 5 .125" type="plane" material="BeigeMaterial" condim="0"  contype="0" conaffinity="0"/>
+        <geom name="floor" pos="0 0 0" size="5 5 .125" type="plane" material="BeigeMaterial" condim="3"  contype="0" conaffinity="0"/>
 
         <!-- obstacles -->
         <body name="obstacle" pos="0.55 -0.7 0" quat="0.707 0 0 -0.707">
