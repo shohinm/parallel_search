@@ -590,6 +590,7 @@ int main(int argc, char* argv[])
     planner_params["min_ctrl_points"] = 4;
     planner_params["max_ctrl_points"] = 7;
     planner_params["spline_order"] = 4;
+    planner_params["sampling_dt"] = 5e-3;
 
     ofstream log_file;
 
@@ -790,6 +791,7 @@ int main(int argc, char* argv[])
         // cout << "************************" << endl;
         // getchar();
 
+        double exec_duration = -1;
         if (plan_found)
         {
 
@@ -847,13 +849,14 @@ int main(int argc, char* argv[])
             {
                 std::shared_ptr<InsatPlanner> insat_planner = std::dynamic_pointer_cast<InsatPlanner>(planner_ptr);
                 auto soln_traj = insat_planner->getSolutionTraj();
-                auto samp_traj = sampleTrajectory(soln_traj.traj_, 5e-3);
+                auto samp_traj = sampleTrajectory(soln_traj.traj_, planner_params["sampling_dt"]);
                 traj_log.conservativeResize(insat_params.lowD_dims_, traj_log.cols()+samp_traj.cols());
                 traj_log.rightCols(samp_traj.cols()) = samp_traj;
                 traj_log.conservativeResize(insat_params.lowD_dims_, traj_log.cols()+1);
                 traj_log.rightCols(1) = -1*VecDf::Ones(insat_params.lowD_dims_);
                 all_execution_time.push_back(soln_traj.traj_.end_time());
                 cout << "Execution time: " << soln_traj.traj_.end_time() << endl;
+                exec_duration = soln_traj.traj_.end_time();
 
                 auto plan = planner_ptr->GetPlan();
                 plan_vec.emplace_back(plan);
@@ -862,6 +865,7 @@ int main(int argc, char* argv[])
             {
                 auto plan = planner_ptr->GetPlan();
                 plan_vec.emplace_back(plan);
+                exec_duration = plan_vec.size()*planner_params["sampling_dt"];
             }
 
 
@@ -875,6 +879,7 @@ int main(int argc, char* argv[])
             cout << " | Plan not found!" << endl;
         }
 
+
         log_file << run << " " 
         << planner_stats.total_time_ << " " 
         << planner_stats.path_cost_<< " " 
@@ -882,6 +887,7 @@ int main(int argc, char* argv[])
         << planner_stats.num_state_expansions_<< " " 
         << planner_stats.num_evaluated_edges_<< " " 
         << planner_stats.num_threads_spawned_<< " " 
+        << exec_duration<< " "
         << endl;
     }
 
