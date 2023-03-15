@@ -218,29 +218,110 @@ void ArastarPlanner::expandState(StatePtrType state_ptr)
     {
         if (action_ptr->CheckPreconditions(state_ptr->GetStateVars()))
         {
-            // Evaluate the edge
-            auto action_successor = action_ptr->GetSuccessor(state_ptr->GetStateVars());
-            planner_stats_.num_evaluated_edges_++; // Only the edges controllers that satisfied pre-conditions and args are in the open list
-            //********************
-            
-            updateState(state_ptr, action_ptr, action_successor);
+            // Check if the edge is already in the edge map
+            auto edge_temp = Edge(state_ptr, action_ptr);
+            auto edge_key = getEdgeKey(&edge_temp);
+            auto it_edge = edge_map_.find(edge_key); 
+            EdgePtrType edge_ptr_next;
+
+            if (it_edge == edge_map_.end())
+            {
+                edge_ptr_next = new Edge(state_ptr, action_ptr);
+                edge_map_.insert(make_pair(edge_key, edge_ptr_next));
+            }
+            else
+            {
+                edge_ptr_next = it_edge->second;
+            }
+            // Update state
+            updateState(state_ptr, action_ptr, edge_ptr_next);
+
+            // // Evaluate the edge
+            // if(!edge_ptr_next->is_eval_)
+            // {
+            //     auto action_successor = action_ptr->GetSuccessor(state_ptr->GetStateVars());
+            //     edge_ptr_next->is_eval_ = true;
+            //     planner_stats_.num_evaluated_edges_++; // Only the edges controllers that satisfied pre-conditions and args are in the open list
+            //     //********************
+            // }
+            // else
+            // {
+            //     // update existing successor state
+            //     auto action_successor = edge_ptr_next->child_state_ptr_;
+            // }
         }
     }
 }
 
-void ArastarPlanner::updateState(StatePtrType& state_ptr, ActionPtrType& action_ptr, ActionSuccessor& action_successor)
+void ArastarPlanner::updateState(StatePtrType& state_ptr, ActionPtrType& action_ptr, EdgePtrType& edge_ptr)
 {
-    if (action_successor.success_)
+    if (!edge_ptr->is_eval_)
     {
-        auto successor_state_ptr = constructState(action_successor.successor_state_vars_costs_.back().first);
-        double cost = action_successor.successor_state_vars_costs_.back().second;                
-        double new_g_val = state_ptr->GetGValue() + cost;
+        auto action_successor = action_ptr->GetSuccessor(state_ptr->GetStateVars());
+        edge_ptr->is_eval_ = true;
+        planner_stats_.num_evaluated_edges_++;
+        if (action_successor.success_) 
+        {
+            auto successor_state_ptr = constructState(action_successor.successor_state_vars_costs_.back().first);
+            double cost = action_successor.successor_state_vars_costs_.back().second;                
+            double new_g_val = state_ptr->GetGValue() + cost;
 
-            
+            // Set successor and cost in expanded edge
+            edge_ptr->child_state_ptr_ = successor_state_ptr;
+            edge_ptr->SetCost(cost);
+                
+            if (successor_state_ptr->GetGValue() > new_g_val)
+            {
+
+                double h_val = successor_state_ptr->GetHValue();
+                if (h_val == -1)
+                {
+                    h_val = computeHeuristic(successor_state_ptr);
+                    successor_state_ptr->SetHValue(h_val);        
+                }
+
+                if (h_val != DINF)
+                {
+                    h_val_min_ = h_val < h_val_min_ ? h_val : h_val_min_;
+                    successor_state_ptr->SetGValue(new_g_val);
+                    successor_state_ptr->SetFValue(new_g_val + heuristic_w_*h_val);
+                    successor_state_ptr->SetIncomingEdgePtr(edge_ptr);
+         
+                    if (!successor_state_ptr->IsVisited())
+                    {
+                        if (state_open_list_.contains(successor_state_ptr))
+                        {
+                            state_open_list_.decrease(successor_state_ptr);
+                        }
+                        else
+                        {
+                            state_open_list_.push(successor_state_ptr);
+                        }
+                    }
+                    else
+                    {
+                        if (find(state_incon_list_.begin(), state_incon_list_.end(), successor_state_ptr) == state_incon_list_.end())
+                        {
+                            state_incon_list_.push_back(successor_state_ptr);
+                        }
+                    }
+                }
+            } 
+        }
+        else
+        {
+            edge_ptr->is_invalid_ = true;
+        }
+    }
+    else if (!edge_ptr->is_invalid_)
+    {
+        double new_g_val = edge_ptr->parent_state_ptr_->GetGValue() + edge_ptr->GetCost();
+        auto successor_state_ptr = edge_ptr->child_state_ptr_;
+
         if (successor_state_ptr->GetGValue() > new_g_val)
         {
-
             double h_val = successor_state_ptr->GetHValue();
+            
             if (h_val == -1)
             {
                 h_val = computeHeuristic(successor_state_ptr);
@@ -252,11 +333,6 @@ void ArastarPlanner::updateState(StatePtrType& state_ptr, ActionPtrType& action_
                 h_val_min_ = h_val < h_val_min_ ? h_val : h_val_min_;
                 successor_state_ptr->SetGValue(new_g_val);
                 successor_state_ptr->SetFValue(new_g_val + heuristic_w_*h_val);
-                
-                auto edge_ptr = new Edge(state_ptr, successor_state_ptr, action_ptr);
-                edge_ptr->SetCost(cost);
-                edge_map_.insert(make_pair(getEdgeKey(edge_ptr), edge_ptr));
-                
                 successor_state_ptr->SetIncomingEdgePtr(edge_ptr);
                 
                 if (!successor_state_ptr->IsVisited())
@@ -277,11 +353,9 @@ void ArastarPlanner::updateState(StatePtrType& state_ptr, ActionPtrType& action_
                         state_incon_list_.push_back(successor_state_ptr);
                     }
                 }
-
             }
-
         }
-    } 
+    }  
 }
 
 void ArastarPlanner::exit()

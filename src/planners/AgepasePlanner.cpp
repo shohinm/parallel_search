@@ -576,6 +576,7 @@ void AgepasePlanner::expandEdge(EdgePtrType edge_ptr, int thread_id)
         auto t_lock_e = chrono::steady_clock::now();
         planner_stats_.lock_time_ += 1e-9*chrono::duration_cast<chrono::nanoseconds>(t_lock_e-t_lock_s).count();
 
+        edge_ptr->is_eval_ = true;
         planner_stats_.num_evaluated_edges_++; // Only the edges controllers that satisfied pre-conditions and args are in the open list
 
         if (action_successor.success_)
@@ -586,7 +587,6 @@ void AgepasePlanner::expandEdge(EdgePtrType edge_ptr, int thread_id)
             // Set successor and cost in expanded edge
             edge_ptr->child_state_ptr_ = successor_state_ptr;
             edge_ptr->SetCost(cost);
-            edge_ptr->is_eval_ = true;
 
             double new_g_val = edge_ptr->parent_state_ptr_->GetGValue() + cost;
 
@@ -650,10 +650,11 @@ void AgepasePlanner::expandEdge(EdgePtrType edge_ptr, int thread_id)
         }
         else
         {
+            edge_ptr->is_invalid_ = true;
             if (VERBOSE) edge_ptr->Print("No successors for");
         }
     }
-    else
+    else if (!edge_ptr->is_invalid_)
     {
         double new_g_val = edge_ptr->parent_state_ptr_->GetGValue() + edge_ptr->GetCost();
         auto successor_state_ptr = edge_ptr->child_state_ptr_;

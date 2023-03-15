@@ -20,7 +20,7 @@ class ArastarPlanner : public WastarPlanner
         void initialize();
         void improvePath();
         void expandState(StatePtrType state_ptr);
-        void updateState(StatePtrType& state_ptr, ActionPtrType& action_ptr, ActionSuccessor& action_successor);
+        void updateState(StatePtrType& state_ptr, ActionPtrType& action_ptr, EdgePtrType& edge_ptr);
         void exit();
 
         std::vector<StatePtrType> state_incon_list_;
