@@ -55,18 +55,9 @@ def balltraj(end_pos, len, max_len, dx):
   ball_traj = np.hstack((ball_traj, quat_traj))
   return ball_traj
 
-def processLogToTrajectory(log, sts, gos):
-  log_len = np.shape(log)[0]
-  idx = np.zeros((log_len, 1))
-  for st in range(np.shape(sts)[0]):
-    st_mat = np.repeat([sts[st,:]], repeats=log_len, axis=0)
-    diff = log - st_mat
-    dnorm = np.linalg.norm(diff, axis=1)
-    idx[st] = np.argmin(dnorm)
-
-  traj = list()
-  for i in range(np.shape(idx)[0]-1):
-    traj.append(log[int(idx[i][0]):int(idx[i+1][0])-1,:])
+def processLogToTrajectory(log):
+  for i in range(np.shape(log)[0]):
+    
 
   return traj
 

@@ -26,12 +26,12 @@ else:
   # dt = 0.5
   # dt = 1
 
-model_dir = '../parallel_search/third_party/mujoco-2.3.2/model/abb/irb_1600'
+model_dir = '../third_party/mujoco-2.3.2/model/abb/irb_1600'
 mjcf = 'irb1600_6_12.xml'
 mjcf_arm = 'irb1600_6_12_shield.xml'
-traj_file = '../parallel_search/logs/' + planner_name + '_abb_traj.txt'
-starts_file = '../parallel_search/logs/' + planner_name + '_abb_starts.txt'
-goals_file = '../parallel_search/logs/' + planner_name + '_abb_goals.txt'
+traj_file = '../logs/' + planner_name + '_abb_traj.txt'
+starts_file = '../logs/' + planner_name + '_abb_starts.txt'
+goals_file = '../logs/' + planner_name + '_abb_goals.txt'
 traj = genfromtxt(traj_file, delimiter=' ' if static_planner else ',')
 starts = genfromtxt(starts_file, delimiter=',')
 goals = genfromtxt(goals_file, delimiter=',')
@@ -86,8 +86,8 @@ if static_planner:
 skp = 0
 for i in range(np.shape(traj)[0]):
   skp += 1
-  if skp % 2 == 0:
-    continue
+  # if skp % 2 == 0:
+  #   continue
   if np.array_equal(traj[i,:], -1*np.ones((arm_model.nq,))):
     sleep(2)
     continue
