@@ -148,8 +148,6 @@ namespace ps
             {
                 // Evaluate the edge
                 auto action_successor = action_ptr->GetSuccessor(state_ptr->GetStateVars());
-                planner_stats_.num_evaluated_edges_++; // Only the edges controllers that satisfied pre-conditions and args are in the open list
-                //********************
 
                 updateState(state_ptr, ancestors, action_ptr, action_successor);
             }
