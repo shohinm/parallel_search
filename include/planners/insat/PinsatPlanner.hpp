@@ -25,7 +25,7 @@ class PinsatPlanner : virtual public GepasePlanner, virtual public InsatPlanner
         void initialize();
         void expandEdgeLoop(int thread_id);    
         void expand(InsatEdgePtrType edge_ptr, int thread_id);
-        void expandEdge(InsatEdgePtrType edge_ptr, int thread_id);
+        void expandEdge(InsatEdgePtrType insat_edge_ptr, int thread_id);
         void exit();
 
         EdgeQueueMinType edge_open_list_;

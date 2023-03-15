@@ -336,15 +336,15 @@ void PinsatPlanner::expand(InsatEdgePtrType edge_ptr, int thread_id)
     lock_.unlock();
 }
 
-void PinsatPlanner::expandEdge(InsatEdgePtrType edge_ptr, int thread_id)
+void PinsatPlanner::expandEdge(InsatEdgePtrType insat_edge_ptr, int thread_id)
 {
 
-    auto action_ptr = edge_ptr->action_ptr_;
-    if (VERBOSE) edge_ptr->Print("Expanding ");
+    auto action_ptr = insat_edge_ptr->action_ptr_;
+    if (VERBOSE) insat_edge_ptr->Print("Expanding ");
     lock_.unlock();
     // Evaluate the edge
     auto t_start = chrono::steady_clock::now();
-    auto action_successor = action_ptr->GetSuccessor(edge_ptr->lowD_parent_state_ptr_->GetStateVars(), thread_id);
+    auto action_successor = action_ptr->GetSuccessor(insat_edge_ptr->lowD_parent_state_ptr_->GetStateVars(), thread_id);
     auto t_end = chrono::steady_clock::now();
     //********************
     
@@ -361,8 +361,8 @@ void PinsatPlanner::expandEdge(InsatEdgePtrType edge_ptr, int thread_id)
         // double cost = action_successor.successor_state_vars_costs_.back().second;                
 
         // Set successor and cost in expanded edge
-        edge_ptr->child_state_ptr_ = successor_state_ptr;
-        // edge_ptr->SetCost(cost);
+        insat_edge_ptr->child_state_ptr_ = successor_state_ptr;
+        // insat_edge_ptr->SetCost(cost);
 
         if (!successor_state_ptr->IsVisited())
         {
@@ -371,7 +371,7 @@ void PinsatPlanner::expandEdge(InsatEdgePtrType edge_ptr, int thread_id)
             TrajType traj;
             double cost = 0, inc_cost = 0;
             bool root=true;
-            auto ancestors = edge_ptr->lowD_parent_state_ptr_->GetAncestors();
+            auto ancestors = insat_edge_ptr->lowD_parent_state_ptr_->GetAncestors();
          
             lock_.unlock();
 
@@ -482,18 +482,22 @@ void PinsatPlanner::expandEdge(InsatEdgePtrType edge_ptr, int thread_id)
                         h_val_min_ = h_val < h_val_min_ ? h_val : h_val_min_;
                         successor_state_ptr->SetGValue(new_g_val);
                         successor_state_ptr->SetFValue(new_g_val + heuristic_w_*h_val);
-                      successor_state_ptr->SetIncomingInsatEdgePtr(edge_ptr);
+                        successor_state_ptr->SetIncomingInsatEdgePtr(insat_edge_ptr);
 
-                        edge_ptr->SetTraj(traj);
-                        edge_ptr->SetTrajCost(cost);
-                        edge_ptr->SetCost(cost);
+                        auto edge_ptr = new Edge(insat_edge_ptr->parent_state_ptr_, action_ptr, successor_state_ptr);
+                        edge_ptr->SetCost(inc_cost);
+                        successor_state_ptr->SetIncomingEdgePtr(edge_ptr);
+
+                        insat_edge_ptr->SetTraj(traj);
+                        insat_edge_ptr->SetTrajCost(cost);
+                        insat_edge_ptr->SetCost(cost);
                         if (isGoalState(successor_state_ptr))
                         {
-                            edge_ptr->SetTrajCost(0);
-                            edge_ptr->SetCost(0);
+                            insat_edge_ptr->SetTrajCost(0);
+                            insat_edge_ptr->SetCost(0);
                             successor_state_ptr->SetFValue(0.0);
                         }
-                        edge_ptr->fullD_parent_state_ptr_ = best_anc;
+                        insat_edge_ptr->fullD_parent_state_ptr_ = best_anc;
                         // Insert poxy edge
                         auto edge_temp = Edge(successor_state_ptr, dummy_action_ptr_);
                         auto edge_key = getEdgeKey(&edge_temp);
@@ -531,10 +535,10 @@ void PinsatPlanner::expandEdge(InsatEdgePtrType edge_ptr, int thread_id)
     }
     else
     {
-        if (VERBOSE) edge_ptr->Print("No successors for");
+        if (VERBOSE) insat_edge_ptr->Print("No successors for");
     }
 
-    edge_ptr->lowD_parent_state_ptr_->num_expanded_successors_ += 1;
+  insat_edge_ptr->lowD_parent_state_ptr_->num_expanded_successors_ += 1;
 
 }
 
