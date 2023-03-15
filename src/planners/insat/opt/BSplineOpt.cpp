@@ -959,7 +959,7 @@ namespace ps
 
         /// Start constraint
         opt.AddPathPositionConstraint(q0, q0, 0); // Linear constraint
-        if (q0.isApprox(opt_params_.global_start_, 5e-3) && opt_params_.zero_vel_start)
+        if (q0.isApprox(opt_params_.global_start_, 5e-3) && opt_params_.zero_vel_start_)
         {
             dq0.setZero();
             opt.AddPathVelocityConstraint(dq0, dq0, 0); // Linear constraint
@@ -967,7 +967,7 @@ namespace ps
 
         /// Goal constraint
         opt.AddPathPositionConstraint(qF, qF, 1); // Linear constraint
-        if (isGoal(qF) && opt_params_.zero_vel_goal)
+        if (isGoal(qF) && opt_params_.zero_vel_goal_)
         {
             VecDf dqF(insat_params_.aux_dims_);
             dqF.setZero();
@@ -1027,7 +1027,7 @@ namespace ps
 
         /// Start constraint
         opt.AddPathPositionConstraint(q0, q0, 0); // Linear constraint
-        if (q0.isApprox(opt_params_.global_start_, 5e-3) && opt_params_.zero_vel_start)
+        if (q0.isApprox(opt_params_.global_start_, 5e-3) && opt_params_.zero_vel_start_)
         {
             dq0.setZero();
             opt.AddPathVelocityConstraint(dq0, dq0, 0); // Linear constraint
@@ -1035,7 +1035,7 @@ namespace ps
 
         /// Goal constraint
         opt.AddPathPositionConstraint(qF, qF, 1); // Linear constraint
-        if (isGoal(qF) && opt_params_.zero_vel_goal)
+        if (isGoal(qF) && opt_params_.zero_vel_goal_)
         {
             VecDf dqF(insat_params_.aux_dims_);
             dqF.setZero();
@@ -1110,13 +1110,13 @@ namespace ps
 
         /// Start constraint
         opt.AddPathPositionConstraint(q0, q0, 0); // Linear constraint
-        if (opt_params_.zero_vel_start)
+        if (opt_params_.zero_vel_start_)
         {
             opt.AddPathVelocityConstraint(dq0, dq0, 0); // Linear constraint
         }
         /// Goal constraint
         opt.AddPathPositionConstraint(qF, qF, 1); // Linear constraint
-        if (isGoal(qF) && opt_params_.zero_vel_goal)
+        if (isGoal(qF) && opt_params_.zero_vel_goal_)
         {
             VecDf dqF(insat_params_.aux_dims_);
             dqF.setZero();
@@ -1176,13 +1176,13 @@ namespace ps
 
         /// Start constraint
         opt.AddPathPositionConstraint(q0, q0, 0); // Linear constraint
-        if (opt_params_.zero_vel_start)
+        if (opt_params_.zero_vel_start_)
         {
             opt.AddPathVelocityConstraint(dq0, dq0, 0); // Linear constraint
         }
         /// Goal constraint
         opt.AddPathPositionConstraint(qF, qF, 1); // Linear constraint
-        if (isGoal(qF) && opt_params_.zero_vel_goal)
+        if (isGoal(qF) && opt_params_.zero_vel_goal_)
         {
             VecDf dqF(insat_params_.aux_dims_);
             dqF.setZero();
