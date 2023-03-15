@@ -338,7 +338,7 @@ void constructActions(vector<shared_ptr<Action>>& action_ptrs,
         }
         else
         {
-            bool is_expensive = (action_params["planner_name"] == 1) ? 1 : 0;
+            bool is_expensive = (action_params["planner_type"] == 1) ? 1 : 0;
             auto one_joint_action = std::make_shared<OneJointAtATime>(std::to_string(i), action_params,
                                                                       DISCRETIZATION, mprims,
                                                                       opt, m_vec, d_vec, num_threads, is_expensive);
