@@ -286,6 +286,7 @@ int main(int argc, char* argv[])
     bool naive = 0;
     bool adaptive = 0;
     double heuristic_weight = 50;
+    int map_num = -1;
 
     if (!strcmp(argv[1], "wastar"))
     {
@@ -295,6 +296,12 @@ int main(int argc, char* argv[])
         {
             num_threads = 1;
             heuristic_weight = atof(argv[2]);
+        }
+        else if (argc == 4)
+        {
+            num_threads = 1;
+            heuristic_weight = atof(argv[2]);
+            map_num = atoi(argv[3]);
         }
         else
             throw runtime_error("Format: run_robot_nav_2d wastar");
@@ -311,6 +318,12 @@ int main(int argc, char* argv[])
         {
             num_threads = 1;
             time_budget = atof(argv[2]);
+        }
+        else if (argc == 4)
+        {
+            num_threads = 1;
+            time_budget = atof(argv[2]);
+            map_num = atoi(argv[3]);
         }
         else
             throw runtime_error("Format: run_robot_nav_2d arastar [time_budget]");
@@ -329,6 +342,14 @@ int main(int argc, char* argv[])
             naive = atoi(argv[4]);
             adaptive = atoi(argv[5]);
         }
+        else if (argc == 7)
+        {
+            num_threads = atoi(argv[2]);
+            time_budget = atof(argv[3]);
+            naive = atoi(argv[4]);
+            adaptive = atoi(argv[5]);
+            map_num = atoi(argv[6]);
+        }
         else
             throw runtime_error("Format: run_robot_nav_2d agepase [num_threads] [time_budget]");
     }
@@ -342,6 +363,12 @@ int main(int argc, char* argv[])
         {
             num_threads = atoi(argv[2]);
             heuristic_weight = atof(argv[3]);
+        }
+        else if (argc == 5)
+        {
+            num_threads = atoi(argv[2]);
+            heuristic_weight = atof(argv[3]);
+            map_num = atoi(argv[4]);
         }
         else
             throw runtime_error("Format: run_robot_nav_2d epase [num_threads]");
@@ -417,10 +444,11 @@ int main(int argc, char* argv[])
     vector<int> all_maps_num_edges_vec;
     unordered_map<string, vector<double>> all_action_eval_times;
 
-    // for (int m_idx = 0; m_idx < map_vec.size(); ++m_idx)
-    for (int m_idx = 0; m_idx < 1; ++m_idx) // anytime experiment
+    for (int m_idx = 0; m_idx < map_vec.size(); ++m_idx)
+    // for (int m_idx = 0; m_idx < 1; ++m_idx) // anytime experiment
     // for (int m_idx = 2; m_idx < 3; ++m_idx) // Fail case for optimality (thread=10)
     {
+        if (map_num != -1 && m_idx != map_num) continue;
         auto map = map_vec[m_idx];
         auto img = img_vec[m_idx];
         auto cost_factor_map = apply_cost_factor_map ? cost_factor_map_vec[m_idx] : vector<vector<double>>();
