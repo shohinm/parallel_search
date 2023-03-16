@@ -593,6 +593,7 @@ namespace ps
             }
         }
 
+        /// path should be in the order: Start ----> Goal (recent ancestor)
         if (!path.leftCols(1).isApprox(opt_params_.global_start_, 5e-2))
         {
             path.rowwise().reverseInPlace();
@@ -889,7 +890,8 @@ namespace ps
 
         if (isGoal(go))
         {
-            auto snap_traj = directOptimizeWithCallback(act, path.leftCols(1), path.rightCols(1), thread_id);
+            auto snap_from = path.rightCols(2).leftCols(1);
+            auto snap_traj = directOptimizeWithCallback(act, snap_from, go, thread_id);
             if (snap_traj.disc_traj_.size() > 0)
             {
                 traj = blendWithHigherOrderAndControl(act, init_traj, snap_traj, thread_id);
