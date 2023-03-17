@@ -897,6 +897,7 @@ namespace ps
                 traj = blendWithHigherOrderAndControl(act, init_traj, snap_traj, thread_id);
                 if (traj.disc_traj_.size() > 0)
                 {
+                  traj.conv_step_ = "blend";
                     return traj;
                 }
             }
@@ -907,6 +908,7 @@ namespace ps
             /// Do direct optimization
             /// This shouldn't be failing (at least the assumption is)
             traj = directOptimizeWithCallback(act, path.leftCols(1), path.rightCols(1), thread_id);
+            traj.conv_step_ = "direct";
             return traj;
         }
 
@@ -936,6 +938,7 @@ namespace ps
                 init_guess = BSplineTraj::TrajInstanceType(basis, control_points);
             }
             traj =optimizeWithInitAndCallback(act, path.leftCols(1), path.rightCols(1), init_guess, thread_id);
+            traj.conv_step_ = "indirect";
             if (traj.disc_traj_.size() > 0)
             {
                 break;

@@ -43,6 +43,8 @@ namespace ps
         OptResultType result_;
         TrajInstanceType traj_;
         MatDf disc_traj_;
+
+        std::string conv_step_;
     };
 
 }

@@ -856,6 +856,7 @@ int main(int argc, char* argv[])
                 traj_log.rightCols(1) = -1*VecDf::Ones(insat_params.lowD_dims_);
                 all_execution_time.push_back(soln_traj.traj_.end_time());
                 cout << "Execution time: " << soln_traj.traj_.end_time() << endl;
+                cout << "Traj converged in: " << soln_traj.conv_step_ << endl;
                 exec_duration = soln_traj.traj_.end_time();
 
                 auto plan = planner_ptr->GetPlan();
