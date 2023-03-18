@@ -187,12 +187,12 @@ namespace ps
     std::vector<BSplineTraj::TrajInstanceType>
     BSplineOpt::optimizeWithCallback(const BSplineOpt::OptType &opt, drake::solvers::MathematicalProgram &prog) const {
         std::vector<BSplineTraj::TrajInstanceType> traj_trace;
-        auto convergenceCallback = [&](const Eigen::Ref<const Eigen::VectorXd>& control_vec)
+        std::vector<std::vector<MatDf>> ctrl_pt_trace;
+        std::vector<double> duration_trace;
+        auto ctrlPtConvergenceCallback = [&](const Eigen::Ref<const Eigen::VectorXd>& control_vec)
         {
             int r = opt.control_points().rows();
             int c = opt.control_points().cols();
-//                MatDf control_matix(r, c);
-//                control_matrix << control_vec;
             MatDf control_matrix(r,c);
             /// The control vector transformed to control matrix (this MUST BE DONE IN COLUMN MAJOR ORDER)
             for (int j=0; j<c; ++j)
@@ -209,15 +209,41 @@ namespace ps
                 control_points.emplace_back(control_matrix.col(i));
             }
 
-            BSplineTraj::TrajInstanceType traj = BSplineTraj::TrajInstanceType(opt.basis(), control_points);
-            traj_trace.emplace_back(traj);
+            ctrl_pt_trace.emplace_back(control_points);
         };
 
+        auto durationConvergenceCallback = [&](const Eigen::Ref<const Eigen::VectorXd>& duration_vec)
+        {
+            for (int i=0; i<duration_vec.size(); ++i)
+            {
+                duration_trace.emplace_back(duration_vec(i));
+            }
+        };
+
+        /// control pts
         drake::solvers::MatrixXDecisionVariable control_points = opt.control_points();
         Eigen::Map<drake::solvers::VectorXDecisionVariable> control_vec(control_points.data(), control_points.size());
-
-        prog.AddVisualizationCallback(convergenceCallback, control_vec);
+        /// duration
+        drake::solvers::VectorXDecisionVariable duration(1);
+        duration(0) = opt.duration();
+        Eigen::Map<drake::solvers::VectorXDecisionVariable> duration_vec(duration.data(), duration.size());
+        /// Seting callbacks
+        prog.AddVisualizationCallback(ctrlPtConvergenceCallback, control_vec);
+        prog.AddVisualizationCallback(durationConvergenceCallback, duration_vec);
         drake::solvers::Solve(prog);
+        /// Reconstructing trajectory with control point and duration trace
+        for (int i=0; i<ctrl_pt_trace.size(); ++i)
+        {
+            std::vector<double> scaled_knots = opt.basis().knots();
+            for (auto& knot : scaled_knots)
+            {
+                knot *= duration_trace[i];
+            }
+            auto traj = BSplineTraj::TrajInstanceType(
+                    drake::math::BsplineBasis<double>(opt.basis().order(), scaled_knots),
+                                                            ctrl_pt_trace[i]);
+            traj_trace.emplace_back(traj);
+        }
 
         return traj_trace;
     }
@@ -894,22 +920,37 @@ namespace ps
             auto snap_traj = directOptimizeWithCallback(act, snap_from, go, thread_id);
             if (snap_traj.disc_traj_.size() > 0)
             {
-                traj = blendWithHigherOrderAndControl(act, init_traj, snap_traj, thread_id);
-                if (traj.disc_traj_.size() > 0)
+                if (init_traj.disc_traj_.size() > 0)
                 {
-                  traj.conv_step_ = "blend";
+                    traj = blendWithHigherOrderAndControl(act, init_traj, snap_traj, thread_id);
+                    if (traj.disc_traj_.size() > 0)
+                    {
+                        traj.story_ += "Control point blending with init_traj of " +
+                                std::to_string(init_traj.traj_.end_time()) + "s and snap_traj of " +
+                                       std::to_string(snap_traj.traj_.end_time()) + "s"; /// remove
+                        return traj;
+                    }
+                }
+                else
+                {
+                    traj = snap_traj;
+                    traj.story_ += "Control point blending with snap_traj of "
+                            + std::to_string(snap_traj.traj_.end_time()) + "s"; /// remove
                     return traj;
                 }
             }
         }
 
-        if (!init_traj.isValid())
+        if (init_traj.size() == 0) /// should happen only when expanding start in low-D
         {
             /// Do direct optimization
             /// This shouldn't be failing (at least the assumption is)
             traj = directOptimizeWithCallback(act, path.leftCols(1), path.rightCols(1), thread_id);
-            traj.conv_step_ = "direct";
-            return traj;
+            if (traj.disc_traj_.size() > 0)
+            {
+                traj.story_ += "direct optimize with traj of " + std::to_string(traj.traj_.end_time()) + "s"; /// remove
+                return traj;
+            }
         }
 
         /// For min to max control points
@@ -938,9 +979,10 @@ namespace ps
                 init_guess = BSplineTraj::TrajInstanceType(basis, control_points);
             }
             traj =optimizeWithInitAndCallback(act, path.leftCols(1), path.rightCols(1), init_guess, thread_id);
-            traj.conv_step_ = "indirect";
             if (traj.disc_traj_.size() > 0)
             {
+                traj.story_ += "adaptive control point optimize with traj of " + std::to_string(traj.traj_.end_time())
+                        + "s and " + std::to_string(ctrl) + " control points"; ///remove
                 break;
             }
         }
@@ -1079,6 +1121,7 @@ namespace ps
                     {
                         traj.traj_ = traj_trace[i];
                         traj.disc_traj_ = samp_traj;
+                        traj.story_ = "recovered from " + std::to_string(i) + "/" + std::to_string(traj_trace.size()) + " ";
                         is_feasible = true;
                         break;
                     }
@@ -1226,6 +1269,7 @@ namespace ps
                     {
                         traj.traj_ = traj_trace[i];
                         traj.disc_traj_ = samp_traj;
+                        traj.story_ = "recovered from " + std::to_string(i) + "/" + std::to_string(traj_trace.size()) + " ";
                         is_feasible = true;
                         break;
                     }
