@@ -584,8 +584,8 @@ int main(int argc, char* argv[])
     planner_params["timeout"] = 10;
     planner_params["adaptive_opt"] = 0;
     planner_params["smart_opt"] = 1;
-    planner_params["min_exec_duration"] = 0.2;
-    planner_params["max_exec_duration"] = 1.5;
+    planner_params["min_exec_duration"] = 0.5;
+    planner_params["max_exec_duration"] = 0.9;
     planner_params["num_ctrl_points"] = 7;
     planner_params["min_ctrl_points"] = 4;
     planner_params["max_ctrl_points"] = 7;
@@ -856,7 +856,7 @@ int main(int argc, char* argv[])
                 traj_log.rightCols(1) = -1*VecDf::Ones(insat_params.lowD_dims_);
                 all_execution_time.push_back(soln_traj.traj_.end_time());
                 cout << "Execution time: " << soln_traj.traj_.end_time() << endl;
-                cout << "Traj converged in: " << soln_traj.conv_step_ << endl;
+                cout << "Traj converged in: " << soln_traj.story_ << endl;
                 exec_duration = soln_traj.traj_.end_time();
 
                 auto plan = planner_ptr->GetPlan();
