@@ -44,7 +44,7 @@ namespace ps
         TrajInstanceType traj_;
         MatDf disc_traj_;
 
-        std::string conv_step_;
+        std::string story_;
     };
 
 }
