@@ -165,50 +165,45 @@ double computeHeuristic(const StateVarsType& state_vars)
   return computeHeuristicStateToState(state_vars, rm::goal);
 }
 
-
-vec_Vec3f fk(const VecDf& state)
+Vec3f getEEPosition(const VecDf& state)
 {
   mju_copy(rm::global_d->qpos, state.data(), rm::global_m->nq);
-  mju_zero(rm::global_d->qvel, rm::global_m->nv);
-  mju_zero(rm::global_d->qacc, rm::global_m->nv);
-  mj_kinematics(rm::global_m, rm::global_d);
+  mj_fwdPosition(rm::global_m, rm::global_d);
 
-  double jnt_pos[rm::global_m->njnt*3];
-  mju_copy(jnt_pos, rm::global_d->xanchor, rm::global_m->njnt*3);
-
-  // all the joints pose except end effector
-  vec_Vec3f jpos;
-  for (int i=0; i<rm::global_m->nq; ++i)
-  {
-    VecDf unit_jpos(3);
-    mju_copy(unit_jpos.data(), &jnt_pos[3*i], 3);
-    jpos.emplace_back(unit_jpos);
-  }
-
-  // ee pose
   VecDf ee_pos(3);
-  double xpos[rm::global_m->nbody*3];
-  mju_copy(xpos, rm::global_d->xpos, rm::global_m->nbody*3);
-  ee_pos(0) = xpos[3*(rm::global_m->nbody-1)];
-  ee_pos(1) = xpos[3*(rm::global_m->nbody-1) + 1];
-  ee_pos(2) = xpos[3*(rm::global_m->nbody-1) + 2];
-  jpos.emplace_back(ee_pos);
+  mju_copy(ee_pos.data(), rm::global_d->xpos + 3*(rm::global_m->nbody-1), 3);
 
-  return jpos;
+  return ee_pos;
 }
 
-vec_Vec3f fk(const StateVarsType& state_vars)
+Vec3f getEEPosition(const StateVarsType& state_vars)
 {
   Eigen::Map<const VecDf> state(&state_vars[0], state_vars.size());
-  return fk(state);
+  return getEEPosition(state);
+}
+
+Vec4f getEERotation(const VecDf& state)
+{
+  mju_copy(rm::global_d->qpos, state.data(), rm::global_m->nq);
+  mj_fwdPosition(rm::global_m, rm::global_d);
+
+  VecDf ee_rot(4);
+  mju_copy(ee_rot.data(), rm::global_d->xquat + 4 * (rm::global_m->nbody - 1), 4);
+
+  return ee_rot;
+}
+
+Vec4f getEERotation(const StateVarsType& state_vars)
+{
+  Eigen::Map<const VecDf> state(&state_vars[0], state_vars.size());
+  return getEERotation(state);
 }
 
 
 double computeEEHeuristic(const StateVarsType& state_vars)
 {
   Eigen::Map<const VecDf> state(&state_vars[0], state_vars.size());
-  vec_Vec3f jpos = fk(state);
-  Vec3f ee_pos = jpos.back();
+  Vec3f ee_pos = getEEPosition(state);
 
   return (rm::goal_ee_pos - ee_pos).norm();
 }
@@ -750,8 +745,7 @@ int main(int argc, char* argv[])
     {
         // Set goal conditions
         rm::goal = goals[run];
-        vec_Vec3f goal_jpos = fk(rm::goal);
-        rm::goal_ee_pos = goal_jpos.back();
+        rm::goal_ee_pos = getEEPosition(rm::goal);
 
         // TODO: RAM
         // rm::bfs3d->recomputeBFS(x, y, z);
