@@ -61,6 +61,7 @@ using namespace ps;
 namespace rm
 {
   vector<double> goal;
+  Vec3f goal_ee_pos;
 
   int dof;
   VecDf discretization;
@@ -162,6 +163,54 @@ double zeroHeuristic(const StateVarsType& state_vars)
 double computeHeuristic(const StateVarsType& state_vars)
 {
   return computeHeuristicStateToState(state_vars, rm::goal);
+}
+
+
+vec_Vec3f fk(const VecDf& state)
+{
+  mju_copy(rm::global_d->qpos, state.data(), rm::global_m->nq);
+  mju_zero(rm::global_d->qvel, rm::global_m->nv);
+  mju_zero(rm::global_d->qacc, rm::global_m->nv);
+  mj_kinematics(rm::global_m, rm::global_d);
+
+  double jnt_pos[rm::global_m->njnt*3];
+  mju_copy(jnt_pos, rm::global_d->xanchor, rm::global_m->njnt*3);
+
+  // all the joints pose except end effector
+  vec_Vec3f jpos;
+  for (int i=0; i<rm::global_m->nq; ++i)
+  {
+    VecDf unit_jpos(3);
+    mju_copy(unit_jpos.data(), &jnt_pos[3*i], 3);
+    jpos.emplace_back(unit_jpos);
+  }
+
+  // ee pose
+  VecDf ee_pos(3);
+  double xpos[rm::global_m->nbody*3];
+  mju_copy(xpos, rm::global_d->xpos, rm::global_m->nbody*3);
+  ee_pos(0) = xpos[3*(rm::global_m->nbody-1)];
+  ee_pos(1) = xpos[3*(rm::global_m->nbody-1) + 1];
+  ee_pos(2) = xpos[3*(rm::global_m->nbody-1) + 2];
+  jpos.emplace_back(ee_pos);
+
+  return jpos;
+}
+
+vec_Vec3f fk(const StateVarsType& state_vars)
+{
+  Eigen::Map<const VecDf> state(&state_vars[0], state_vars.size());
+  return fk(state);
+}
+
+
+double computeEEHeuristic(const StateVarsType& state_vars)
+{
+  Eigen::Map<const VecDf> state(&state_vars[0], state_vars.size());
+  vec_Vec3f jpos = fk(state);
+  Vec3f ee_pos = jpos.back();
+
+  return (rm::goal_ee_pos - ee_pos).norm();
 }
 
 double computeLoSHeuristic(const StateVarsType& state_vars)
@@ -406,6 +455,7 @@ void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vec
     planner_ptr->SetHeuristicGenerator(bind(computeLoSHeuristic, placeholders::_1));
 //    planner_ptr->SetHeuristicGenerator(bind(computeShieldHeuristic, placeholders::_1));
 //    planner_ptr->SetHeuristicGenerator(bind(computeBFSHeuristic, placeholders::_1));
+//    planner_ptr->SetHeuristicGenerator(bind(computeEEHeuristic, placeholders::_1));
 
     planner_ptr->SetActions(action_ptrs);
     planner_ptr->SetStateMapKeyGenerator(bind(StateKeyGenerator, placeholders::_1));
@@ -700,6 +750,8 @@ int main(int argc, char* argv[])
     {
         // Set goal conditions
         rm::goal = goals[run];
+        vec_Vec3f goal_jpos = fk(rm::goal);
+        rm::goal_ee_pos = goal_jpos.back();
 
         // TODO: RAM
         // rm::bfs3d->recomputeBFS(x, y, z);
