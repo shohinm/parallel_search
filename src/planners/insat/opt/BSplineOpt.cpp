@@ -147,7 +147,7 @@ namespace ps
             VecDf x2 = traj.value(std::min(t+ddt, traj.end_time()));
 
             /// keep decreasing adaptive t until distance is smaller than threshold
-            while ((x2-x1).norm() > robot_params_.collision_delta_ && ddt > opt_params_.min_duration_/5.0)
+            while ((x2-x1).norm() > robot_params_.collision_delta_ && ddt > opt_params_.min_duration_/50.0)
             {
                 ddt /= 2.0;
                 x2 = traj.value(std::min(t+ddt, traj.end_time()));
