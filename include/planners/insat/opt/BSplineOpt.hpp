@@ -26,7 +26,7 @@ namespace ps
 
         struct BSplineOptParams
         {
-            enum ConstraintMode
+            enum class ConstraintMode
             {
                 WAYPT = 0,
                 CONTROLPT
