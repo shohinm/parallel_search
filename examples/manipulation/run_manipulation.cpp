@@ -313,6 +313,9 @@ void setupSmplBFS()
   }
 
   initializeBFS(length, width, height, occupied_cells);
+
+  std::cout << "Finished setting up SMPL bfs3d environment of size " <<  length << "x" << width << "x" << height
+      << " cells containing " << occupied_cells.size() << " occupied cells." << std::endl;
 }
 
 void recomputeBFS()
@@ -772,7 +775,7 @@ int main(int argc, char* argv[])
     //                    bfsmodelpath, bfsmprimpath, num_threads);
     
     /// SMPL bfs3d
-    setupSmplBFS();
+//    setupSmplBFS();
 
     std::vector<std::shared_ptr<ManipulationAction>> manip_action_ptrs;
     for (auto& a : action_ptrs)
@@ -794,7 +797,7 @@ int main(int argc, char* argv[])
         rm::goal = goals[run];
         rm::goal_ee_pos = getEEPosition(rm::goal);
         /// Call SMPL bfs3d after updating ee goal
-        recomputeBFS();
+//        recomputeBFS();
         
         auto start = starts[run];
 
