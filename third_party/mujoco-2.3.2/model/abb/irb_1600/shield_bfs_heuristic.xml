@@ -8,12 +8,14 @@
     </asset>
 
     <custom>
-        <numeric name="env_size" size="6" data="-1.5 -1.5 0 1.5 1.5 2"/>
+        <numeric name="env_size" size="6" data="-0.95 -2.2 0 2.05 0.8 2"/>
     </custom>
 
     <worldbody>
         <!-- obstacles -->
-        <include file="shield_obstacles.xml"/>
+        <body name="obstacle" pos="0.55 -0.7 0" quat="0.707 0 0 -0.707">
+            <include file="shield_obstacles.xml"/>
+        </body>
 
         <!-- env limits represented as with an outer dome -->
         <body name="outer_dome" pos="0.55 -0.7 0" quat="1 0 0 0">
