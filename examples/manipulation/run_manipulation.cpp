@@ -58,6 +58,27 @@ using namespace ps;
 #define BFS_DISCRETIZATION 0.01
 #define DISCRETIZATION 0.05
 
+enum class HeuristicMode
+{
+  EUCLIDEAN = 0,
+  LOS,
+  SHIELD,
+  SMPL_BFS,
+  EE
+};
+
+enum class GoalCheckerMode
+{
+  CSPACE = 0,
+  EE
+};
+
+enum class PPMode
+{
+  CONTROLPT = 0,
+  WAYPT
+};
+
 namespace rm
 {
   vector<double> goal;
@@ -82,6 +103,10 @@ namespace rm
   ps::Planner::StatePtrMapType bfs_state_map;
   shared_ptr<smpl::BFS_3D> bfs3d;
 
+  // Modes
+  HeuristicMode h_mode = HeuristicMode::LOS;
+  GoalCheckerMode goal_mode = GoalCheckerMode::CSPACE;
+  PPMode pp_mode = PPMode::WAYPT;
 }
 
 double roundOff(double value, unsigned char prec)
@@ -511,25 +536,51 @@ void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vec
         throw runtime_error("Planner type not identified!");
 
     /// Heuristic
-//    planner_ptr->SetHeuristicGenerator(bind(computeHeuristic, placeholders::_1));
-//    planner_ptr->SetHeuristicGenerator(bind(computeLoSHeuristic, placeholders::_1));
-//    planner_ptr->SetHeuristicGenerator(bind(computeShieldHeuristic, placeholders::_1));
-    planner_ptr->SetHeuristicGenerator(bind(computeBFSHeuristic, placeholders::_1));
-//    planner_ptr->SetHeuristicGenerator(bind(computeEEHeuristic, placeholders::_1));
+    if (rm::h_mode == HeuristicMode::EUCLIDEAN)
+    {
+      planner_ptr->SetHeuristicGenerator(bind(computeHeuristic, placeholders::_1));
+    }
+    else if (rm::h_mode == HeuristicMode::LOS)
+    {
+      planner_ptr->SetHeuristicGenerator(bind(computeLoSHeuristic, placeholders::_1));
+    }
+    else if (rm::h_mode == HeuristicMode::SHIELD)
+    {
+      planner_ptr->SetHeuristicGenerator(bind(computeShieldHeuristic, placeholders::_1));
+    }
+    else if (rm::h_mode == HeuristicMode::SMPL_BFS)
+    {
+       planner_ptr->SetHeuristicGenerator(bind(computeBFSHeuristic, placeholders::_1));
+    }
+    else if (rm::h_mode == HeuristicMode::EE)
+    {
+      planner_ptr->SetHeuristicGenerator(bind(computeEEHeuristic, placeholders::_1));
+    }
+
 
     planner_ptr->SetActions(action_ptrs);
     planner_ptr->SetStateMapKeyGenerator(bind(StateKeyGenerator, placeholders::_1));
     planner_ptr->SetEdgeKeyGenerator(bind(EdgeKeyGenerator, placeholders::_1));
     planner_ptr->SetStateToStateHeuristicGenerator(bind(computeHeuristicStateToState, placeholders::_1, placeholders::_2));
-//    planner_ptr->SetGoalChecker(bind(isGoalState, placeholders::_1, TERMINATION_DIST));
-    planner_ptr->SetGoalChecker(bind(isEEGoalState, placeholders::_1, TERMINATION_DIST));
-    if ((planner_name == "epase") || (planner_name == "gepase") || (planner_name == "rrt") || (planner_name == "rrtconnect"))
+
+    /// Goal checker
+    if (rm::goal_mode == GoalCheckerMode::CSPACE)
     {
-        planner_ptr->SetPostProcessor(bind(postProcess, placeholders::_1, placeholders::_2, placeholders::_3, action_ptrs[0], opt));
+      planner_ptr->SetGoalChecker(bind(isGoalState, placeholders::_1, TERMINATION_DIST));
     }
-    else if (!(planner_name == "insat" || planner_name == "pinsat"))
+    else if (rm::goal_mode == GoalCheckerMode::EE)
     {
-        planner_ptr->SetPostProcessor(bind(postProcessWithControlPoints, placeholders::_1, placeholders::_2, placeholders::_3, action_ptrs[0], opt));        
+       planner_ptr->SetGoalChecker(bind(isEEGoalState, placeholders::_1, TERMINATION_DIST));
+    }
+
+    /// PP
+    if (rm::pp_mode == PPMode::WAYPT)
+    {
+      planner_ptr->SetPostProcessor(bind(postProcess, placeholders::_1, placeholders::_2, placeholders::_3, action_ptrs[0], opt));
+    }
+    else if (rm::pp_mode == PPMode::CONTROLPT)
+    {
+      planner_ptr->SetPostProcessor(bind(postProcessWithControlPoints, placeholders::_1, placeholders::_2, placeholders::_3, action_ptrs[0], opt));
     }
 }
 
@@ -791,7 +842,10 @@ int main(int argc, char* argv[])
     //                    bfsmodelpath, bfsmprimpath, num_threads);
     
     /// SMPL bfs3d
-    setupSmplBFS();
+    if (rm::h_mode == HeuristicMode::SMPL_BFS)
+    {
+       setupSmplBFS();
+    }
 
     std::vector<std::shared_ptr<ManipulationAction>> manip_action_ptrs;
     for (auto& a : action_ptrs)
@@ -813,8 +867,11 @@ int main(int argc, char* argv[])
         rm::goal = goals[run];
         rm::goal_ee_pos = getEEPosition(rm::goal);
         /// Call SMPL bfs3d after updating ee goal
-        recomputeBFS();
-        
+        if (rm::h_mode == HeuristicMode::SMPL_BFS)
+        {
+           recomputeBFS();
+        }
+
         auto start = starts[run];
 
         for (auto& op : *opt_vec_ptr)
