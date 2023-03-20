@@ -574,13 +574,16 @@ void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vec
     }
 
     /// PP
-    if (rm::pp_mode == PPMode::WAYPT)
+    if ((planner_name != "pinsat") && (planner_name != "insat"))
     {
-      planner_ptr->SetPostProcessor(bind(postProcess, placeholders::_1, placeholders::_2, placeholders::_3, action_ptrs[0], opt));
-    }
-    else if (rm::pp_mode == PPMode::CONTROLPT)
-    {
-      planner_ptr->SetPostProcessor(bind(postProcessWithControlPoints, placeholders::_1, placeholders::_2, placeholders::_3, action_ptrs[0], opt));
+        if (rm::pp_mode == PPMode::WAYPT)
+        {
+          planner_ptr->SetPostProcessor(bind(postProcess, placeholders::_1, placeholders::_2, placeholders::_3, action_ptrs[0], opt));
+        }
+        else if (rm::pp_mode == PPMode::CONTROLPT)
+        {
+          planner_ptr->SetPostProcessor(bind(postProcessWithControlPoints, placeholders::_1, placeholders::_2, placeholders::_3, action_ptrs[0], opt));
+        }        
     }
 }
 
