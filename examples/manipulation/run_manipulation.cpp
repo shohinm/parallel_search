@@ -90,6 +90,40 @@ double roundOff(double value, unsigned char prec)
     return round(value * pow_10) / pow_10;
 }
 
+Vec3f getEEPosition(const VecDf& state)
+{
+  mju_copy(rm::global_d->qpos, state.data(), rm::global_m->nq);
+  mj_fwdPosition(rm::global_m, rm::global_d);
+
+  VecDf ee_pos(3);
+  mju_copy(ee_pos.data(), rm::global_d->xpos + 3*(rm::global_m->nbody-1), 3);
+
+  return ee_pos;
+}
+
+Vec3f getEEPosition(const StateVarsType& state_vars)
+{
+  Eigen::Map<const VecDf> state(&state_vars[0], state_vars.size());
+  return getEEPosition(state);
+}
+
+Vec4f getEERotation(const VecDf& state)
+{
+  mju_copy(rm::global_d->qpos, state.data(), rm::global_m->nq);
+  mj_fwdPosition(rm::global_m, rm::global_d);
+
+  VecDf ee_rot(4);
+  mju_copy(ee_rot.data(), rm::global_d->xquat + 4 * (rm::global_m->nbody - 1), 4);
+
+  return ee_rot;
+}
+
+Vec4f getEERotation(const StateVarsType& state_vars)
+{
+  Eigen::Map<const VecDf> state(&state_vars[0], state_vars.size());
+  return getEERotation(state);
+}
+
 bool isGoalState(const StateVarsType& state_vars, double dist_thresh)
 {
     /// Joint-wise threshold
@@ -105,6 +139,22 @@ bool isGoalState(const StateVarsType& state_vars, double dist_thresh)
     /// Euclidean threshold
 //    return (computeHeuristic(state_vars) < dist_thresh);
 }
+
+bool isEEGoalState(const StateVarsType& state_vars, double dist_thresh)
+{
+  Vec3f ee_pos = getEEPosition(state_vars);
+
+  /// Joint-wise threshold
+  for (int i=0; i < 3; ++i)
+  {
+    if (fabs(rm::goal_ee_pos[i] - ee_pos[i]) > dist_thresh)
+    {
+      return false;
+    }
+  }
+  return true;
+}
+
 
 bool isBFS3DGoalState(const StateVarsType& state_vars, double dist_thresh)
 {
@@ -164,41 +214,6 @@ double computeHeuristic(const StateVarsType& state_vars)
 {
   return computeHeuristicStateToState(state_vars, rm::goal);
 }
-
-Vec3f getEEPosition(const VecDf& state)
-{
-  mju_copy(rm::global_d->qpos, state.data(), rm::global_m->nq);
-  mj_fwdPosition(rm::global_m, rm::global_d);
-
-  VecDf ee_pos(3);
-  mju_copy(ee_pos.data(), rm::global_d->xpos + 3*(rm::global_m->nbody-1), 3);
-
-  return ee_pos;
-}
-
-Vec3f getEEPosition(const StateVarsType& state_vars)
-{
-  Eigen::Map<const VecDf> state(&state_vars[0], state_vars.size());
-  return getEEPosition(state);
-}
-
-Vec4f getEERotation(const VecDf& state)
-{
-  mju_copy(rm::global_d->qpos, state.data(), rm::global_m->nq);
-  mj_fwdPosition(rm::global_m, rm::global_d);
-
-  VecDf ee_rot(4);
-  mju_copy(ee_rot.data(), rm::global_d->xquat + 4 * (rm::global_m->nbody - 1), 4);
-
-  return ee_rot;
-}
-
-Vec4f getEERotation(const StateVarsType& state_vars)
-{
-  Eigen::Map<const VecDf> state(&state_vars[0], state_vars.size());
-  return getEERotation(state);
-}
-
 
 double computeEEHeuristic(const StateVarsType& state_vars)
 {
@@ -320,9 +335,9 @@ void setupSmplBFS()
 
 void recomputeBFS()
 {
-    int x = static_cast<int>(rm::goal_ee_pos(0)/BFS_DISCRETIZATION);
-    int y = static_cast<int>(rm::goal_ee_pos(1)/BFS_DISCRETIZATION);
-    int z = static_cast<int>(rm::goal_ee_pos(2)/BFS_DISCRETIZATION);
+    int x = static_cast<int>((rm::goal_ee_pos(0)-rm::global_bfs_m->numeric_data[0])/BFS_DISCRETIZATION);
+    int y = static_cast<int>((rm::goal_ee_pos(1)-rm::global_bfs_m->numeric_data[1])/BFS_DISCRETIZATION);
+    int z = static_cast<int>((rm::goal_ee_pos(2)-rm::global_bfs_m->numeric_data[2])/BFS_DISCRETIZATION);
 
     rm::bfs3d->run(x, y, z);
 }
@@ -331,9 +346,9 @@ double computeBFSHeuristic(const StateVarsType& state_vars)
 {
     Vec3f ee_pos = getEEPosition(state_vars);
 
-    int x = static_cast<int>(ee_pos(0)/BFS_DISCRETIZATION);
-    int y = static_cast<int>(ee_pos(1)/BFS_DISCRETIZATION);
-    int z = static_cast<int>(ee_pos(2)/BFS_DISCRETIZATION);
+    int x = static_cast<int>((ee_pos(0)-rm::global_bfs_m->numeric_data[0])/BFS_DISCRETIZATION);
+    int y = static_cast<int>((ee_pos(1)-rm::global_bfs_m->numeric_data[1])/BFS_DISCRETIZATION);
+    int z = static_cast<int>((ee_pos(2)-rm::global_bfs_m->numeric_data[2])/BFS_DISCRETIZATION);
     double cost_per_cell = 1;
 
     if (!rm::bfs3d->inBounds(x, y, z)) {
@@ -497,16 +512,17 @@ void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vec
 
     /// Heuristic
 //    planner_ptr->SetHeuristicGenerator(bind(computeHeuristic, placeholders::_1));
-    planner_ptr->SetHeuristicGenerator(bind(computeLoSHeuristic, placeholders::_1));
+//    planner_ptr->SetHeuristicGenerator(bind(computeLoSHeuristic, placeholders::_1));
 //    planner_ptr->SetHeuristicGenerator(bind(computeShieldHeuristic, placeholders::_1));
-//    planner_ptr->SetHeuristicGenerator(bind(computeBFSHeuristic, placeholders::_1));
+    planner_ptr->SetHeuristicGenerator(bind(computeBFSHeuristic, placeholders::_1));
 //    planner_ptr->SetHeuristicGenerator(bind(computeEEHeuristic, placeholders::_1));
 
     planner_ptr->SetActions(action_ptrs);
     planner_ptr->SetStateMapKeyGenerator(bind(StateKeyGenerator, placeholders::_1));
     planner_ptr->SetEdgeKeyGenerator(bind(EdgeKeyGenerator, placeholders::_1));
     planner_ptr->SetStateToStateHeuristicGenerator(bind(computeHeuristicStateToState, placeholders::_1, placeholders::_2));
-    planner_ptr->SetGoalChecker(bind(isGoalState, placeholders::_1, TERMINATION_DIST));
+//    planner_ptr->SetGoalChecker(bind(isGoalState, placeholders::_1, TERMINATION_DIST));
+    planner_ptr->SetGoalChecker(bind(isEEGoalState, placeholders::_1, TERMINATION_DIST));
     if ((planner_name == "epase") || (planner_name == "gepase") || (planner_name == "rrt") || (planner_name == "rrtconnect"))
     {
         planner_ptr->SetPostProcessor(bind(postProcess, placeholders::_1, placeholders::_2, placeholders::_3, action_ptrs[0], opt));
@@ -775,7 +791,7 @@ int main(int argc, char* argv[])
     //                    bfsmodelpath, bfsmprimpath, num_threads);
     
     /// SMPL bfs3d
-//    setupSmplBFS();
+    setupSmplBFS();
 
     std::vector<std::shared_ptr<ManipulationAction>> manip_action_ptrs;
     for (auto& a : action_ptrs)
@@ -788,7 +804,7 @@ int main(int argc, char* argv[])
     int num_success = 0;
     vector<vector<PlanElement>> plan_vec;
 
-    int run_offset = 0;
+    int run_offset = 1;
     num_runs = starts.size();
     num_runs = 500;
     for (int run = run_offset; run < run_offset+num_runs; ++run)
@@ -797,7 +813,7 @@ int main(int argc, char* argv[])
         rm::goal = goals[run];
         rm::goal_ee_pos = getEEPosition(rm::goal);
         /// Call SMPL bfs3d after updating ee goal
-//        recomputeBFS();
+        recomputeBFS();
         
         auto start = starts[run];
 
