@@ -29,9 +29,9 @@ else:
 model_dir = '../third_party/mujoco-2.3.2/model/abb/irb_1600'
 mjcf = 'irb1600_6_12.xml'
 mjcf_arm = 'irb1600_6_12_shield.xml'
-traj_file = '../logs/' + planner_name + '_abb_traj.txt'
-starts_file = '../logs/' + planner_name + '_abb_starts.txt'
-goals_file = '../logs/' + planner_name + '_abb_goals.txt'
+traj_file = '../logs/demo/' + planner_name + '_abb_traj.txt'
+starts_file = '../logs/demo/' + planner_name + '_abb_starts.txt'
+goals_file = '../logs/demo/' + planner_name + '_abb_goals.txt'
 traj = genfromtxt(traj_file, delimiter=' ' if static_planner else ',')
 starts = genfromtxt(starts_file, delimiter=',')
 goals = genfromtxt(goals_file, delimiter=',')
@@ -84,12 +84,18 @@ if static_planner:
   traj = upsampleTraj(traj, 0.1)
 
 skp = 0
-for i in range(np.shape(traj)[0]):
+i=0
+while i <= np.shape(traj)[0]:
+  if i == np.shape(traj)[0]:
+    i=0
+    continue
   skp += 1
   # if skp % 2 == 0:
   #   continue
+
   if np.array_equal(traj[i,:], -1*np.ones((arm_model.nq,))):
     sleep(2)
+    i+=1
     continue
   if viewer.is_alive:
     arm_data.qpos[:] = traj[i,:]
@@ -99,6 +105,7 @@ for i in range(np.shape(traj)[0]):
     sleep(dt)
   else:
       break
+  i+=1
 
 # close
 viewer.close()
