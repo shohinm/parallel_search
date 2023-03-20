@@ -271,19 +271,66 @@ void initializeBFS(int length, int width, int height, vector<vector<int>> occupi
     }
 }
 
-
-void recomputeBFS(int x, int y, int z)
+void setupSmplBFS()
 {
+  Vec3f lwh;
+  lwh << rm::global_bfs_m->numeric_data[3] - rm::global_bfs_m->numeric_data[0],
+      rm::global_bfs_m->numeric_data[4] - rm::global_bfs_m->numeric_data[1],
+      rm::global_bfs_m->numeric_data[5] - rm::global_bfs_m->numeric_data[2];
+
+  int length = static_cast<int>(lwh(0)/BFS_DISCRETIZATION)+1;
+  int width = static_cast<int>(lwh(1)/BFS_DISCRETIZATION)+1;
+  int height = static_cast<int>(lwh(2)/BFS_DISCRETIZATION)+1;
+
+  std::vector<std::vector<int>> occupied_cells;
+  for (int i=0; i<length; ++i)
+  {
+    for (int j=0; j<width; ++j)
+    {
+      for (int k=0; k<height; ++k)
+      {
+        Vec3f xyz;
+        xyz << i*BFS_DISCRETIZATION + rm::global_bfs_m->numeric_data[0],
+            j*BFS_DISCRETIZATION + rm::global_bfs_m->numeric_data[1],
+            k*BFS_DISCRETIZATION + rm::global_bfs_m->numeric_data[2];
+
+        VecDf fullstate(7);
+        fullstate << xyz(0), xyz(1), xyz(2), 1, 0, 0, 0;
+        mju_copy(rm::global_bfs_d->qpos, fullstate.data(), rm::global_bfs_m->nq);
+        mj_fwdPosition(rm::global_bfs_m, rm::global_bfs_d);
+
+        if (rm::global_bfs_d->ncon>0)
+        {
+          std::vector<int> occupied_cell;
+          occupied_cell.emplace_back(i);
+          occupied_cell.emplace_back(j);
+          occupied_cell.emplace_back(k);
+
+          occupied_cells.push_back(occupied_cell);
+        }
+      }
+    }
+  }
+
+  initializeBFS(length, width, height, occupied_cells);
+}
+
+void recomputeBFS()
+{
+    int x = static_cast<int>(rm::goal_ee_pos(0)/BFS_DISCRETIZATION);
+    int y = static_cast<int>(rm::goal_ee_pos(1)/BFS_DISCRETIZATION);
+    int z = static_cast<int>(rm::goal_ee_pos(2)/BFS_DISCRETIZATION);
+
     rm::bfs3d->run(x, y, z);
 }
 
 double computeBFSHeuristic(const StateVarsType& state_vars)
 {
-    // TODO: RAM, call FK here.
+    Vec3f ee_pos = getEEPosition(state_vars);
 
-    int x = 0;
-    int y = 0;
-    int z = 0;
+    int x = static_cast<int>(ee_pos(0)/BFS_DISCRETIZATION);
+    int y = static_cast<int>(ee_pos(1)/BFS_DISCRETIZATION);
+    int z = static_cast<int>(ee_pos(2)/BFS_DISCRETIZATION);
     double cost_per_cell = 1;
 
     if (!rm::bfs3d->inBounds(x, y, z)) {
@@ -724,8 +771,8 @@ int main(int argc, char* argv[])
     // constructBFSActions(bfs_action_ptrs, action_params,
     //                    bfsmodelpath, bfsmprimpath, num_threads);
     
-    // TODO: RAM
-    // rm::bfs3d->initializeBFS(length, width, height, occupied_cells)
+    /// SMPL bfs3d
+    setupSmplBFS();
 
     std::vector<std::shared_ptr<ManipulationAction>> manip_action_ptrs;
     for (auto& a : action_ptrs)
@@ -746,9 +793,8 @@ int main(int argc, char* argv[])
         // Set goal conditions
         rm::goal = goals[run];
         rm::goal_ee_pos = getEEPosition(rm::goal);
-
-        // TODO: RAM
-        // rm::bfs3d->recomputeBFS(x, y, z);
+        /// Call SMPL bfs3d after updating ee goal
+        recomputeBFS();
         
         auto start = starts[run];
 
