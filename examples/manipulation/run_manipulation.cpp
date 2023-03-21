@@ -75,7 +75,8 @@ enum class GoalCheckerMode
 
 enum class PPMode
 {
-  CONTROLPT = 0,
+  NONE = 0,
+  CONTROLPT,
   WAYPT
 };
 
