@@ -1,9 +1,9 @@
 <mujoco model="shield_obstacles_easy">
 
     <!-- simple obstacles -->
-    <geom name="c1" size="0.1 0.1 1" pos="0.6 0.5 1" type="box" rgba="0.7 0.7 0.7 1" contype="0" conaffinity="2"/>
-    <geom name="c2" size="0.1 0.1 1" pos="-0.6 0.5 1" type="box" rgba="0.7 0.7 0.7 1" contype="0" conaffinity="2"/>
-    <geom name="c3" size="0.1 0.1 1" pos="0.6 -0.6 1" type="box" rgba="0.7 0.7 0.7 1" contype="0" conaffinity="2"/>
-    <geom name="c4" size="0.1 0.1 1" pos="-0.6 -0.6 1" type="box" rgba="0.7 0.7 0.7 1" contype="0" conaffinity="2"/>            
+    <geom name="c1" size="0.06 0.06 1" pos="0.600 0.600 1" type="box" rgba="1.0 0.0 0.0 1" contype="0" conaffinity="2"/>
+    <geom name="c2" size="0.06 0.06 1" pos="-0.600 0.600 1" type="box" rgba="1.0 0.0 0.0 1" contype="0" conaffinity="2"/>
+    <geom name="c3" size="0.06 0.06 1" pos="0.600 -0.600 1" type="box" rgba="1.0 0.0 0.0 1" contype="0" conaffinity="2"/>
+    <geom name="c4" size="0.06 0.06 1" pos="-0.600 -0.600 1" type="box" rgba="1.0 0.0 0.0 1" contype="0" conaffinity="2"/>            
 
 </mujoco>
