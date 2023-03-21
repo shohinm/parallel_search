@@ -889,7 +889,10 @@ int main(int argc, char* argv[])
         }
 
         /// Clear heuristic cache
-        rm::heuristic_cache.clear();
+        if (rm::h_mode == HeuristicMode::LOS)
+        {
+          rm::heuristic_cache.clear();
+        }
 
         /// Set BFS heuristic
         std::shared_ptr<Planner> bfs_planner_ptr = std::make_shared<BFSPlanner>(planner_params);
