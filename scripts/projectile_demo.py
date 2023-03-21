@@ -1,5 +1,7 @@
 
 import os
+import time
+
 import mujoco as mp
 from mujoco import MjData, MjModel
 import mujoco_viewer
@@ -13,6 +15,7 @@ planner_name = 'pinsat'
 # planner_name = 'rrt'
 # planner_name = 'rrtconnect'
 # planner_name = 'epase'
+# planner_name = 'gepase'
 
 static_planner = True if not (planner_name=='insat' or planner_name=='pinsat' or planner_name=='test') else False
 
@@ -27,12 +30,12 @@ else:
   # dt = 0.5
   # dt = 1
 
-model_dir = '/home/gaussian/cmu_ri_phd/phd_research/parallel_search/third_party/mujoco-2.3.2/model/abb/irb_1600'
+model_dir = '../third_party/mujoco-2.3.2/model/abb/irb_1600'
 mjcf_arm = 'irb1600_6_12_shield.xml'
 mjcf_arm_demo = 'irb1600_6_12_shield_projectile.xml'
-traj_file = '/home/gaussian/cmu_ri_phd/phd_research/parallel_search/logs/demo/' + planner_name + '_abb_traj.txt'
-starts_file = '/home/gaussian/cmu_ri_phd/phd_research/parallel_search/logs/demo/' + planner_name + '_abb_starts.txt'
-goals_file = '/home/gaussian/cmu_ri_phd/phd_research/parallel_search/logs/demo/' + planner_name + '_abb_goals.txt'
+traj_file = '../logs/demo/' + planner_name + '_abb_traj.txt'
+starts_file = '../logs/demo/' + planner_name + '_abb_starts.txt'
+goals_file = '../logs/demo/' + planner_name + '_abb_goals.txt'
 traj = genfromtxt(traj_file, delimiter=' ' if static_planner else ',')
 starts = genfromtxt(starts_file, delimiter=',')
 goals = genfromtxt(goals_file, delimiter=',')
@@ -42,6 +45,7 @@ arm_data = MjData(arm_model)
 # for demo
 arm_model_demo = MjModel.from_xml_path(os.path.join(model_dir, mjcf_arm_demo))
 arm_data_demo = MjData(arm_model_demo)
+traj_dt = 5e-3
 
 
 def balltraj(end_pos, len, max_len, dx):
@@ -94,10 +98,10 @@ for i in range(len(traj_list)):
   ball_traj.append(bt)
 
 cfilt_idx = []
-with open('../logs/demo/cfilt_idx.txt', 'r') as filehandle:
-    for line in filehandle:
-        idx = line[:-1]
-        cfilt_idx.append(idx)
+# with open('../logs/demo/cfilt_idx.txt', 'r') as filehandle:
+#     for line in filehandle:
+#         idx = line[:-1]
+#         cfilt_idx.append(idx)
 
 # viewer = mujoco_viewer.MujocoViewer(arm_model, arm_data)
 viewer = mujoco_viewer.MujocoViewer(arm_model_demo, arm_data_demo)
@@ -107,18 +111,21 @@ for i in range(len(traj_list)):
   traj = traj_list[i]
   bt = ball_traj[i]
 
+  T = np.shape(traj)[0]*traj_dt
+  sim_t0 = time.time()
   for j in range(np.shape(traj)[0]):
     if viewer.is_alive:
-      # arm_data.qpos[:] = traj[j,:]
       arm_data_demo.qpos[:6] = traj[j,:]
       arm_data_demo.qpos[6:] = bt[j,:]
 
       # mp.mj_step(arm_model, arm_data)
       mp.mj_step(arm_model_demo, arm_data_demo)
       viewer.render()
-      # sleep(dt)
     else:
         break
+  sim_tf = time.time() - sim_t0
+  print(sim_tf/T)
+
 
   sleep(2)
   if i == len(traj_list)-1:
