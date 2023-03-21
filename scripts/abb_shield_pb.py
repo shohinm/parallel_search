@@ -9,10 +9,11 @@ from numpy import genfromtxt
 
 # planner_name = 'test'
 # planner_name = 'insat'
-planner_name = 'pinsat'
+# planner_name = 'pinsat'
 # planner_name = 'rrt'
 # planner_name = 'rrtconnect'
 # planner_name = 'epase'
+planner_name = 'gepase'
 
 static_planner = True if not (planner_name=='insat' or planner_name=='pinsat' or planner_name=='test') else False
 
