@@ -43,6 +43,7 @@ bool ArastarPlanner::Plan()
             data_list.push_back(1e-9*t_elapsed);
             data_list.push_back(goal_state_ptr_->GetFValue());
             data_list.push_back(planner_stats_.num_state_expansions_);
+            data_list.push_back(planner_stats_.num_evaluated_edges_);
         }
         // Early termination if there's no solution
         if (goal_state_ptr_ == NULL || heuristic_w_ == 1)

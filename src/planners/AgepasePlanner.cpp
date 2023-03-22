@@ -65,6 +65,7 @@ bool AgepasePlanner::Plan()
             data_list.push_back(1e-9*t_elapsed);
             data_list.push_back(best_cost_);
             data_list.push_back(planner_stats_.num_state_expansions_);
+            data_list.push_back(planner_stats_.num_evaluated_edges_);
         }
         // cout << "Min edge open: " << edge_open_list_.min()->expansion_priority_ << endl;
         // cout << "Min state BE: " << being_expanded_states_.min()->GetFValue() << endl;
