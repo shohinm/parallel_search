@@ -507,7 +507,7 @@ void AgepasePlanner::expand(EdgePtrType edge_ptr, int thread_id)
                 edge_ptr_next->expansion_priority_ = edge_ptr->expansion_priority_;
                 state_ptr->num_successors_+=1;
 
-                if (action_ptr->IsExpensive())
+                if (action_ptr->IsExpensive() || !edge_ptr_next->is_eval_)
                 {
                     if (VERBOSE) cout << "Pushing successor with g_val: " << state_ptr->GetGValue() << " | h_val: " << state_ptr->GetHValue() << endl;
                     if (edge_open_list_.contains(edge_ptr_next))
