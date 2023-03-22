@@ -135,6 +135,7 @@ bool EpasePlanner::Plan()
                     double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start_).count();
                     data_list.push_back(1e-9*t_elapsed);
                     data_list.push_back(goal_state_ptr_->GetGValue());
+                    data_list.push_back(planner_stats_.num_state_expansions_);
                     string filename = "experiment_" + to_string(num_threads_) + "_epase_" + to_string(heuristic_w_) + ".txt";
                     std::ofstream newFile(filename, std::ios::app);
                     for (auto data : data_list)
