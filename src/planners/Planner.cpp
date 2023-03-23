@@ -179,6 +179,8 @@ void Planner::constructPlan(StatePtrType& state_ptr)
             state_ptr = NULL;
         }
     }
+    
+    planner_stats_.preprocess_cost_ = cost;
 
     if (post_processor_)
     {

@@ -139,6 +139,8 @@ void RrtConnectPlanner::constructPlan(StatePtrType& connected_state_start, State
 
     }
 
+    planner_stats_.preprocess_cost_ = cost;
+
     if (post_processor_)
     {
         auto t_end = chrono::steady_clock::now();

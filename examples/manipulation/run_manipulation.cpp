@@ -935,6 +935,7 @@ int main(int argc, char* argv[])
         << planner_stats.num_evaluated_edges_<< " " 
         << planner_stats.num_threads_spawned_<< " " 
         << exec_duration<< " "
+        << planner_stats.preprocess_cost_<< " "
         << endl;
     }
 
