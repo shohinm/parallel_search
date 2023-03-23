@@ -38,6 +38,7 @@
 #include <fstream>
 #include <numeric>
 #include <boost/functional/hash.hpp>
+#include <drake/math/matrix_util.h>
 #include <planners/insat/InsatPlanner.hpp>
 #include <planners/insat/PinsatPlanner.hpp>
 #include <planners/RrtPlanner.hpp>
@@ -817,8 +818,9 @@ int main(int argc, char* argv[])
     vector<double> all_execution_time;
 
     /// save logs
-    MatDf start_log, goal_log, traj_log;
+    MatDf start_log, goal_log, traj_log, ctrl_pt_log;
     std::string traj_path ="../logs/" + planner_name +"_abb_traj.txt";
+    std::string ctrl_pt_path ="../logs/" + planner_name +"_abb_ctrlpt.txt";
     std::string starts_path ="../logs/" + planner_name + "_abb_starts.txt";
     std::string goals_path ="../logs/" + planner_name +"_abb_goals.txt";
 
@@ -1024,11 +1026,21 @@ int main(int argc, char* argv[])
             {
                 std::shared_ptr<InsatPlanner> insat_planner = std::dynamic_pointer_cast<InsatPlanner>(planner_ptr);
                 auto soln_traj = insat_planner->getSolutionTraj();
+
+                /// Saving sampled trajectory
                 auto samp_traj = sampleTrajectory(soln_traj.traj_, planner_params["sampling_dt"]);
                 traj_log.conservativeResize(insat_params.lowD_dims_, traj_log.cols()+samp_traj.cols());
                 traj_log.rightCols(samp_traj.cols()) = samp_traj;
                 traj_log.conservativeResize(insat_params.lowD_dims_, traj_log.cols()+1);
                 traj_log.rightCols(1) = -1*VecDf::Ones(insat_params.lowD_dims_);
+
+                /// Save control points
+                auto soln_ctrl_pts =  drake::math::StdVectorToEigen(soln_traj.traj_.control_points());
+                ctrl_pt_log.conservativeResize(insat_params.lowD_dims_, ctrl_pt_log.cols()+soln_ctrl_pts.cols());
+                ctrl_pt_log.rightCols(soln_ctrl_pts.cols()) = soln_ctrl_pts;
+                ctrl_pt_log.conservativeResize(insat_params.lowD_dims_, ctrl_pt_log.cols()+1);
+                ctrl_pt_log.rightCols(1) = -1*VecDf::Ones(insat_params.lowD_dims_);
+
                 all_execution_time.push_back(soln_traj.traj_.end_time());
                 cout << "Execution time: " << soln_traj.traj_.end_time() << endl;
                 cout << "Traj converged in: " << soln_traj.story_ << endl;
@@ -1070,8 +1082,12 @@ int main(int argc, char* argv[])
     StateVarsType dummy_wp(6, -1);
     if ((planner_name == "insat") || (planner_name == "pinsat"))
     {
+        /// Dump traj to file
         traj_log.transposeInPlace();
         writeEigenToFile(traj_path, traj_log);
+        /// Dump control points to file
+        ctrl_pt_log.transposeInPlace();
+        writeEigenToFile(ctrl_pt_path, ctrl_pt_log);
 
         ofstream traj_fout("../logs/" + planner_name + "_abb_path.txt");
 
