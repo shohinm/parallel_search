@@ -58,6 +58,28 @@ using namespace ps;
 #define BFS_DISCRETIZATION 0.01
 #define DISCRETIZATION 0.05
 
+enum class HeuristicMode
+{
+  EUCLIDEAN = 0,
+  LOS,
+  SHIELD,
+  SMPL_BFS,
+  EE
+};
+
+enum class GoalCheckerMode
+{
+  CSPACE = 0,
+  EE
+};
+
+enum class PPMode
+{
+  NONE = 0,
+  CONTROLPT,
+  WAYPT
+};
+
 namespace rm
 {
   vector<double> goal;
@@ -82,12 +104,50 @@ namespace rm
   ps::Planner::StatePtrMapType bfs_state_map;
   shared_ptr<smpl::BFS_3D> bfs3d;
 
+  // Modes
+  HeuristicMode h_mode = HeuristicMode::LOS;
+  GoalCheckerMode goal_mode = GoalCheckerMode::CSPACE;
+  PPMode pp_mode = PPMode::WAYPT;
 }
 
 double roundOff(double value, unsigned char prec)
 {
     double pow_10 = pow(10.0, (double)prec);
     return round(value * pow_10) / pow_10;
+}
+
+Vec3f getEEPosition(const VecDf& state)
+{
+  mju_copy(rm::global_d->qpos, state.data(), rm::global_m->nq);
+  mj_fwdPosition(rm::global_m, rm::global_d);
+
+  VecDf ee_pos(3);
+  mju_copy(ee_pos.data(), rm::global_d->xpos + 3*(rm::global_m->nbody-1), 3);
+
+  return ee_pos;
+}
+
+Vec3f getEEPosition(const StateVarsType& state_vars)
+{
+  Eigen::Map<const VecDf> state(&state_vars[0], state_vars.size());
+  return getEEPosition(state);
+}
+
+Vec4f getEERotation(const VecDf& state)
+{
+  mju_copy(rm::global_d->qpos, state.data(), rm::global_m->nq);
+  mj_fwdPosition(rm::global_m, rm::global_d);
+
+  VecDf ee_rot(4);
+  mju_copy(ee_rot.data(), rm::global_d->xquat + 4 * (rm::global_m->nbody - 1), 4);
+
+  return ee_rot;
+}
+
+Vec4f getEERotation(const StateVarsType& state_vars)
+{
+  Eigen::Map<const VecDf> state(&state_vars[0], state_vars.size());
+  return getEERotation(state);
 }
 
 bool isGoalState(const StateVarsType& state_vars, double dist_thresh)
@@ -105,6 +165,22 @@ bool isGoalState(const StateVarsType& state_vars, double dist_thresh)
     /// Euclidean threshold
 //    return (computeHeuristic(state_vars) < dist_thresh);
 }
+
+bool isEEGoalState(const StateVarsType& state_vars, double dist_thresh)
+{
+  Vec3f ee_pos = getEEPosition(state_vars);
+
+  /// Joint-wise threshold
+  for (int i=0; i < 3; ++i)
+  {
+    if (fabs(rm::goal_ee_pos[i] - ee_pos[i]) > dist_thresh)
+    {
+      return false;
+    }
+  }
+  return true;
+}
+
 
 bool isBFS3DGoalState(const StateVarsType& state_vars, double dist_thresh)
 {
@@ -164,41 +240,6 @@ double computeHeuristic(const StateVarsType& state_vars)
 {
   return computeHeuristicStateToState(state_vars, rm::goal);
 }
-
-Vec3f getEEPosition(const VecDf& state)
-{
-  mju_copy(rm::global_d->qpos, state.data(), rm::global_m->nq);
-  mj_fwdPosition(rm::global_m, rm::global_d);
-
-  VecDf ee_pos(3);
-  mju_copy(ee_pos.data(), rm::global_d->xpos + 3*(rm::global_m->nbody-1), 3);
-
-  return ee_pos;
-}
-
-Vec3f getEEPosition(const StateVarsType& state_vars)
-{
-  Eigen::Map<const VecDf> state(&state_vars[0], state_vars.size());
-  return getEEPosition(state);
-}
-
-Vec4f getEERotation(const VecDf& state)
-{
-  mju_copy(rm::global_d->qpos, state.data(), rm::global_m->nq);
-  mj_fwdPosition(rm::global_m, rm::global_d);
-
-  VecDf ee_rot(4);
-  mju_copy(ee_rot.data(), rm::global_d->xquat + 4 * (rm::global_m->nbody - 1), 4);
-
-  return ee_rot;
-}
-
-Vec4f getEERotation(const StateVarsType& state_vars)
-{
-  Eigen::Map<const VecDf> state(&state_vars[0], state_vars.size());
-  return getEERotation(state);
-}
-
 
 double computeEEHeuristic(const StateVarsType& state_vars)
 {
@@ -271,19 +312,69 @@ void initializeBFS(int length, int width, int height, vector<vector<int>> occupi
     }
 }
 
-
-void recomputeBFS(int x, int y, int z)
+void setupSmplBFS()
 {
+  Vec3f lwh;
+  lwh << rm::global_bfs_m->numeric_data[3] - rm::global_bfs_m->numeric_data[0],
+      rm::global_bfs_m->numeric_data[4] - rm::global_bfs_m->numeric_data[1],
+      rm::global_bfs_m->numeric_data[5] - rm::global_bfs_m->numeric_data[2];
+
+  int length = static_cast<int>(lwh(0)/BFS_DISCRETIZATION)+1;
+  int width = static_cast<int>(lwh(1)/BFS_DISCRETIZATION)+1;
+  int height = static_cast<int>(lwh(2)/BFS_DISCRETIZATION)+1;
+
+  std::vector<std::vector<int>> occupied_cells;
+  for (int i=0; i<length; ++i)
+  {
+    for (int j=0; j<width; ++j)
+    {
+      for (int k=0; k<height; ++k)
+      {
+        Vec3f xyz;
+        xyz << i*BFS_DISCRETIZATION + rm::global_bfs_m->numeric_data[0],
+            j*BFS_DISCRETIZATION + rm::global_bfs_m->numeric_data[1],
+            k*BFS_DISCRETIZATION + rm::global_bfs_m->numeric_data[2];
+
+        VecDf fullstate(7);
+        fullstate << xyz(0), xyz(1), xyz(2), 1, 0, 0, 0;
+        mju_copy(rm::global_bfs_d->qpos, fullstate.data(), rm::global_bfs_m->nq);
+        mj_fwdPosition(rm::global_bfs_m, rm::global_bfs_d);
+
+        if (rm::global_bfs_d->ncon>0)
+        {
+          std::vector<int> occupied_cell;
+          occupied_cell.emplace_back(i);
+          occupied_cell.emplace_back(j);
+          occupied_cell.emplace_back(k);
+
+          occupied_cells.push_back(occupied_cell);
+        }
+      }
+    }
+  }
+
+  initializeBFS(length, width, height, occupied_cells);
+
+  std::cout << "Finished setting up SMPL bfs3d environment of size " <<  length << "x" << width << "x" << height
+      << " cells containing " << occupied_cells.size() << " occupied cells." << std::endl;
+}
+
+void recomputeBFS()
+{
+    int x = static_cast<int>((rm::goal_ee_pos(0)-rm::global_bfs_m->numeric_data[0])/BFS_DISCRETIZATION);
+    int y = static_cast<int>((rm::goal_ee_pos(1)-rm::global_bfs_m->numeric_data[1])/BFS_DISCRETIZATION);
+    int z = static_cast<int>((rm::goal_ee_pos(2)-rm::global_bfs_m->numeric_data[2])/BFS_DISCRETIZATION);
+
     rm::bfs3d->run(x, y, z);
 }
 
 double computeBFSHeuristic(const StateVarsType& state_vars)
 {
-    // TODO: RAM, call FK here.
+    Vec3f ee_pos = getEEPosition(state_vars);
 
-    int x = 0;
-    int y = 0;
-    int z = 0;
+    int x = static_cast<int>((ee_pos(0)-rm::global_bfs_m->numeric_data[0])/BFS_DISCRETIZATION);
+    int y = static_cast<int>((ee_pos(1)-rm::global_bfs_m->numeric_data[1])/BFS_DISCRETIZATION);
+    int z = static_cast<int>((ee_pos(2)-rm::global_bfs_m->numeric_data[2])/BFS_DISCRETIZATION);
     double cost_per_cell = 1;
 
     if (!rm::bfs3d->inBounds(x, y, z)) {
@@ -446,24 +537,54 @@ void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vec
         throw runtime_error("Planner type not identified!");
 
     /// Heuristic
-//    planner_ptr->SetHeuristicGenerator(bind(computeHeuristic, placeholders::_1));
-    planner_ptr->SetHeuristicGenerator(bind(computeLoSHeuristic, placeholders::_1));
-//    planner_ptr->SetHeuristicGenerator(bind(computeShieldHeuristic, placeholders::_1));
-//    planner_ptr->SetHeuristicGenerator(bind(computeBFSHeuristic, placeholders::_1));
-//    planner_ptr->SetHeuristicGenerator(bind(computeEEHeuristic, placeholders::_1));
+    if (rm::h_mode == HeuristicMode::EUCLIDEAN)
+    {
+      planner_ptr->SetHeuristicGenerator(bind(computeHeuristic, placeholders::_1));
+    }
+    else if (rm::h_mode == HeuristicMode::LOS)
+    {
+      planner_ptr->SetHeuristicGenerator(bind(computeLoSHeuristic, placeholders::_1));
+    }
+    else if (rm::h_mode == HeuristicMode::SHIELD)
+    {
+      planner_ptr->SetHeuristicGenerator(bind(computeShieldHeuristic, placeholders::_1));
+    }
+    else if (rm::h_mode == HeuristicMode::SMPL_BFS)
+    {
+       planner_ptr->SetHeuristicGenerator(bind(computeBFSHeuristic, placeholders::_1));
+    }
+    else if (rm::h_mode == HeuristicMode::EE)
+    {
+      planner_ptr->SetHeuristicGenerator(bind(computeEEHeuristic, placeholders::_1));
+    }
+
 
     planner_ptr->SetActions(action_ptrs);
     planner_ptr->SetStateMapKeyGenerator(bind(StateKeyGenerator, placeholders::_1));
     planner_ptr->SetEdgeKeyGenerator(bind(EdgeKeyGenerator, placeholders::_1));
     planner_ptr->SetStateToStateHeuristicGenerator(bind(computeHeuristicStateToState, placeholders::_1, placeholders::_2));
-    planner_ptr->SetGoalChecker(bind(isGoalState, placeholders::_1, TERMINATION_DIST));
-    if ((planner_name == "epase") || (planner_name == "gepase") || (planner_name == "rrt") || (planner_name == "rrtconnect"))
+
+    /// Goal checker
+    if (rm::goal_mode == GoalCheckerMode::CSPACE)
     {
-        planner_ptr->SetPostProcessor(bind(postProcess, placeholders::_1, placeholders::_2, placeholders::_3, action_ptrs[0], opt));
+      planner_ptr->SetGoalChecker(bind(isGoalState, placeholders::_1, TERMINATION_DIST));
     }
-    else if (!(planner_name == "insat" || planner_name == "pinsat"))
+    else if (rm::goal_mode == GoalCheckerMode::EE)
     {
-        planner_ptr->SetPostProcessor(bind(postProcessWithControlPoints, placeholders::_1, placeholders::_2, placeholders::_3, action_ptrs[0], opt));        
+       planner_ptr->SetGoalChecker(bind(isEEGoalState, placeholders::_1, TERMINATION_DIST));
+    }
+
+    /// PP
+    if ((planner_name != "pinsat") && (planner_name != "insat"))
+    {
+        if (rm::pp_mode == PPMode::WAYPT)
+        {
+          planner_ptr->SetPostProcessor(bind(postProcess, placeholders::_1, placeholders::_2, placeholders::_3, action_ptrs[0], opt));
+        }
+        else if (rm::pp_mode == PPMode::CONTROLPT)
+        {
+          planner_ptr->SetPostProcessor(bind(postProcessWithControlPoints, placeholders::_1, placeholders::_2, placeholders::_3, action_ptrs[0], opt));
+        }        
     }
 }
 
@@ -724,8 +845,11 @@ int main(int argc, char* argv[])
     // constructBFSActions(bfs_action_ptrs, action_params,
     //                    bfsmodelpath, bfsmprimpath, num_threads);
     
-    // TODO: RAM
-    // rm::bfs3d->initializeBFS(length, width, height, occupied_cells)
+    /// SMPL bfs3d
+    if (rm::h_mode == HeuristicMode::SMPL_BFS)
+    {
+       setupSmplBFS();
+    }
 
     std::vector<std::shared_ptr<ManipulationAction>> manip_action_ptrs;
     for (auto& a : action_ptrs)
@@ -746,10 +870,12 @@ int main(int argc, char* argv[])
         // Set goal conditions
         rm::goal = goals[run];
         rm::goal_ee_pos = getEEPosition(rm::goal);
+        /// Call SMPL bfs3d after updating ee goal
+        if (rm::h_mode == HeuristicMode::SMPL_BFS)
+        {
+           recomputeBFS();
+        }
 
-        // TODO: RAM
-        // rm::bfs3d->recomputeBFS(x, y, z);
-        
         auto start = starts[run];
 
         for (auto& op : *opt_vec_ptr)
@@ -763,7 +889,10 @@ int main(int argc, char* argv[])
         }
 
         /// Clear heuristic cache
-        rm::heuristic_cache.clear();
+        if (rm::h_mode == HeuristicMode::LOS)
+        {
+          rm::heuristic_cache.clear();
+        }
 
         /// Set BFS heuristic
         std::shared_ptr<Planner> bfs_planner_ptr = std::make_shared<BFSPlanner>(planner_params);
