@@ -11,7 +11,7 @@ using namespace ps;
 ArastarPlanner::ArastarPlanner(ParamsType planner_params):
 WastarPlanner(planner_params)
 {    
-
+    delta_w_ = planner_params_["heuristic_reduction"];
 }
 
 ArastarPlanner::~ArastarPlanner()

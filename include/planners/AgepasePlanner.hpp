@@ -20,6 +20,7 @@ class AgepasePlanner : public GepasePlanner
         void improvePath();
         void expand(EdgePtrType edge_ptr, int thread_id);
         void expandEdge(EdgePtrType edge_ptr, int thread_id);
+        void updateEdge(EdgePtrType edge_ptr, StatePtrType successor_state_ptr, double new_g_val);
         void exitMultiThread();
         void exit();
 
@@ -27,8 +28,6 @@ class AgepasePlanner : public GepasePlanner
         double delta_w_;
         double best_cost_;
         std::vector<PlanElement> best_plan_;
-        bool naive_;
-        bool adaptive_;
 
 };
 

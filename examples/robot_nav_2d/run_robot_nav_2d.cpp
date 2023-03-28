@@ -283,25 +283,17 @@ int main(int argc, char* argv[])
     int num_threads;
     double time_budget = 0;
     bool apply_cost_factor_map = true;
-    bool naive = 0;
-    bool adaptive = 0;
     double heuristic_weight = 50;
-    int map_num = -1;
+    double heuristic_reduction = 0.5;
 
     if (!strcmp(argv[1], "wastar"))
     {
-        if (argc == 2)
+        if (argc == 2) 
             num_threads = 1;
         else if (argc == 3)
         {
             num_threads = 1;
             heuristic_weight = atof(argv[2]);
-        }
-        else if (argc == 4)
-        {
-            num_threads = 1;
-            heuristic_weight = atof(argv[2]);
-            map_num = atoi(argv[3]);
         }
         else
             throw runtime_error("Format: run_robot_nav_2d wastar");
@@ -319,14 +311,15 @@ int main(int argc, char* argv[])
             num_threads = 1;
             time_budget = atof(argv[2]);
         }
-        else if (argc == 4)
+        else if (argc == 5)
         {
             num_threads = 1;
             time_budget = atof(argv[2]);
-            map_num = atoi(argv[3]);
+            heuristic_weight = atof(argv[3]);
+            heuristic_reduction = atof(argv[4]);
         }
         else
-            throw runtime_error("Format: run_robot_nav_2d arastar [time_budget]");
+            throw runtime_error("Format: run_robot_nav_2d arastar [time_budget] [heuristic_weight] [heuristic_reduction]");
     }
     else if (!strcmp(argv[1], "agepase"))
     {
@@ -339,19 +332,11 @@ int main(int argc, char* argv[])
         {
             num_threads = atoi(argv[2]);
             time_budget = atof(argv[3]);
-            naive = atoi(argv[4]);
-            adaptive = atoi(argv[5]);
-        }
-        else if (argc == 7)
-        {
-            num_threads = atoi(argv[2]);
-            time_budget = atof(argv[3]);
-            naive = atoi(argv[4]);
-            adaptive = atoi(argv[5]);
-            map_num = atoi(argv[6]);
+            heuristic_weight = atof(argv[4]);
+            heuristic_reduction = atof(argv[5]);
         }
         else
-            throw runtime_error("Format: run_robot_nav_2d agepase [num_threads] [time_budget]");
+            throw runtime_error("Format: run_robot_nav_2d agepase [num_threads] [time_budget] [heuristic_weight] [heuristic_reduction]");
     }
     else if (!strcmp(argv[1], "epase"))
     {
@@ -364,14 +349,8 @@ int main(int argc, char* argv[])
             num_threads = atoi(argv[2]);
             heuristic_weight = atof(argv[3]);
         }
-        else if (argc == 5)
-        {
-            num_threads = atoi(argv[2]);
-            heuristic_weight = atof(argv[3]);
-            map_num = atoi(argv[4]);
-        }
         else
-            throw runtime_error("Format: run_robot_nav_2d epase [num_threads]");
+            throw runtime_error("Format: run_robot_nav_2d epase [num_threads] [heuristic_weight]");
     }
     else
     {
@@ -391,10 +370,7 @@ int main(int argc, char* argv[])
     string planner_name = argv[1];
     planner_params["num_threads"] = num_threads;
     planner_params["heuristic_weight"] = heuristic_weight;
-    planner_params["naive"] = naive;
-    planner_params["adaptive"] = adaptive;
-    // planner_params["heuristic_weight"] = 5;
-    // planner_params["heuristic_weight"] = 1;
+    planner_params["heuristic_reduction"] = heuristic_reduction;
     if (time_budget)
     {
         planner_params["timeout"] = time_budget;
@@ -445,10 +421,7 @@ int main(int argc, char* argv[])
     unordered_map<string, vector<double>> all_action_eval_times;
 
     for (int m_idx = 0; m_idx < map_vec.size(); ++m_idx)
-    // for (int m_idx = 0; m_idx < 1; ++m_idx) // anytime experiment
-    // for (int m_idx = 2; m_idx < 3; ++m_idx) // Fail case for optimality (thread=10)
     {
-        if (map_num != -1 && m_idx != map_num) continue;
         auto map = map_vec[m_idx];
         auto img = img_vec[m_idx];
         auto cost_factor_map = apply_cost_factor_map ? cost_factor_map_vec[m_idx] : vector<vector<double>>();
@@ -492,16 +465,12 @@ int main(int argc, char* argv[])
         if (visualize_plan) cv::namedWindow("Plan", cv::WINDOW_AUTOSIZE );// Create a window for display.
         
         int num_success = 0;
-        // for (int exp_idx = 45; exp_idx < 46; ++exp_idx ) // Fail case to find optimal (thread=10, h_weight=1)
-        // for (int exp_idx = 23; exp_idx < 24; ++exp_idx ) // anytime experiment map 0, run 23 (0 index)
         for (int exp_idx = 0; exp_idx < num_runs; ++exp_idx)
         {
             cout << "Experiment: " << exp_idx;
 
             if (start_goal_idx >= starts.size()) 
                 start_goal_idx = 0;
-
-            // start_goal_idx = 45; // Fail case to find optimal (thread=10, h_weight=1)
 
             // Set start state
             planner_ptr->SetStartState(starts[start_goal_idx]);
@@ -583,8 +552,6 @@ int main(int argc, char* argv[])
                 img2.setTo(cv::Scalar(0,0,0));
                 cv::imshow("Plan", img2);
 
-                // Halt for image display
-                // cin.get();
             }  
         }
 
