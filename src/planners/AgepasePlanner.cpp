@@ -88,7 +88,7 @@ bool AgepasePlanner::Plan()
     heuristic_w_ = heuristic_w;
     auto t_end = chrono::steady_clock::now();
     double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start_).count();
-    planner_stats_.total_time_ = 1e-9*t_elapsed;
+    planner_stats_.total_time = 1e-9*t_elapsed;
     if (!plan_.empty()) {
         exit();
         return true;
@@ -245,7 +245,7 @@ void AgepasePlanner::improvePath()
         // Insert the state in BE and mark it closed if the edge being expanded is dummy edge
         if (curr_edge_ptr->action_ptr_ == dummy_action_ptr_)
         {
-            planner_stats_.num_state_expansions_++;  
+            planner_stats_.num_state_expansions++;  
             curr_edge_ptr->parent_state_ptr_->SetVisited();
             curr_edge_ptr->parent_state_ptr_->SetBeingExpanded();
             being_expanded_states_.push(curr_edge_ptr->parent_state_ptr_);
@@ -305,9 +305,9 @@ void AgepasePlanner::expand(EdgePtrType edge_ptr, int thread_id)
     auto t_start = chrono::steady_clock::now();
     lock_.lock();
     auto t_lock_e = chrono::steady_clock::now();
-    planner_stats_.lock_time_ += 1e-9*chrono::duration_cast<chrono::nanoseconds>(t_lock_e-t_start).count();
+    planner_stats_.lock_time += 1e-9*chrono::duration_cast<chrono::nanoseconds>(t_lock_e-t_start).count();
 
-    planner_stats_.num_jobs_per_thread_[thread_id] +=1;
+    planner_stats_.num_jobs_per_thread[thread_id] +=1;
     
     // Proxy edge, add the real edges to Eopen
     if (edge_ptr->action_ptr_ == dummy_action_ptr_)
@@ -386,7 +386,7 @@ void AgepasePlanner::expand(EdgePtrType edge_ptr, int thread_id)
     }
 
     auto t_end_expansion = chrono::steady_clock::now();
-    planner_stats_.cumulative_expansions_time_ += 1e-9*chrono::duration_cast<chrono::nanoseconds>(t_end_expansion-t_start).count();
+    planner_stats_.cumulative_expansions_time += 1e-9*chrono::duration_cast<chrono::nanoseconds>(t_end_expansion-t_start).count();
 
     lock_.unlock();
 }
@@ -406,10 +406,10 @@ void AgepasePlanner::expandEdge(EdgePtrType edge_ptr, int thread_id)
         auto t_lock_s = chrono::steady_clock::now();
         lock_.lock();
         auto t_lock_e = chrono::steady_clock::now();
-        planner_stats_.lock_time_ += 1e-9*chrono::duration_cast<chrono::nanoseconds>(t_lock_e-t_lock_s).count();
+        planner_stats_.lock_time += 1e-9*chrono::duration_cast<chrono::nanoseconds>(t_lock_e-t_lock_s).count();
 
         edge_ptr->is_eval_ = true;
-        planner_stats_.num_evaluated_edges_++; // Only the edges controllers that satisfied pre-conditions and args are in the open list
+        planner_stats_.num_evaluated_edges++; // Only the edges controllers that satisfied pre-conditions and args are in the open list
 
         if (action_successor.success_)
         {
@@ -519,7 +519,7 @@ void AgepasePlanner::exit()
         cv_vec_[thread_id].notify_one();
     }
 
-    planner_stats_.num_threads_spawned_ = edge_expansion_futures_.size()+1;
+    planner_stats_.num_threads_spawned = edge_expansion_futures_.size()+1;
     bool all_expansion_threads_terminated = false;
     while (!all_expansion_threads_terminated)
     {

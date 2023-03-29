@@ -64,7 +64,7 @@ bool ArastarPlanner::Plan()
     heuristic_w_ = heuristic_w;
     auto t_end = chrono::steady_clock::now();
     double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start_).count();
-    planner_stats_.total_time_ = 1e-9*t_elapsed;
+    planner_stats_.total_time = 1e-9*t_elapsed;
     if (goal_state_ptr_ != NULL) {
         exit();
         return true;
@@ -134,8 +134,8 @@ void ArastarPlanner::expandState(StatePtrType state_ptr)
     
     if (VERBOSE) state_ptr->Print("Expanding");
 
-    planner_stats_.num_jobs_per_thread_[0] +=1;
-    planner_stats_.num_state_expansions_++;
+    planner_stats_.num_jobs_per_thread[0] +=1;
+    planner_stats_.num_state_expansions++;
 
     state_ptr->SetVisited();
     state_ptr->SetVValue(state_ptr->GetGValue());
@@ -171,7 +171,7 @@ void ArastarPlanner::updateState(StatePtrType& state_ptr, ActionPtrType& action_
     {
         auto action_successor = action_ptr->GetSuccessor(state_ptr->GetStateVars());
         edge_ptr->is_eval_ = true;
-        planner_stats_.num_evaluated_edges_++;
+        planner_stats_.num_evaluated_edges++;
         if (action_successor.success_) 
         {
             auto successor_state_ptr = constructState(action_successor.successor_state_vars_costs_.back().first);

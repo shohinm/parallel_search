@@ -506,7 +506,7 @@ int main(int argc, char* argv[])
                 cout << " | Time (s): " << planner_stats.total_time 
                 << " | Cost: " << planner_stats.path_cost 
                 << " | Length: " << planner_stats.path_length
-                << " | State expansions: " << planner_stats.num_state_expansions_
+                << " | State expansions: " << planner_stats.num_state_expansions
                 << " | Threads used: " << planner_stats.num_threads_spawned << "/" << planner_params["num_threads"]
                 << " | Lock time: " <<  planner_stats.lock_time
                 << " | Expand time: " << planner_stats.cumulative_expansions_time

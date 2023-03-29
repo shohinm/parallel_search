@@ -49,7 +49,7 @@ namespace ps
         double processed_path_cost = 0;
         double processed_path_length = 0;
         
-        int num_state_expansions_ = 0;
+        int num_state_expansions = 0;
         int num_evaluated_edges = 0;
         int num_threads_spawned = 0;
         

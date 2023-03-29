@@ -189,7 +189,7 @@ void PasePlanner::expandState(StatePtrType state_ptr, int thread_id)
     if (VERBOSE) state_ptr->Print("Expanding");
     
     planner_stats_.num_jobs_per_thread[thread_id] +=1;
-    planner_stats_.num_state_expansions_++;
+    planner_stats_.num_state_expansions++;
    
     for (auto& action_ptr: actions_ptrs_)
     {
