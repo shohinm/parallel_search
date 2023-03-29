@@ -121,7 +121,7 @@ void AgepasePlanner::improvePath()
                 if (!edge_open_list_.empty())
                 {
                     // Terminate condition: no state in open/be has f-value < goal's g-value
-                    if (goal_state_ptr_->GetFValue() + 1e-3 < edge_open_list_.min()->expansion_priority_)
+                    if (goal_state_ptr_->GetFValue() + 1e-5 < edge_open_list_.min()->expansion_priority_)
                     {
                         // Construct path
                         auto goal_state_ptr = goal_state_ptr_;
@@ -135,7 +135,7 @@ void AgepasePlanner::improvePath()
                 else if (!being_expanded_states_.empty())
                 {
                     // Terminate condition: no state in open/be has f-value < goal's g-value
-                    if (goal_state_ptr_->GetFValue() + 1e-3 < being_expanded_states_.min()->GetFValue())
+                    if (goal_state_ptr_->GetFValue() + 1e-5 < being_expanded_states_.min()->GetFValue())
                     {
                         // Construct path
                         auto goal_state_ptr = goal_state_ptr_;

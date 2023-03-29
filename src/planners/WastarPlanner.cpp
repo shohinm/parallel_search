@@ -1,8 +1,5 @@
 #include <iostream>
 #include <planners/WastarPlanner.hpp>
-#include <fstream>
-
-#define EXPERIMENT 1
 
 using namespace std;
 using namespace ps;
@@ -20,9 +17,6 @@ WastarPlanner::~WastarPlanner()
 
 bool WastarPlanner::Plan()
 {
-    // Experiment
-    std::vector<double> data_list;
-
     initialize();
     startTimer();   
     while (!state_open_list_.empty() && !checkTimeout())
@@ -37,18 +31,6 @@ bool WastarPlanner::Plan()
             double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start_).count();            
             goal_state_ptr_ = state_ptr;
             
-            if (EXPERIMENT)
-            {
-                data_list.push_back(goal_state_ptr_->GetGValue());
-                string filename = "opt.txt";
-                std::ofstream newFile(filename, std::ios::app);
-                for (auto data : data_list)
-                {
-                    newFile << data;
-                }
-                newFile << endl;
-            }
-
             // Reconstruct and return path
             constructPlan(state_ptr);   
             planner_stats_.total_time_ = 1e-9*t_elapsed;
