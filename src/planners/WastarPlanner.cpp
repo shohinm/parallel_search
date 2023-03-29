@@ -33,7 +33,7 @@ bool WastarPlanner::Plan()
             
             // Reconstruct and return path
             constructPlan(state_ptr);   
-            planner_stats_.total_time_ = 1e-9*t_elapsed;
+            planner_stats_.total_time = 1e-9*t_elapsed;
             exit();
             return true;
         }
@@ -44,20 +44,20 @@ bool WastarPlanner::Plan()
 
     auto t_end = chrono::steady_clock::now();
     double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start_).count();
-    planner_stats_.total_time_ = 1e-9*t_elapsed;
+    planner_stats_.total_time = 1e-9*t_elapsed;
     return false;
 }
 
 void WastarPlanner::initialize()
 {
     Planner::initialize();
-    planner_stats_.num_jobs_per_thread_.resize(1, 0);
+    planner_stats_.num_jobs_per_thread.resize(1, 0);
 
     // Initialize open list
     start_state_ptr_->SetFValue(start_state_ptr_->GetGValue() + heuristic_w_*start_state_ptr_->GetHValue());
     state_open_list_.push(start_state_ptr_);
 
-    planner_stats_.num_threads_spawned_ = 1;
+    planner_stats_.num_threads_spawned = 1;
 }
 
 void WastarPlanner::expandState(StatePtrType state_ptr)
@@ -65,7 +65,7 @@ void WastarPlanner::expandState(StatePtrType state_ptr)
     
     if (VERBOSE) state_ptr->Print("Expanding");
 
-    planner_stats_.num_jobs_per_thread_[0] +=1;
+    planner_stats_.num_jobs_per_thread[0] +=1;
     planner_stats_.num_state_expansions_++;
 
     state_ptr->SetVisited();
@@ -75,8 +75,11 @@ void WastarPlanner::expandState(StatePtrType state_ptr)
         if (action_ptr->CheckPreconditions(state_ptr->GetStateVars()))
         {
             // Evaluate the edge
+            auto t_start = chrono::steady_clock::now();
             auto action_successor = action_ptr->GetSuccessor(state_ptr->GetStateVars());
-            planner_stats_.num_evaluated_edges_++; // Only the edges controllers that satisfied pre-conditions and args are in the open list
+            auto t_end = chrono::steady_clock::now();
+            planner_stats_.action_eval_times[action_ptr->GetType()].emplace_back(1e-9*chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count());
+            planner_stats_.num_evaluated_edges++; // Only the edges controllers that satisfied pre-conditions and args are in the open list
             //********************
             
             updateState(state_ptr, action_ptr, action_successor);

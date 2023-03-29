@@ -25,7 +25,7 @@ bool MplpPlanner::Plan()
 
     delegate_edges_process_ = shared_ptr<thread>(new thread(&MplpPlanner::delegateEdges, this));
     monitor_paths_process_ = shared_ptr<thread>(new thread(&MplpPlanner::monitorPaths, this));    
-    planner_stats_.num_threads_spawned_ = 3;
+    planner_stats_.num_threads_spawned = 3;
 
     int plan_idx = 0;
     bool path_exists = true;
@@ -61,7 +61,7 @@ bool MplpPlanner::Plan()
 
     auto t_end = chrono::steady_clock::now();
     double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start_).count();
-    planner_stats_.total_time_ = 1e-9*t_elapsed;
+    planner_stats_.total_time = 1e-9*t_elapsed;
 
     exit();
 
@@ -71,7 +71,7 @@ bool MplpPlanner::Plan()
 void MplpPlanner::initialize()
 {
     Planner::initialize();
-    planner_stats_.num_jobs_per_thread_.resize(num_threads_, 0);
+    planner_stats_.num_jobs_per_thread.resize(num_threads_, 0);
 
     terminate_ = false;
     plan_found_ = false;
@@ -353,7 +353,7 @@ void MplpPlanner::delegateEdges()
                 {
                     if (VERBOSE) cout << "Spawning edge evaluation thread " << thread_id << endl;
                     edge_evaluation_futures_.emplace_back(async(launch::async, &MplpPlanner::evaluateEdgeLoop, this, thread_id));
-                    planner_stats_.num_threads_spawned_+=1;
+                    planner_stats_.num_threads_spawned+=1;
                 }
 
                 if (VERBOSE) edge_ptr->Print("Delegating");
@@ -376,8 +376,8 @@ void MplpPlanner::delegateEdges()
 void MplpPlanner::evaluateEdge(EdgePtrType edge_ptr, int thread_id)
 {
     lock_.lock();
-    planner_stats_.num_evaluated_edges_++;  
-    planner_stats_.num_jobs_per_thread_[thread_id] +=1;
+    planner_stats_.num_evaluated_edges++;  
+    planner_stats_.num_jobs_per_thread[thread_id] +=1;
     lock_.unlock();
 
     auto action = edge_ptr->action_ptr_;
@@ -559,8 +559,8 @@ void MplpPlanner::monitorPaths()
                     {
                         plan_ = plan;
                         successful_plan_idx_ = plan_idx;
-                        planner_stats_.path_cost_ = cost;
-                        planner_stats_.path_length_ += plan_.size();
+                        planner_stats_.path_cost = cost;
+                        planner_stats_.path_length += plan_.size();
                         plan_found_ = true;                    
                     }
 

@@ -36,7 +36,7 @@ bool EpasePlanner::Plan()
                 terminate_ = true;
                 auto t_end = chrono::steady_clock::now();
                 double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start_).count();
-                planner_stats_.total_time_ = 1e-9*t_elapsed;
+                planner_stats_.total_time = 1e-9*t_elapsed;
                 cout << "Goal Not Reached" << endl;   
                 lock_.unlock();
                 exit();
@@ -114,7 +114,7 @@ bool EpasePlanner::Plan()
             {
                 auto t_end = chrono::steady_clock::now();
                 double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start_).count();
-                planner_stats_.total_time_ = 1e-9*t_elapsed;
+                planner_stats_.total_time = 1e-9*t_elapsed;
 
                 // cout << "--------------------------------------------------------" << endl;            
                 // cout << "Goal Reached!" << endl;
@@ -188,7 +188,7 @@ bool EpasePlanner::Plan()
     terminate_ = true;
     auto t_end = chrono::steady_clock::now();
     double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start_).count();
-    planner_stats_.total_time_ = 1e-9*t_elapsed;
+    planner_stats_.total_time = 1e-9*t_elapsed;
     // cout << "Goal Not Reached, Number of states expanded: " << planner_stats_.num_state_expansions_ << endl;   
     lock_.unlock();
     exit();
@@ -221,11 +221,11 @@ void EpasePlanner::expandEdge(EdgePtrType edge_ptr, int thread_id)
     auto t_start = chrono::steady_clock::now();
     lock_.lock();
     auto t_lock_e = chrono::steady_clock::now();
-    planner_stats_.lock_time_ += 1e-9*chrono::duration_cast<chrono::nanoseconds>(t_lock_e-t_start).count();
+    planner_stats_.lock_time += 1e-9*chrono::duration_cast<chrono::nanoseconds>(t_lock_e-t_start).count();
 
     if (VERBOSE) edge_ptr->Print("Expanding");
 
-    planner_stats_.num_jobs_per_thread_[thread_id] +=1;
+    planner_stats_.num_jobs_per_thread[thread_id] +=1;
 
     auto state_ptr = edge_ptr->parent_state_ptr_;
     
@@ -266,10 +266,10 @@ void EpasePlanner::expandEdge(EdgePtrType edge_ptr, int thread_id)
         lock_.lock();
         auto t_lock_e = chrono::steady_clock::now();
 
-        planner_stats_.action_eval_times_[action_ptr->GetType()].emplace_back(1e-9*chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count());
-        planner_stats_.lock_time_ += 1e-9*chrono::duration_cast<chrono::nanoseconds>(t_lock_e-t_lock_s).count();
+        planner_stats_.action_eval_times[action_ptr->GetType()].emplace_back(1e-9*chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count());
+        planner_stats_.lock_time += 1e-9*chrono::duration_cast<chrono::nanoseconds>(t_lock_e-t_lock_s).count();
 
-        planner_stats_.num_evaluated_edges_++; // Only the edges controllers that satisfied pre-conditions and args are in the open list
+        planner_stats_.num_evaluated_edges++; // Only the edges controllers that satisfied pre-conditions and args are in the open list
 
         if (action_successor.success_)
         {
@@ -362,7 +362,7 @@ void EpasePlanner::expandEdge(EdgePtrType edge_ptr, int thread_id)
     }
 
     auto t_end = chrono::steady_clock::now();
-    planner_stats_.cumulative_expansions_time_ += 1e-9*chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
+    planner_stats_.cumulative_expansions_time += 1e-9*chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count();
 
     lock_.unlock();
 }

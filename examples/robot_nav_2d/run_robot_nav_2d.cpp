@@ -489,34 +489,34 @@ int main(int argc, char* argv[])
             {
                 auto planner_stats = planner_ptr->GetStats();
                 
-                time_vec.emplace_back(planner_stats.total_time_);
-                all_maps_time_vec.emplace_back(planner_stats.total_time_);
-                cost_vec.emplace_back(planner_stats.path_cost_);
-                all_maps_cost_vec.emplace_back(planner_stats.path_cost_);
-                num_edges_vec.emplace_back(planner_stats.num_evaluated_edges_);
-                all_maps_num_edges_vec.emplace_back(planner_stats.num_evaluated_edges_);
+                time_vec.emplace_back(planner_stats.total_time);
+                all_maps_time_vec.emplace_back(planner_stats.total_time);
+                cost_vec.emplace_back(planner_stats.path_cost);
+                all_maps_cost_vec.emplace_back(planner_stats.path_cost);
+                num_edges_vec.emplace_back(planner_stats.num_evaluated_edges);
+                all_maps_num_edges_vec.emplace_back(planner_stats.num_evaluated_edges);
 
-                for (auto& [action, times] : planner_stats.action_eval_times_)
+                for (auto& [action, times] : planner_stats.action_eval_times)
                 { 
                     action_eval_times[action].insert(action_eval_times[action].end(), times.begin(), times.end());
                     all_action_eval_times[action].insert(all_action_eval_times[action].end(), times.begin(), times.end());
                 }
 
-                threads_used_vec.emplace_back(planner_stats.num_threads_spawned_);
-                cout << " | Time (s): " << planner_stats.total_time_ 
-                << " | Cost: " << planner_stats.path_cost_ 
-                << " | Length: " << planner_stats.path_length_
+                threads_used_vec.emplace_back(planner_stats.num_threads_spawned);
+                cout << " | Time (s): " << planner_stats.total_time 
+                << " | Cost: " << planner_stats.path_cost 
+                << " | Length: " << planner_stats.path_length
                 << " | State expansions: " << planner_stats.num_state_expansions_
-                << " | Threads used: " << planner_stats.num_threads_spawned_ << "/" << planner_params["num_threads"]
-                << " | Lock time: " <<  planner_stats.lock_time_
-                << " | Expand time: " << planner_stats.cumulative_expansions_time_
-                << " | Threads: " << planner_stats.num_threads_spawned_ << "/" << planner_params["num_threads"] << endl;
+                << " | Threads used: " << planner_stats.num_threads_spawned << "/" << planner_params["num_threads"]
+                << " | Lock time: " <<  planner_stats.lock_time
+                << " | Expand time: " << planner_stats.cumulative_expansions_time
+                << " | Threads: " << planner_stats.num_threads_spawned << "/" << planner_params["num_threads"] << endl;
                
                 // cout << endl << "------------- Jobs per thread -------------" << endl;
                 // for (int tidx = 0; tidx < planner_params["num_threads"]; ++tidx)
-                    // cout << "thread: " << tidx << " jobs: " << planner_stats.num_jobs_per_thread_[tidx] << endl;
+                    // cout << "thread: " << tidx << " jobs: " << planner_stats.num_jobs_per_thread[tidx] << endl;
                 for (int tidx = 0; tidx < planner_params["num_threads"]; ++tidx)
-                    jobs_per_thread[tidx] += planner_stats.num_jobs_per_thread_[tidx];        
+                    jobs_per_thread[tidx] += planner_stats.num_jobs_per_thread[tidx];        
                 
                 num_success++;
             }

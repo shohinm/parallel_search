@@ -51,6 +51,11 @@ void Planner::SetStateToStateHeuristicGenerator(function<double(const StateVarsT
     binary_heuristic_generator_ = callback;
 }
 
+void Planner::SetPostProcessor(std::function<void(vector<PlanElement>& plan, double& cost)> callback)
+{
+    post_processor_ = callback;
+}
+
 std::vector<PlanElement> Planner::GetPlan() const
 {
     return plan_;
@@ -181,8 +186,16 @@ void Planner::constructPlan(StatePtrType& state_ptr)
         }
     }
 
-    planner_stats_.path_cost_= cost;
-    planner_stats_.path_length_ = plan_.size();
+    planner_stats_.path_cost= cost;
+    planner_stats_.path_length = plan_.size();
+
+    if (post_processor_)
+    {
+        post_processor_(plan_, cost);
+    }
+
+    planner_stats_.processed_path_cost= cost;
+    planner_stats_.processed_path_length = plan_.size();
 }
 
 double Planner::roundOff(double value, int prec)

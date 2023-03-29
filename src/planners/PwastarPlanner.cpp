@@ -36,7 +36,7 @@ bool PwastarPlanner::Plan()
             
             // Reconstruct and return path
             constructPlan(state_ptr);   
-            planner_stats_.total_time_ = 1e-9*t_elapsed;
+            planner_stats_.total_time = 1e-9*t_elapsed;
             terminate_ = true;
             exit();
             return true;
@@ -48,7 +48,7 @@ bool PwastarPlanner::Plan()
 
     auto t_end = chrono::steady_clock::now();
     double t_elapsed = chrono::duration_cast<chrono::nanoseconds>(t_end-t_start_).count();
-    planner_stats_.total_time_ = 1e-9*t_elapsed;
+    planner_stats_.total_time = 1e-9*t_elapsed;
     return false;
 }
 
@@ -173,19 +173,23 @@ void PwastarPlanner::evaluateEdgeThread(int thread_id)
 
         auto action_ptr = edge_evaluation_vec_[thread_id]->action_ptr_;
         auto state_ptr = edge_evaluation_vec_[thread_id]->parent_state_ptr_;
+
+        auto t_start = chrono::steady_clock::now();
         auto action_successor = action_ptr->GetSuccessor(state_ptr->GetStateVars());
+        auto t_end = chrono::steady_clock::now();
 
         lock_vec_[thread_id].lock();
+        planner_stats_.action_eval_times[action_ptr->GetType()].emplace_back(1e-9*chrono::duration_cast<chrono::nanoseconds>(t_end-t_start).count());
         all_successors_[thread_id].emplace_back(make_pair(action_ptr, action_successor));
         delete edge_evaluation_vec_[thread_id];
         edge_evaluation_status_[thread_id] = 0;
-        planner_stats_.num_jobs_per_thread_[thread_id] +=1;
+        planner_stats_.num_jobs_per_thread[thread_id] +=1;
         lock_vec_[thread_id].unlock();
     }    
 }
 
 void PwastarPlanner::exit()
 {
-    planner_stats_.num_threads_spawned_ += edge_evaluation_futures_.size();
+    planner_stats_.num_threads_spawned += edge_evaluation_futures_.size();
     WastarPlanner::exit();
 }
