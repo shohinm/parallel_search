@@ -10,9 +10,11 @@
 #include "RobotNav2dActions.hpp"
 #include <planners/WastarPlanner.hpp>
 #include <planners/PwastarPlanner.hpp>
+#include <planners/ArastarPlanner.hpp>
 #include <planners/PasePlanner.hpp>
 #include <planners/EpasePlanner.hpp>
 #include <planners/GepasePlanner.hpp>
+#include <planners/AgepasePlanner.hpp>
 #include <planners/MplpPlanner.hpp>
 
 using namespace std;
@@ -29,6 +31,22 @@ double roundOff(double value, unsigned char prec)
 {
     double pow_10 = pow(10.0, (double)prec);
     return round(value * pow_10) / pow_10;
+}
+
+vector<vector<double>> loadCostFactorMap(const string& fname, int width, int height)
+{
+    ifstream infile(fname);
+    vector<vector<double>> cost_map(width, vector<double>(height));
+    
+    for (int y = 0; y < height; y++)
+    {
+        for (int x = 0; x < width; x++)
+        {
+            infile >> cost_map[x][y];
+        }
+    }   
+
+    return cost_map;
 }
 
 vector<vector<int>> loadMap(const char *fname, cv::Mat& img, int &width, int &height, int scale=1)
@@ -83,6 +101,8 @@ vector<vector<int>> loadMap(const char *fname, cv::Mat& img, int &width, int &he
         }
     }
 
+    height = scaled_height;
+    width = scaled_width;
     return scaled_map;
 
 }
@@ -166,7 +186,7 @@ size_t EdgeKeyGenerator(const EdgePtrType& edge_ptr)
     return seed;
 }
 
-void constructActions(vector<shared_ptr<Action>>& action_ptrs, ParamsType& action_params, vector<vector<int>>& map)
+void constructActions(vector<shared_ptr<Action>>& action_ptrs, ParamsType& action_params, vector<vector<int>>& map, vector<vector<double>>& cost_factor_map)
 {
     // Define action parameters
     action_params["length"] = 25;
@@ -174,30 +194,30 @@ void constructActions(vector<shared_ptr<Action>>& action_ptrs, ParamsType& actio
     action_params["cache_footprint"] = 1;
 
     ParamsType expensive_action_params = action_params;
-    expensive_action_params["cache_footprint"] = 0;
+    expensive_action_params["cache_footprint"] = 1;
     
-    auto move_up_controller_ptr = make_shared<MoveUpAction>("MoveUp", action_params, map, 0);
+    auto move_up_controller_ptr = make_shared<MoveUpAction>("MoveUp", action_params, map, cost_factor_map);
     action_ptrs.emplace_back(move_up_controller_ptr);
 
-    auto move_up_right_controller_ptr = make_shared<MoveUpRightAction>("MoveUpRight", expensive_action_params, map);
+    auto move_up_right_controller_ptr = make_shared<MoveUpRightAction>("MoveUpRight", expensive_action_params, map, cost_factor_map);
     action_ptrs.emplace_back(move_up_right_controller_ptr);
 
-    auto move_right_controller_ptr = make_shared<MoveRightAction>("MoveRight", action_params, map, 0);
+    auto move_right_controller_ptr = make_shared<MoveRightAction>("MoveRight", action_params, map, cost_factor_map);
     action_ptrs.emplace_back(move_right_controller_ptr);
 
-    auto move_right_down_controller_ptr = make_shared<MoveRightDownAction>("MoveRightDown", expensive_action_params, map);
+    auto move_right_down_controller_ptr = make_shared<MoveRightDownAction>("MoveRightDown", expensive_action_params, map, cost_factor_map);
     action_ptrs.emplace_back(move_right_down_controller_ptr);
 
-    auto move_down_controller_ptr = make_shared<MoveDownAction>("MoveDown", action_params, map, 0);
+    auto move_down_controller_ptr = make_shared<MoveDownAction>("MoveDown", action_params, map, cost_factor_map);
     action_ptrs.emplace_back(move_down_controller_ptr);
 
-    auto move_down_left_controller_ptr = make_shared<MoveDownLeftAction>("MoveDownLeft", expensive_action_params, map);
+    auto move_down_left_controller_ptr = make_shared<MoveDownLeftAction>("MoveDownLeft", expensive_action_params, map, cost_factor_map);
     action_ptrs.emplace_back(move_down_left_controller_ptr);
 
-    auto move_left_controller_ptr = make_shared<MoveLeftAction>("MoveLeft", action_params, map, 0);
+    auto move_left_controller_ptr = make_shared<MoveLeftAction>("MoveLeft", action_params, map, cost_factor_map);
     action_ptrs.emplace_back(move_left_controller_ptr);
 
-    auto move_left_up_controller_ptr = make_shared<MoveLeftUpAction>("MoveLeftUp", expensive_action_params, map);
+    auto move_left_up_controller_ptr = make_shared<MoveLeftUpAction>("MoveLeftUp", expensive_action_params, map, cost_factor_map);
     action_ptrs.emplace_back(move_left_up_controller_ptr);
 
 }
@@ -208,12 +228,16 @@ void constructPlanner(string planner_name, shared_ptr<Planner>& planner_ptr, vec
         planner_ptr = make_shared<WastarPlanner>(planner_params);
     else if (planner_name == "pwastar")
         planner_ptr = make_shared<PwastarPlanner>(planner_params);
+    else if (planner_name == "arastar")
+        planner_ptr = make_shared<ArastarPlanner>(planner_params);
     else if (planner_name == "pase")
         planner_ptr = make_shared<PasePlanner>(planner_params);
     else if (planner_name == "epase")
         planner_ptr = make_shared<EpasePlanner>(planner_params); 
     else if (planner_name == "gepase")
         planner_ptr = make_shared<GepasePlanner>(planner_params); 
+    else if (planner_name == "agepase")
+        planner_ptr = make_shared<AgepasePlanner>(planner_params);
     else if (planner_name == "mplp")
         planner_ptr = make_shared<MplpPlanner>(planner_params); 
     else
@@ -257,17 +281,76 @@ void loadStartsGoalsFromFile(vector<vector<double>>& starts, vector<vector<doubl
 int main(int argc, char* argv[])
 {
     int num_threads;
+    double time_budget = 0;
+    bool apply_cost_factor_map = true;
+    double heuristic_weight = 50;
+    double heuristic_reduction = 0.5;
 
     if (!strcmp(argv[1], "wastar"))
     {
-        if (argc != 2) throw runtime_error("Format: run_robot_nav_2d wastar");
-        num_threads = 1;
+        if (argc == 2) 
+            num_threads = 1;
+        else if (argc == 3)
+        {
+            num_threads = 1;
+            heuristic_weight = atof(argv[2]);
+        }
+        else
+            throw runtime_error("Format: run_robot_nav_2d wastar");
     }
     else if (!strcmp(argv[1], "mplp"))
     {
         if (argc != 3) throw runtime_error("Format: run_robot_nav_2d [planner_name] [num_threads]");
         if (atoi(argv[2]) < 4) throw runtime_error("mplp requires a minimum of 4 threads");
         num_threads = atoi(argv[2]);
+    }
+    else if (!strcmp(argv[1], "arastar"))
+    {
+        if (argc == 3)
+        {
+            num_threads = 1;
+            time_budget = atof(argv[2]);
+        }
+        else if (argc == 5)
+        {
+            num_threads = 1;
+            time_budget = atof(argv[2]);
+            heuristic_weight = atof(argv[3]);
+            heuristic_reduction = atof(argv[4]);
+        }
+        else
+            throw runtime_error("Format: run_robot_nav_2d arastar [time_budget] [heuristic_weight] [heuristic_reduction]");
+    }
+    else if (!strcmp(argv[1], "agepase"))
+    {
+        if (argc == 4)
+        {
+            num_threads = atoi(argv[2]);
+            time_budget = atof(argv[3]);
+        }
+        else if (argc == 6)
+        {
+            num_threads = atoi(argv[2]);
+            time_budget = atof(argv[3]);
+            heuristic_weight = atof(argv[4]);
+            heuristic_reduction = atof(argv[5]);
+        }
+        else
+            throw runtime_error("Format: run_robot_nav_2d agepase [num_threads] [time_budget] [heuristic_weight] [heuristic_reduction]");
+    }
+    else if (!strcmp(argv[1], "epase"))
+    {
+        if (argc == 3)
+        {
+            num_threads = atoi(argv[2]);
+        }
+        else if (argc == 4)
+        {
+            num_threads = atoi(argv[2]);
+            heuristic_weight = atof(argv[3]);
+        }
+        else
+            throw runtime_error("Format: run_robot_nav_2d epase [num_threads] [heuristic_weight]");
     }
     else
     {
@@ -286,25 +369,43 @@ int main(int argc, char* argv[])
     ParamsType planner_params;
     string planner_name = argv[1];
     planner_params["num_threads"] = num_threads;
-    planner_params["heuristic_weight"] = 50;
-    planner_params["timeout"] = 5;
+    planner_params["heuristic_weight"] = heuristic_weight;
+    planner_params["heuristic_reduction"] = heuristic_reduction;
+    if (time_budget)
+    {
+        planner_params["timeout"] = time_budget;
+    }
+    else
+    {
+        planner_params["timeout"] = 5;
+    }
     
     // Read map
     int width, height;
     cv::Mat img;
     
     vector<vector<vector<int>>> map_vec;
+    vector<vector<vector<double>>> cost_factor_map_vec;
     vector<cv::Mat> img_vec;
 
     map_vec.emplace_back(loadMap("../examples/robot_nav_2d/resources/hrt201n/hrt201n.map", img, width, height, scale_vec[0]));
+    cost_factor_map_vec.emplace_back(loadCostFactorMap("../examples/robot_nav_2d/resources/hrt201n/hrt201n_cost_factor.map", width, height));
     img_vec.emplace_back(img.clone());
+
     map_vec.emplace_back(loadMap("../examples/robot_nav_2d/resources/den501d/den501d.map", img, width, height, scale_vec[1]));
+    cost_factor_map_vec.emplace_back(loadCostFactorMap("../examples/robot_nav_2d/resources/den501d/den501d_cost_factor.map", width, height));
     img_vec.emplace_back(img.clone());
+
     map_vec.emplace_back(loadMap("../examples/robot_nav_2d/resources/den520d/den520d.map", img, width, height, scale_vec[2]));
+    cost_factor_map_vec.emplace_back(loadCostFactorMap("../examples/robot_nav_2d/resources/den520d/den520d_cost_factor.map", width, height));
     img_vec.emplace_back(img.clone());
+
     map_vec.emplace_back(loadMap("../examples/robot_nav_2d/resources/ht_chantry/ht_chantry.map", img, width, height, scale_vec[3]));
+    cost_factor_map_vec.emplace_back(loadCostFactorMap("../examples/robot_nav_2d/resources/ht_chantry/ht_chantry_cost_factor.map", width, height));
     img_vec.emplace_back(img.clone());
+
     map_vec.emplace_back(loadMap("../examples/robot_nav_2d/resources/brc203d/brc203d.map", img, width, height, scale_vec[4]));
+    cost_factor_map_vec.emplace_back(loadCostFactorMap("../examples/robot_nav_2d/resources/brc203d/brc203d_cost_factor.map", width, height));
     img_vec.emplace_back(img.clone());
 
 
@@ -323,12 +424,13 @@ int main(int argc, char* argv[])
     {
         auto map = map_vec[m_idx];
         auto img = img_vec[m_idx];
+        auto cost_factor_map = apply_cost_factor_map ? cost_factor_map_vec[m_idx] : vector<vector<double>>();
         auto scale = scale_vec[m_idx];
 
         // Construct actions
         ParamsType action_params;
         vector<shared_ptr<Action>> action_ptrs;
-        constructActions(action_ptrs, action_params, map);
+        constructActions(action_ptrs, action_params, map, cost_factor_map);
 
         // Construct planner
         shared_ptr<Planner> planner_ptr;
@@ -363,7 +465,7 @@ int main(int argc, char* argv[])
         if (visualize_plan) cv::namedWindow("Plan", cv::WINDOW_AUTOSIZE );// Create a window for display.
         
         int num_success = 0;
-        for (int exp_idx = 0; exp_idx < num_runs; ++exp_idx )
+        for (int exp_idx = 0; exp_idx < num_runs; ++exp_idx)
         {
             cout << "Experiment: " << exp_idx;
 
@@ -404,7 +506,7 @@ int main(int argc, char* argv[])
                 cout << " | Time (s): " << planner_stats.total_time 
                 << " | Cost: " << planner_stats.path_cost 
                 << " | Length: " << planner_stats.path_length
-                << " | State expansions: " << planner_stats.num_state_expansions_
+                << " | State expansions: " << planner_stats.num_state_expansions
                 << " | Threads used: " << planner_stats.num_threads_spawned << "/" << planner_params["num_threads"]
                 << " | Lock time: " <<  planner_stats.lock_time
                 << " | Expand time: " << planner_stats.cumulative_expansions_time

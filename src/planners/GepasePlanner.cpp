@@ -137,7 +137,7 @@ bool GepasePlanner::Plan()
         // Insert the state in BE and mark it closed if the edge being expanded is dummy edge
         if (curr_edge_ptr->action_ptr_ == dummy_action_ptr_)
         {
-            planner_stats_.num_state_expansions_++;  
+            planner_stats_.num_state_expansions++;  
             curr_edge_ptr->parent_state_ptr_->SetVisited();
             curr_edge_ptr->parent_state_ptr_->SetBeingExpanded();
             being_expanded_states_.push(curr_edge_ptr->parent_state_ptr_);
@@ -219,6 +219,7 @@ void GepasePlanner::initialize()
     dummy_action_ptr_ = NULL;
     auto edge_ptr = new Edge(start_state_ptr_, dummy_action_ptr_);
     edge_ptr->expansion_priority_ = heuristic_w_*computeHeuristic(start_state_ptr_);
+    start_state_ptr_->SetFValue(heuristic_w_*computeHeuristic(start_state_ptr_));
 
     edge_map_.insert(make_pair(getEdgeKey(edge_ptr), edge_ptr));
     edge_open_list_.push(edge_ptr);   
@@ -232,23 +233,28 @@ void GepasePlanner::notifyMainThread()
 
 void GepasePlanner::expandEdgeLoop(int thread_id)
 {
-    while (!terminate_)
+    try{
+        while (!terminate_)
+        {
+            unique_lock<mutex> locker(lock_vec_[thread_id]);
+            cv_vec_[thread_id].wait(locker, [this, thread_id](){return (edge_expansion_status_[thread_id] == 1);});
+            locker.unlock();
+
+            if (terminate_)
+                break;
+
+            expand(edge_expansion_vec_[thread_id], thread_id);
+
+            locker.lock();
+            edge_expansion_vec_[thread_id] = NULL;
+            edge_expansion_status_[thread_id] = 0;
+            locker.unlock();
+        }   
+    } catch (const exception &exc)
     {
-        unique_lock<mutex> locker(lock_vec_[thread_id]);
-        cv_vec_[thread_id].wait(locker, [this, thread_id](){return (edge_expansion_status_[thread_id] == 1);});
-        locker.unlock();
-
-        if (terminate_)
-            break;
-
-        expand(edge_expansion_vec_[thread_id], thread_id);
-
-        locker.lock();
-        edge_expansion_vec_[thread_id] = NULL;
-        edge_expansion_status_[thread_id] = 0;
-        locker.unlock();
-
-    }    
+        cout << "Caught Exception\n";
+        cerr << exc.what();
+    }
 }
 
 void GepasePlanner::expand(EdgePtrType edge_ptr, int thread_id)

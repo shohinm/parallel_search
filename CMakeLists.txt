@@ -26,10 +26,12 @@ set(SOURCES
     src/common/Edge.cpp
     src/planners/Planner.cpp
     src/planners/WastarPlanner.cpp
+    src/planners/ArastarPlanner.cpp
     src/planners/PwastarPlanner.cpp
     src/planners/PasePlanner.cpp
     src/planners/EpasePlanner.cpp
     src/planners/GepasePlanner.cpp
+    src/planners/AgepasePlanner.cpp
     src/planners/MplpPlanner.cpp
 )
 

@@ -12,7 +12,7 @@ class WastarPlanner : public Planner
     public:
         WastarPlanner(ParamsType planner_params);
         ~WastarPlanner();
-        bool Plan();
+        virtual bool Plan();
 
     protected:
         void initialize();

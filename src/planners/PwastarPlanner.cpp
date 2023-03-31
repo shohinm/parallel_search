@@ -79,7 +79,7 @@ void PwastarPlanner::expandState(StatePtrType state_ptr)
         if (VERBOSE) state_ptr->Print("Expanding");
 
         state_ptr->SetVisited();
-        planner_stats_.num_state_expansions_++;
+        planner_stats_.num_state_expansions++;
        
         vector<shared_ptr<Action>> valid_action_ptrs;
         for (auto& action_ptr: actions_ptrs_)

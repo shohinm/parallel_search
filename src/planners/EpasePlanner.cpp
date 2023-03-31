@@ -136,7 +136,7 @@ bool EpasePlanner::Plan()
         // Insert the state in BE and mark it closed if the edge being expanded is dummy edge
         if (curr_edge_ptr->action_ptr_ == dummy_action_ptr_)
         {
-            planner_stats_.num_state_expansions_++;  
+            planner_stats_.num_state_expansions++;  
             curr_edge_ptr->parent_state_ptr_->SetVisited();
             curr_edge_ptr->parent_state_ptr_->SetBeingExpanded();
             being_expanded_states_.emplace_back(curr_edge_ptr->parent_state_ptr_);

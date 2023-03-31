@@ -18,6 +18,7 @@ State::State(const StateVarsType& vars):
 vars_(vars),
 g_val_(DINF),
 f_val_(DINF),
+v_val_(DINF),
 h_val_(-1),
 is_visited_(false),
 being_expanded_(false),
@@ -38,6 +39,7 @@ void State::Print(string str)
     cout << "] | g: " << GetGValue() 
     << " | h: " << GetHValue() 
     << " | f: "<< GetFValue() 
+    << " | v: "<< GetVValue() 
     << " | is_closed: " << IsVisited()
     << " | being_expanded_: " << IsBeingExpanded()
     << " | num_successors: " << num_successors_ 
@@ -53,3 +55,11 @@ bool IsLesserState::operator()(const State& lhs, const State& rhs)
 		return lhs.GetFValue() < rhs.GetFValue();
 }
 
+
+bool IsGreaterState::operator()(const State& lhs, const State& rhs)
+{
+    if (lhs.GetFValue() == rhs.GetFValue()) // tie breaking
+        return lhs.GetStateID() < rhs.GetStateID();
+    else
+		return lhs.GetFValue() > rhs.GetFValue();
+}
