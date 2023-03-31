@@ -4,11 +4,11 @@ This repository maintains open-source implementations of several parallel search
 * [wA*: Weighted A*](https://www.sciencedirect.com/science/article/pii/000437027090007X) [Pohl 1970]
 * [ARA*: Anytime Repairing A*](https://proceedings.neurips.cc/paper_files/paper/2003/file/ee8fe9093fbbb687bef15a38facc44d2-Paper.pdf) [Likhachev et al. 1970]
 * PwA*: Parallel Weighted A* (As explained in the [ePA\*SE](https://arxiv.org/pdf/2203.01369.pdf) and [MPLP](https://ieeexplore.ieee.org/abstract/document/9730025) papers)
-* [PA\*SE: Parallel A* for Slow Expansions](https://www.aaai.org/ocs/index.php/ICAPS/ICAPS14/paper/view/7952/8029) [Phillips et al. 2014]
+* [PA\*SE: Parallel A* For Slow Expansions](https://www.aaai.org/ocs/index.php/ICAPS/ICAPS14/paper/view/7952/8029) [Phillips et al. 2014]
 * [MPLP: Massively Parallelized Lazy Planning](https://arxiv.org/abs/2107.02826) [Mukherjee et al. 2022]
-* [ePA\*SE: Edge-based Parallel A* for Slow Evaluations](https://arxiv.org/abs/2203.01369) [Mukherjee et al. 2022]
+* [ePA\*SE: Edge-based Parallel A* For Slow Evaluations](https://arxiv.org/abs/2203.01369) [Mukherjee et al. 2022]
 * [GePA\*SE: Generalized Edge-Based Parallel A* for Slow Evaluations](https://arxiv.org/abs/2301.10347) [Mukherjee et al. 2023]
-* A-ePA\*SE: Anytime Edge-Based Parallel A* for Slow Evaluations [Yang et al. 2023]
+* [A-ePA\*SE: Anytime Edge-Based Parallel A* for Slow Evaluations](https://arxiv.org/abs/2305.04408) [Yang et al. 2023]
 
 If you use MPLP, please use the following citation:
 ```
