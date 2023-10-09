@@ -33,6 +33,7 @@
 
 # Folders
 build/
+build*
 devel/
 logs/
 

@@ -30,17 +30,18 @@ bool AgepasePlanner::Plan()
         resetClosed();
         being_expanded_states_.clear();
         improvePath();
+
+        // Early termination if there's no solution
+        if (goal_state_ptr_ == NULL)
+        {
+            break;
+        }
+
         if (goal_state_ptr_->GetFValue() < best_cost_)
         {
             best_cost_ = goal_state_ptr_->GetFValue();
             best_plan_.clear();
             best_plan_ = plan_;
-        }
-
-        // Early termination if there's no solution
-        if (goal_state_ptr_ == NULL || heuristic_w_ == 1)
-        {
-            break;
         }
 
         // Update heuristic weight
@@ -101,6 +102,8 @@ void AgepasePlanner::initialize()
 {
     GepasePlanner::initialize();
     edge_incon_list_.clear();
+    plan_.clear();
+    best_plan_.clear();
     best_cost_ = numeric_limits<double>::max();
 }
 
