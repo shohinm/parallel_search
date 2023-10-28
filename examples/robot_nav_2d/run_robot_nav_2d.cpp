@@ -143,40 +143,60 @@ size_t EdgeKeyGenerator(const EdgePtrType& edge_ptr)
     int controller_id;
     auto action_ptr = edge_ptr->action_ptr_;
 
-    if (action_ptr->GetType() ==  "MoveUp")
+    if (!action_ptr) {
         controller_id = 0;
-    else if (action_ptr->GetType() ==  "MoveUpLong")
+    }
+    else if (action_ptr->GetType() ==  "MoveUp") {
         controller_id = 1;
-    else if (action_ptr->GetType() ==  "MoveUpRight")
+    }
+    else if (action_ptr->GetType() ==  "MoveUpLong") {
         controller_id = 2;
-    else if (action_ptr->GetType() ==  "MoveUpRightLong")
+    }
+    else if (action_ptr->GetType() ==  "MoveUpRight") {
         controller_id = 3;
-    else if (action_ptr->GetType() ==  "MoveRight")
+    }
+    else if (action_ptr->GetType() ==  "MoveUpRightLong") {
         controller_id = 4;
-    else if (action_ptr->GetType() ==  "MoveRightLong")
+    }
+    else if (action_ptr->GetType() ==  "MoveRight") {
         controller_id = 5;
-    else if (action_ptr->GetType() ==  "MoveRightDown")
+    }
+    else if (action_ptr->GetType() ==  "MoveRightLong") {
         controller_id = 6;
-    else if (action_ptr->GetType() ==  "MoveRightDownLong")
+    }
+    else if (action_ptr->GetType() ==  "MoveRightDown") {
         controller_id = 7;
-    else if (action_ptr->GetType() ==  "MoveDown")
+    }
+    else if (action_ptr->GetType() ==  "MoveRightDownLong") {
         controller_id = 8;
-    else if (action_ptr->GetType() ==  "MoveDownLong")
+    }
+    else if (action_ptr->GetType() ==  "MoveDown") {
         controller_id = 9;
-    else if (action_ptr->GetType() ==  "MoveDownLeft")
+    }
+    else if (action_ptr->GetType() ==  "MoveDownLong") {
         controller_id = 10;
-    else if (action_ptr->GetType() ==  "MoveDownLeftLong")
+    }
+    else if (action_ptr->GetType() ==  "MoveDownLeft") {
         controller_id = 11;
-    else if (action_ptr->GetType() ==  "MoveLeft")
+    }
+    else if (action_ptr->GetType() ==  "MoveDownLeftLong") {
         controller_id = 12;
-    else if (action_ptr->GetType() ==  "MoveLeftLong")
+    }
+    else if (action_ptr->GetType() ==  "MoveLeft") {
         controller_id = 13;
-    else if (action_ptr->GetType() ==  "MoveLeftUp")
+    }
+    else if (action_ptr->GetType() ==  "MoveLeftLong") {
         controller_id = 14;
-    else if (action_ptr->GetType() ==  "MoveLeftUpLong")
+    }
+    else if (action_ptr->GetType() ==  "MoveLeftUp") {
         controller_id = 15;
-    else
+    }
+    else if (action_ptr->GetType() ==  "MoveLeftUpLong") {
+        controller_id = 16;
+    }
+    else {
         throw runtime_error("Controller type not recognized in getEdgeKey!");
+    }
 
     size_t seed = 0;
     boost::hash_combine(seed, edge_ptr->parent_state_ptr_->GetStateID());

@@ -125,10 +125,7 @@ void Planner::resetClosed()
 
 size_t Planner::getEdgeKey(const EdgePtrType& edge_ptr)
 {
-    if (edge_ptr->action_ptr_ == NULL) // proxy edge
-        return state_key_generator_(edge_ptr->parent_state_ptr_->GetStateVars());
-    else 
-        return edge_key_generator_(edge_ptr);
+    return edge_key_generator_(edge_ptr);
 }
 
 StatePtrType Planner::constructState(const StateVarsType& state)
